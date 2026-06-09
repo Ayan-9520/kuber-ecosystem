@@ -1,0 +1,236 @@
+// ── AI Sales Copilot Domain ──
+
+enum AiCopilotEntityType {
+  LEAD
+  APPLICATION
+  CUSTOMER
+  EXECUTIVE
+  BRANCH
+  PARTNER
+  PRODUCT
+  PORTFOLIO
+}
+
+enum AiInsightCategory {
+  LEAD
+  APPLICATION
+  EXECUTIVE
+  BRANCH
+  PRODUCT
+  PARTNER
+  MANAGEMENT
+  RISK
+  CONVERSION
+}
+
+enum AiRecommendationType {
+  PRODUCT
+  LENDER
+  EXECUTIVE
+  ACTION
+  CROSS_SELL
+  FOLLOW_UP
+}
+
+enum AiPredictionType {
+  APPROVAL
+  DISBURSAL
+  CONVERSION
+  DELAY
+  SUCCESS
+}
+
+enum AiRiskSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AiActionType {
+  CALL_CUSTOMER
+  COLLECT_DOCUMENTS
+  UPDATE_BANK_LOGIN
+  ESCALATE_CASE
+  SEND_REMINDER
+  RECOMMEND_TOP_UP
+  RECOMMEND_BT
+  RECOMMEND_CROSS_SELL
+  ASSIGN_EXECUTIVE
+  SCHEDULE_FOLLOW_UP
+}
+
+enum AiCopilotSessionStatus {
+  ACTIVE
+  ENDED
+}
+
+enum AiFeedbackRating {
+  HELPFUL
+  PARTIAL
+  NOT_HELPFUL
+}
+
+model AiCopilotSession {
+  id             String                 @id @default(uuid()) @db.Char(36)
+  userId         String                 @map("user_id") @db.Char(36)
+  entityType     AiCopilotEntityType    @map("entity_type")
+  entityId       String?                @map("entity_id") @db.Char(36)
+  branchId       String?                @map("branch_id") @db.Char(36)
+  regionId       String?                @map("region_id") @db.Char(36)
+  status         AiCopilotSessionStatus @default(ACTIVE)
+  contextPayload Json?                  @map("context_payload")
+  ipAddress      String?                @map("ip_address") @db.VarChar(45)
+  userAgent      String?                @map("user_agent") @db.Text
+  requestId      String?                @map("request_id") @db.VarChar(64)
+  startedAt      DateTime               @default(now()) @map("started_at")
+  endedAt        DateTime?              @map("ended_at")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  insights        AiInsight[]
+  recommendations AiRecommendation[]
+  predictions     AiPrediction[]
+  riskFlags       AiRiskFlag[]
+  actionSuggestions AiActionSuggestion[]
+  feedback        AiCopilotFeedback[]
+
+  @@map("ai_copilot_sessions")
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+  @@index([status])
+}
+
+model AiInsight {
+  id          String            @id @default(uuid()) @db.Char(36)
+  sessionId   String?           @map("session_id") @db.Char(36)
+  userId      String            @map("user_id") @db.Char(36)
+  entityType  AiCopilotEntityType @map("entity_type")
+  entityId    String?           @map("entity_id") @db.Char(36)
+  category    AiInsightCategory
+  title       String            @db.VarChar(200)
+  summary     String            @db.Text
+  details     Json?
+  confidence  Decimal?          @db.Decimal(5, 2)
+  modelVersion String           @default("1.0.0") @map("model_version") @db.VarChar(20)
+  provider    String            @default("rules-engine") @db.VarChar(30)
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  session AiCopilotSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@map("ai_insights")
+  @@index([entityType, entityId])
+  @@index([userId, createdAt])
+  @@index([category])
+}
+
+model AiRecommendation {
+  id              String               @id @default(uuid()) @db.Char(36)
+  sessionId       String?              @map("session_id") @db.Char(36)
+  userId          String               @map("user_id") @db.Char(36)
+  entityType      AiCopilotEntityType  @map("entity_type")
+  entityId        String?              @map("entity_id") @db.Char(36)
+  recommendationType AiRecommendationType @map("recommendation_type")
+  title           String               @db.VarChar(200)
+  description     String               @db.Text
+  payload         Json?
+  priority        Int                  @default(50)
+  accepted        Boolean?
+  acceptedAt      DateTime?            @map("accepted_at")
+  modelVersion    String               @default("1.0.0") @map("model_version") @db.VarChar(20)
+  createdAt       DateTime             @default(now()) @map("created_at")
+
+  session AiCopilotSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@map("ai_recommendations")
+  @@index([entityType, entityId])
+  @@index([recommendationType])
+  @@index([userId, createdAt])
+}
+
+model AiPrediction {
+  id             String           @id @default(uuid()) @db.Char(36)
+  sessionId      String?          @map("session_id") @db.Char(36)
+  userId         String           @map("user_id") @db.Char(36)
+  entityType     AiCopilotEntityType @map("entity_type")
+  entityId       String?          @map("entity_id") @db.Char(36)
+  predictionType AiPredictionType @map("prediction_type")
+  probability    Decimal          @db.Decimal(5, 2)
+  grade          String?          @db.VarChar(10)
+  factors        Json?
+  actualOutcome  String?          @map("actual_outcome") @db.VarChar(50)
+  wasAccurate    Boolean?           @map("was_accurate")
+  modelVersion   String           @default("1.0.0") @map("model_version") @db.VarChar(20)
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  session AiCopilotSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@map("ai_predictions")
+  @@index([entityType, entityId])
+  @@index([predictionType])
+  @@index([userId, createdAt])
+}
+
+model AiRiskFlag {
+  id          String         @id @default(uuid()) @db.Char(36)
+  sessionId   String?        @map("session_id") @db.Char(36)
+  userId      String         @map("user_id") @db.Char(36)
+  entityType  AiCopilotEntityType @map("entity_type")
+  entityId    String?        @map("entity_id") @db.Char(36)
+  code        String         @db.VarChar(50)
+  label       String         @db.VarChar(200)
+  severity    AiRiskSeverity @default(MEDIUM)
+  description String?        @db.Text
+  metadata    Json?
+  resolved    Boolean        @default(false)
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  session AiCopilotSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@map("ai_risk_flags")
+  @@index([entityType, entityId])
+  @@index([severity])
+}
+
+model AiActionSuggestion {
+  id          String       @id @default(uuid()) @db.Char(36)
+  sessionId   String?      @map("session_id") @db.Char(36)
+  userId      String       @map("user_id") @db.Char(36)
+  entityType  AiCopilotEntityType @map("entity_type")
+  entityId    String?      @map("entity_id") @db.Char(36)
+  actionType  AiActionType @map("action_type")
+  title       String       @db.VarChar(200)
+  description String       @db.Text
+  priority    Int          @default(50)
+  dueAt       DateTime?    @map("due_at")
+  completed   Boolean      @default(false)
+  completedAt DateTime?    @map("completed_at")
+  metadata    Json?
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  session AiCopilotSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@map("ai_action_suggestions")
+  @@index([entityType, entityId])
+  @@index([actionType])
+  @@index([userId, createdAt])
+}
+
+model AiCopilotFeedback {
+  id           String           @id @default(uuid()) @db.Char(36)
+  sessionId    String?          @map("session_id") @db.Char(36)
+  userId       String           @map("user_id") @db.Char(36)
+  entityType   AiCopilotEntityType? @map("entity_type")
+  entityId     String?          @map("entity_id") @db.Char(36)
+  rating       AiFeedbackRating
+  comment      String?          @db.Text
+  insightId    String?          @map("insight_id") @db.Char(36)
+  recommendationId String?      @map("recommendation_id") @db.Char(36)
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  session AiCopilotSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@map("ai_copilot_feedback")
+  @@index([userId, createdAt])
+  @@index([rating])
+}

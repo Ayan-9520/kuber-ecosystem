@@ -1,0 +1,26 @@
+export {
+  assignLeadSchema,
+  autoAssignLeadSchema,
+  createLeadActivitySchema,
+  createLeadFollowUpSchema,
+  createLeadNoteSchema,
+  createLeadSchema,
+  createLeadSourceSchema,
+  exportLeadsQuerySchema,
+  leadAnalyticsQuerySchema,
+  leadTimelineQuerySchema,
+  listLeadActivitiesQuerySchema,
+  listLeadAssignmentsQuerySchema,
+  listLeadFollowUpsQuerySchema,
+  listLeadNotesQuerySchema,
+  listLeadScoresQuerySchema,
+  listLeadSourcesQuerySchema,
+  listLeadsQuerySchema,
+  scoreLeadSchema,
+  updateLeadFollowUpSchema,
+  updateLeadNoteSchema,
+  updateLeadSchema,
+  updateLeadSourceSchema,
+} from '@kuberone/shared-validation';
+
+export { uuidParamSchema } from '@kuberone/shared-validation';

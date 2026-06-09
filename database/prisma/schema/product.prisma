@@ -1,0 +1,238 @@
+// ── Product Domain ──
+
+model ProductFamily {
+  id           String   @id @default(uuid()) @db.Char(36)
+  code         String   @unique @db.VarChar(10)
+  name         String   @db.VarChar(100)
+  description  String?  @db.Text
+  isSecured    Boolean  @default(true) @map("is_secured")
+  displayOrder Int      @default(0) @map("display_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdById  String?  @map("created_by") @db.Char(36)
+  updatedById  String?  @map("updated_by") @db.Char(36)
+
+  products         Product[]
+  lmsScoringConfigs LmsScoringConfig[]
+
+  @@map("product_families")
+}
+
+model Product {
+  id               String          @id @default(uuid()) @db.Char(36)
+  familyId         String          @map("family_id") @db.Char(36)
+  code             String          @unique @db.VarChar(10)
+  name             String          @db.VarChar(200)
+  description      String?         @db.Text
+  minAmount        Decimal         @map("min_amount") @db.Decimal(15, 2)
+  maxAmount        Decimal         @map("max_amount") @db.Decimal(15, 2)
+  minTenureMonths  Int             @map("min_tenure_months")
+  maxTenureMonths  Int             @map("max_tenure_months")
+  minInterestRate  Decimal?        @map("min_interest_rate") @db.Decimal(5, 2)
+  maxInterestRate  Decimal?        @map("max_interest_rate") @db.Decimal(5, 2)
+  priority         ProductPriority @default(P1)
+  isActive         Boolean         @default(true) @map("is_active")
+  launchDate       DateTime?       @map("launch_date") @db.Date
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+  createdById      String?         @map("created_by") @db.Char(36)
+  updatedById      String?         @map("updated_by") @db.Char(36)
+  deletedAt        DateTime?       @map("deleted_at")
+  deletedById      String?         @map("deleted_by") @db.Char(36)
+
+  family           ProductFamily    @relation(fields: [familyId], references: [id])
+  variants         ProductVariant[]
+  eligibilityRules EligibilityRule[]
+  documentRules    DocumentRule[]
+  lenderPolicies   LenderPolicy[]
+  lenderMappings   ProductLenderMapping[]
+  leads            Lead[]
+  applications     Application[]
+  eligibilityResults EligibilityResult[]
+  financeCalculations FinanceCalculation[]
+  referrals             Referral[]
+  commissionRules       CommissionRule[]
+  commissionLedger      CommissionLedger[]
+
+  @@index([familyId])
+  @@index([isActive])
+  @@map("products")
+}
+
+model ProductVariant {
+  id          String             @id @default(uuid()) @db.Char(36)
+  productId   String             @map("product_id") @db.Char(36)
+  variantCode ProductVariantCode @map("variant_code")
+  name        String             @db.VarChar(100)
+  description String?            @db.Text
+  isActive    Boolean            @default(true) @map("is_active")
+  config      Json?
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  createdById String?            @map("created_by") @db.Char(36)
+  updatedById String?            @map("updated_by") @db.Char(36)
+
+  product              Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  workflowDefinitions  WorkflowDefinition[]
+  eligibilityRules     EligibilityRule[]
+  documentRules        DocumentRule[]
+  lenderMappings       ProductLenderMapping[]
+  leads                Lead[]
+  applications         Application[]
+  financeCalculations  FinanceCalculation[]
+
+  @@unique([productId, variantCode])
+  @@map("product_variants")
+}
+
+model EligibilityRule {
+  id             String              @id @default(uuid()) @db.Char(36)
+  productId      String              @map("product_id") @db.Char(36)
+  variantId      String?             @map("variant_id") @db.Char(36)
+  ruleName       String              @map("rule_name") @db.VarChar(100)
+  ruleType       EligibilityRuleType @map("rule_type")
+  ruleDefinition Json                @map("rule_definition")
+  priority       Int                 @default(0)
+  isActive       Boolean             @default(true) @map("is_active")
+  effectiveFrom  DateTime            @map("effective_from") @db.Date
+  effectiveTo    DateTime?           @map("effective_to") @db.Date
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+  createdById    String?             @map("created_by") @db.Char(36)
+  updatedById    String?             @map("updated_by") @db.Char(36)
+  deletedAt      DateTime?           @map("deleted_at")
+  deletedById    String?             @map("deleted_by") @db.Char(36)
+
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([productId])
+  @@index([productId, isActive])
+  @@map("eligibility_rules")
+}
+
+model DocumentType {
+  id               String               @id @default(uuid()) @db.Char(36)
+  code             String               @unique @db.VarChar(30)
+  name             String               @db.VarChar(100)
+  category         DocumentTypeCategory
+  allowedMimeTypes Json                 @map("allowed_mime_types")
+  maxSizeMb        Int                  @map("max_size_mb")
+  requiresOcr      Boolean              @default(false) @map("requires_ocr")
+  isActive         Boolean              @default(true) @map("is_active")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+
+  documentRules DocumentRule[]
+  documents     Document[]
+  documentRequests DocumentRequest[]
+
+  @@map("document_types")
+}
+
+model DocumentRule {
+  id             String          @id @default(uuid()) @db.Char(36)
+  productId      String          @map("product_id") @db.Char(36)
+  variantId      String?         @map("variant_id") @db.Char(36)
+  documentTypeId String          @map("document_type_id") @db.Char(36)
+  isMandatory    Boolean         @default(true) @map("is_mandatory")
+  stage          LosStage        @default(S03)
+  employmentType EmploymentType? @map("employment_type")
+  description    String?         @db.Text
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  createdById    String?         @map("created_by") @db.Char(36)
+  updatedById    String?         @map("updated_by") @db.Char(36)
+
+  product      Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant      ProductVariant? @relation(fields: [variantId], references: [id])
+  documentType DocumentType    @relation(fields: [documentTypeId], references: [id])
+
+  @@index([productId])
+  @@map("document_rules")
+}
+
+model Lender {
+  id              String                @id @default(uuid()) @db.Char(36)
+  code            String                @unique @db.VarChar(20)
+  name            String                @db.VarChar(200)
+  lenderType      LenderType            @map("lender_type")
+  contactEmail    String?               @map("contact_email") @db.VarChar(255)
+  integrationType LenderIntegrationType @map("integration_type")
+  isActive        Boolean               @default(true) @map("is_active")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+  createdById     String?               @map("created_by") @db.Char(36)
+  updatedById     String?               @map("updated_by") @db.Char(36)
+
+  policies LenderPolicy[]
+  mappings ProductLenderMapping[]
+  bankLogins BankLogin[]
+  sanctions Sanction[]
+  disbursements Disbursement[]
+  selectedApplications Application[] @relation("ApplicationSelectedLender")
+  commissionRules      CommissionRule[]
+  commissionLedger     CommissionLedger[]
+
+  @@map("lenders")
+}
+
+model LenderPolicy {
+  id                 String    @id @default(uuid()) @db.Char(36)
+  lenderId           String    @map("lender_id") @db.Char(36)
+  productId          String    @map("product_id") @db.Char(36)
+  minAmount          Decimal   @map("min_amount") @db.Decimal(15, 2)
+  maxAmount          Decimal   @map("max_amount") @db.Decimal(15, 2)
+  maxLtv             Decimal?  @map("max_ltv") @db.Decimal(5, 2)
+  maxFoir            Decimal?  @map("max_foir") @db.Decimal(5, 2)
+  minCibil           Int?      @map("min_cibil")
+  processingFeePct   Decimal?  @map("processing_fee_pct") @db.Decimal(5, 2)
+  commissionRate     Decimal?  @map("commission_rate") @db.Decimal(5, 2)
+  turnaroundDays     Int?      @map("turnaround_days")
+  policyS3Key        String?   @map("policy_s3_key") @db.VarChar(500)
+  isActive           Boolean   @default(true) @map("is_active")
+  effectiveFrom      DateTime  @map("effective_from") @db.Date
+  effectiveTo        DateTime? @map("effective_to") @db.Date
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  createdById        String?   @map("created_by") @db.Char(36)
+  updatedById        String?   @map("updated_by") @db.Char(36)
+
+  lender  Lender  @relation(fields: [lenderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  mappings ProductLenderMapping[]
+
+  @@unique([lenderId, productId, effectiveFrom])
+  @@index([productId])
+  @@map("lender_policies")
+}
+
+model ProductLenderMapping {
+  id                 String    @id @default(uuid()) @db.Char(36)
+  productId          String    @map("product_id") @db.Char(36)
+  variantId          String?   @map("variant_id") @db.Char(36)
+  lenderId           String    @map("lender_id") @db.Char(36)
+  lenderPolicyId     String?   @map("lender_policy_id") @db.Char(36)
+  eligibilityRuleIds Json?     @map("eligibility_rule_ids")
+  documentRuleIds    Json?     @map("document_rule_ids")
+  priority           Int       @default(0)
+  isActive           Boolean   @default(true) @map("is_active")
+  config             Json?
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  createdById        String?   @map("created_by") @db.Char(36)
+  updatedById        String?   @map("updated_by") @db.Char(36)
+  deletedAt          DateTime? @map("deleted_at")
+  deletedById        String?   @map("deleted_by") @db.Char(36)
+
+  product      Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant      ProductVariant? @relation(fields: [variantId], references: [id])
+  lender       Lender          @relation(fields: [lenderId], references: [id], onDelete: Cascade)
+  lenderPolicy LenderPolicy?   @relation(fields: [lenderPolicyId], references: [id])
+
+  @@unique([productId, variantId, lenderId])
+  @@index([productId])
+  @@index([lenderId])
+  @@map("product_lender_mappings")
+}

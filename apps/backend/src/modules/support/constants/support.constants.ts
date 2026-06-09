@@ -1,0 +1,46 @@
+export const TICKET_NUMBER_PREFIX = 'TKT';
+
+export const SUPPORT_ENGINE_VERSION = '1.0.0';
+
+export const SLA_RESPONSE_HOURS: Record<string, number> = {
+  LOW: 24,
+  MEDIUM: 8,
+  HIGH: 4,
+  CRITICAL: 1,
+};
+
+export const SLA_RESOLUTION_HOURS: Record<string, number> = {
+  LOW: 72,
+  MEDIUM: 48,
+  HIGH: 24,
+  CRITICAL: 8,
+};
+
+export const SLA_ESCALATION_HOURS: Record<string, number> = {
+  LOW: 48,
+  MEDIUM: 24,
+  HIGH: 12,
+  CRITICAL: 4,
+};
+
+export const TERMINAL_TICKET_STATUSES = ['CLOSED', 'REJECTED'] as const;
+
+export const STATUS_TRANSITIONS: Record<string, string[]> = {
+  OPEN: ['ASSIGNED', 'IN_PROGRESS', 'REJECTED', 'CLOSED'],
+  ASSIGNED: ['IN_PROGRESS', 'PENDING_CUSTOMER', 'PENDING_INTERNAL', 'RESOLVED', 'REJECTED'],
+  IN_PROGRESS: ['PENDING_CUSTOMER', 'PENDING_INTERNAL', 'RESOLVED', 'REJECTED'],
+  PENDING_CUSTOMER: ['IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'],
+  PENDING_INTERNAL: ['IN_PROGRESS', 'RESOLVED', 'REJECTED'],
+  RESOLVED: ['CLOSED', 'IN_PROGRESS'],
+  CLOSED: [],
+  REJECTED: [],
+};
+
+export const ESCALATION_ORDER = [
+  'L1_SUPPORT',
+  'L2_SUPPORT',
+  'SUPPORT_MANAGER',
+  'BRANCH_MANAGER',
+  'REGIONAL_MANAGER',
+  'ADMIN',
+] as const;

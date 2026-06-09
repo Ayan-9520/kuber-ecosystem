@@ -1,0 +1,239 @@
+// ── AI Platform / OpenAI Integration Layer ──
+
+enum AiProviderType {
+  OPENAI
+  LOCAL
+  FUTURE
+}
+
+enum AiModelCapability {
+  CHAT
+  EMBEDDING
+  TRANSCRIPTION
+  TTS
+  MODERATION
+  REALTIME
+  STRUCTURED
+  FUNCTION_CALLING
+}
+
+enum AiRequestType {
+  CHAT
+  COMPLETION
+  EMBEDDING
+  TRANSCRIPTION
+  TTS
+  MODERATION
+  FUNCTION_CALL
+}
+
+enum AiRequestStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  FALLBACK
+}
+
+enum AiModuleSource {
+  AI_ADVISOR
+  VOICE_AI
+  COPILOT
+  RECOMMENDATION
+  RAG
+  KNOWLEDGE
+  ADMIN
+  API
+}
+
+model AiProvider {
+  id          String         @id @default(uuid()) @db.Char(36)
+  code        String         @unique @db.VarChar(50)
+  name        String         @db.VarChar(100)
+  providerType AiProviderType @map("provider_type")
+  isActive    Boolean        @default(true) @map("is_active")
+  config      Json?
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  models AiModel[]
+
+  @@map("ai_providers")
+}
+
+model AiModel {
+  id           String            @id @default(uuid()) @db.Char(36)
+  providerId   String            @map("provider_id") @db.Char(36)
+  code         String            @db.VarChar(80)
+  name         String            @db.VarChar(120)
+  capability   AiModelCapability
+  isDefault    Boolean           @default(false) @map("is_default")
+  isActive     Boolean           @default(true) @map("is_active")
+  maxTokens    Int?              @map("max_tokens")
+  dimensions   Int?
+  costPer1kIn  Decimal?          @map("cost_per_1k_in") @db.Decimal(10, 6)
+  costPer1kOut Decimal?          @map("cost_per_1k_out") @db.Decimal(10, 6)
+  metadata     Json?
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  provider       AiProvider     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  primaryRoutes  AiModelRoute[] @relation("AiModelRoutePrimary")
+  fallbackRoutes AiModelRoute[] @relation("AiModelRouteFallback")
+
+  @@unique([providerId, code])
+  @@index([capability, isActive])
+  @@map("ai_models")
+}
+
+model AiModelRoute {
+  id           String         @id @default(uuid()) @db.Char(36)
+  module       AiModuleSource
+  capability   AiModelCapability
+  primaryModelId String       @map("primary_model_id") @db.Char(36)
+  fallbackModelId String?     @map("fallback_model_id") @db.Char(36)
+  priority     Int            @default(0)
+  isActive     Boolean        @default(true) @map("is_active")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  primaryModel  AiModel  @relation("AiModelRoutePrimary", fields: [primaryModelId], references: [id], onDelete: Cascade)
+  fallbackModel AiModel? @relation("AiModelRouteFallback", fields: [fallbackModelId], references: [id], onDelete: SetNull)
+
+  @@unique([module, capability])
+  @@map("ai_model_routes")
+}
+
+model AiPromptTemplate {
+  id          String   @id @default(uuid()) @db.Char(36)
+  code        String   @unique @db.VarChar(80)
+  name        String   @db.VarChar(150)
+  module      AiModuleSource
+  role        String   @db.VarChar(20)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  versions AiPromptVersion[]
+
+  @@index([module, isActive])
+  @@map("ai_prompt_templates")
+}
+
+model AiPromptVersion {
+  id         String   @id @default(uuid()) @db.Char(36)
+  templateId String   @map("template_id") @db.Char(36)
+  version    Int
+  content    String   @db.LongText
+  variables  Json?
+  isActive   Boolean  @default(true) @map("is_active")
+  createdById String? @map("created_by_id") @db.Char(36)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  template AiPromptTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, version])
+  @@index([templateId, isActive])
+  @@map("ai_prompt_versions")
+}
+
+model AiRequest {
+  id           String          @id @default(uuid()) @db.Char(36)
+  userId       String?         @map("user_id") @db.Char(36)
+  module       AiModuleSource
+  requestType  AiRequestType   @map("request_type")
+  status       AiRequestStatus @default(PENDING)
+  modelCode    String?         @map("model_code") @db.VarChar(80)
+  providerCode String?         @map("provider_code") @db.VarChar(50)
+  inputTokens  Int?            @map("input_tokens")
+  outputTokens Int?            @map("output_tokens")
+  latencyMs    Int?            @map("latency_ms")
+  errorCode    String?         @map("error_code") @db.VarChar(50)
+  errorMessage String?         @map("error_message") @db.Text
+  ipAddress    String?         @map("ip_address") @db.VarChar(45)
+  requestId    String?         @map("request_id") @db.VarChar(64)
+  metadata     Json?
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  response AiResponse?
+  usageLogs AiUsageLog[]
+  costLogs  AiCostLog[]
+
+  @@index([userId, createdAt])
+  @@index([module, requestType])
+  @@index([status])
+  @@map("ai_requests")
+}
+
+model AiResponse {
+  id          String   @id @default(uuid()) @db.Char(36)
+  requestId   String   @unique @map("request_id") @db.Char(36)
+  content     String?  @db.LongText
+  structured  Json?
+  audioUrl    String?  @map("audio_url") @db.VarChar(500)
+  embedding   Json?
+  toolCalls   Json?    @map("tool_calls")
+  moderated   Boolean  @default(false)
+  piiMasked   Boolean  @default(false) @map("pii_masked")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  request AiRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@map("ai_responses")
+}
+
+model AiUsageLog {
+  id           String         @id @default(uuid()) @db.Char(36)
+  requestId    String?        @map("request_id") @db.Char(36)
+  userId       String?        @map("user_id") @db.Char(36)
+  module       AiModuleSource
+  requestType  AiRequestType  @map("request_type")
+  modelCode    String         @map("model_code") @db.VarChar(80)
+  inputTokens  Int            @default(0) @map("input_tokens")
+  outputTokens Int            @default(0) @map("output_tokens")
+  totalTokens  Int            @default(0) @map("total_tokens")
+  latencyMs    Int?           @map("latency_ms")
+  success      Boolean        @default(true)
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  request AiRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([module, createdAt])
+  @@map("ai_usage_logs")
+}
+
+model AiCostLog {
+  id           String         @id @default(uuid()) @db.Char(36)
+  requestId    String?        @map("request_id") @db.Char(36)
+  userId       String?        @map("user_id") @db.Char(36)
+  module       AiModuleSource
+  modelCode    String         @map("model_code") @db.VarChar(80)
+  inputCost    Decimal        @default(0) @map("input_cost") @db.Decimal(12, 6)
+  outputCost   Decimal        @default(0) @map("output_cost") @db.Decimal(12, 6)
+  totalCost    Decimal        @default(0) @map("total_cost") @db.Decimal(12, 6)
+  currency     String         @default("USD") @db.VarChar(3)
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  request AiRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([module, createdAt])
+  @@map("ai_cost_logs")
+}
+
+model AiModerationLog {
+  id         String   @id @default(uuid()) @db.Char(36)
+  userId     String?  @map("user_id") @db.Char(36)
+  module     AiModuleSource
+  inputText  String   @map("input_text") @db.Text
+  flagged    Boolean  @default(false)
+  categories Json?
+  scores     Json?
+  action     String?  @db.VarChar(30)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@index([flagged])
+  @@map("ai_moderation_logs")
+}

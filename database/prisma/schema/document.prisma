@@ -1,0 +1,200 @@
+model Document {
+  id             String           @id @default(uuid()) @db.Char(36)
+  documentCode   String           @unique @map("document_code") @db.VarChar(30)
+  ownerType      DocumentOwnerType @map("owner_type")
+  customerId     String?          @map("customer_id") @db.Char(36)
+  leadId         String?          @map("lead_id") @db.Char(36)
+  applicationId  String?          @map("application_id") @db.Char(36)
+  partnerId      String?          @map("partner_id") @db.Char(36)
+  employeeId     String?          @map("employee_id") @db.Char(36)
+  documentTypeId String           @map("document_type_id") @db.Char(36)
+  s3Key          String           @map("s3_key") @db.VarChar(500)
+  fileName       String           @map("file_name") @db.VarChar(255)
+  mimeType       String           @map("mime_type") @db.VarChar(100)
+  fileSizeBytes  BigInt           @map("file_size_bytes")
+  checksum       String           @db.VarChar(64)
+  currentVersion Int              @default(1) @map("current_version")
+  status         DocumentStatus   @default(UPLOADED)
+  metadata       Json?
+  expiresAt      DateTime?        @map("expires_at")
+  uploadedById   String           @map("uploaded_by_id") @db.Char(36)
+  verifiedById   String?          @map("verified_by_id") @db.Char(36)
+  verifiedAt     DateTime?        @map("verified_at")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  deletedAt      DateTime?        @map("deleted_at")
+  deletedById    String?          @map("deleted_by_id") @db.Char(36)
+
+  documentType DocumentType @relation(fields: [documentTypeId], references: [id])
+  customer     Customer?    @relation(fields: [customerId], references: [id])
+  lead         Lead?        @relation(fields: [leadId], references: [id])
+  application  Application? @relation(fields: [applicationId], references: [id])
+  partner      Partner?     @relation(fields: [partnerId], references: [id])
+  employee     Employee?    @relation(fields: [employeeId], references: [id])
+  uploadedBy   User         @relation("DocumentUploadedBy", fields: [uploadedById], references: [id])
+  verifiedBy   User?        @relation("DocumentVerifiedBy", fields: [verifiedById], references: [id])
+  versions     DocumentVersion[]
+  ocrResults   OcrResult[]
+  verifications VerificationResult[]
+  fulfilledRequests DocumentRequest[] @relation("DocumentRequestFulfilled")
+
+  @@index([applicationId, documentTypeId])
+  @@index([customerId, status])
+  @@index([leadId])
+  @@index([status, createdAt])
+  @@index([deletedAt])
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id            String               @id @default(uuid()) @db.Char(36)
+  documentId    String               @map("document_id") @db.Char(36)
+  versionNumber Int                  @map("version_number")
+  s3Key         String               @map("s3_key") @db.VarChar(500)
+  fileName      String               @map("file_name") @db.VarChar(255)
+  mimeType      String               @map("mime_type") @db.VarChar(100)
+  fileSizeBytes BigInt               @map("file_size_bytes")
+  checksum      String               @db.VarChar(64)
+  uploadReason  DocumentUploadReason @default(INITIAL) @map("upload_reason")
+  metadata      Json?
+  uploadedById  String               @map("uploaded_by_id") @db.Char(36)
+  createdAt     DateTime             @default(now()) @map("created_at")
+
+  document   Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  uploadedBy User        @relation("DocumentVersionUploadedBy", fields: [uploadedById], references: [id])
+  ocrResults OcrResult[]
+
+  @@unique([documentId, versionNumber])
+  @@index([documentId])
+  @@map("document_versions")
+}
+
+model DocumentRequest {
+  id                  String                @id @default(uuid()) @db.Char(36)
+  applicationId       String?               @map("application_id") @db.Char(36)
+  leadId              String?               @map("lead_id") @db.Char(36)
+  customerId          String?               @map("customer_id") @db.Char(36)
+  documentTypeId      String                @map("document_type_id") @db.Char(36)
+  requestedById       String                @map("requested_by_id") @db.Char(36)
+  status              DocumentRequestStatus @default(PENDING)
+  dueDate             DateTime?             @map("due_date") @db.Date
+  reminderCount       Int                   @default(0) @map("reminder_count")
+  notes               String?               @db.Text
+  fulfilledDocumentId String?               @map("fulfilled_document_id") @db.Char(36)
+  fulfilledAt         DateTime?             @map("fulfilled_at")
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+
+  application       Application?  @relation(fields: [applicationId], references: [id])
+  lead              Lead?         @relation(fields: [leadId], references: [id])
+  customer          Customer?     @relation(fields: [customerId], references: [id])
+  documentType      DocumentType  @relation(fields: [documentTypeId], references: [id])
+  requestedBy       User          @relation("DocumentRequestRequestedBy", fields: [requestedById], references: [id])
+  fulfilledDocument Document?     @relation("DocumentRequestFulfilled", fields: [fulfilledDocumentId], references: [id])
+  deficiencies      DocumentDeficiency[]
+
+  @@index([applicationId, status])
+  @@index([customerId, status])
+  @@index([dueDate])
+  @@map("document_requests")
+}
+
+model OcrResult {
+  id                String      @id @default(uuid()) @db.Char(36)
+  documentId        String      @map("document_id") @db.Char(36)
+  documentVersionId String?     @map("document_version_id") @db.Char(36)
+  extractedName     String?     @map("extracted_name") @db.VarChar(200)
+  panNumberEnc      String?     @map("pan_number_enc") @db.Text
+  panNumberMasked   String?     @map("pan_number_masked") @db.VarChar(15)
+  aadhaarNumberEnc  String?     @map("aadhaar_number_enc") @db.Text
+  aadhaarNumberMasked String?   @map("aadhaar_number_masked") @db.VarChar(20)
+  dateOfBirth       DateTime?   @map("date_of_birth") @db.Date
+  address           String?     @db.Text
+  gstNumber         String?     @map("gst_number") @db.VarChar(20)
+  vehicleNumber     String?     @map("vehicle_number") @db.VarChar(20)
+  propertyDetails   Json?       @map("property_details")
+  extractedFields     Json        @map("extracted_fields")
+  confidenceScore     Decimal     @map("confidence_score") @db.Decimal(5, 2)
+  rawResponse       Json?         @map("raw_response")
+  provider          OcrProvider   @default(INTERNAL)
+  processedAt       DateTime      @map("processed_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
+
+  document        Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentVersion DocumentVersion? @relation(fields: [documentVersionId], references: [id])
+
+  @@index([documentId, processedAt(sort: Desc)])
+  @@map("ocr_results")
+}
+
+model VerificationResult {
+  id              String                 @id @default(uuid()) @db.Char(36)
+  documentId      String                 @map("document_id") @db.Char(36)
+  verifiedById    String?                @map("verified_by_id") @db.Char(36)
+  mode            VerificationMode       @default(MANUAL)
+  result          VerificationResultType
+  rejectionReason String?                @map("rejection_reason") @db.VarChar(200)
+  notes           String?                @db.Text
+  riskFlags       Json?                  @map("risk_flags")
+  mismatches      Json?
+  verifiedAt      DateTime               @map("verified_at")
+  createdAt       DateTime               @default(now()) @map("created_at")
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  verifiedBy User?    @relation("VerificationResultVerifiedBy", fields: [verifiedById], references: [id])
+
+  @@index([documentId, verifiedAt(sort: Desc)])
+  @@map("verification_results")
+}
+
+model DocumentDeficiency {
+  id                String           @id @default(uuid()) @db.Char(36)
+  applicationId     String?          @map("application_id") @db.Char(36)
+  leadId            String?          @map("lead_id") @db.Char(36)
+  customerId        String?          @map("customer_id") @db.Char(36)
+  documentRequestId String?          @map("document_request_id") @db.Char(36)
+  documentId        String?          @map("document_id") @db.Char(36)
+  deficiencyType    DeficiencyType   @map("deficiency_type")
+  description       String           @db.Text
+  raisedById        String           @map("raised_by_id") @db.Char(36)
+  status            DeficiencyStatus @default(OPEN)
+  resolvedAt        DateTime?        @map("resolved_at")
+  notificationSent  Boolean          @default(false) @map("notification_sent")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  application     Application?    @relation(fields: [applicationId], references: [id])
+  lead            Lead?           @relation(fields: [leadId], references: [id])
+  customer        Customer?       @relation(fields: [customerId], references: [id])
+  documentRequest DocumentRequest? @relation(fields: [documentRequestId], references: [id])
+  raisedBy        User            @relation("DocumentDeficiencyRaisedBy", fields: [raisedById], references: [id])
+
+  @@index([applicationId, status])
+  @@index([customerId, status])
+  @@map("document_deficiencies")
+}
+
+model PresignedUploadIntent {
+  id             String            @id @default(uuid()) @db.Char(36)
+  uploadToken    String            @unique @map("upload_token") @db.VarChar(36)
+  s3Key          String            @unique @map("s3_key") @db.VarChar(500)
+  requestedById  String            @map("requested_by_id") @db.Char(36)
+  documentTypeId String            @map("document_type_id") @db.Char(36)
+  ownerType      DocumentOwnerType @map("owner_type")
+  customerId     String?           @map("customer_id") @db.Char(36)
+  leadId         String?           @map("lead_id") @db.Char(36)
+  applicationId  String?           @map("application_id") @db.Char(36)
+  partnerId      String?           @map("partner_id") @db.Char(36)
+  employeeId     String?           @map("employee_id") @db.Char(36)
+  fileName       String            @map("file_name") @db.VarChar(255)
+  mimeType       String            @map("mime_type") @db.VarChar(100)
+  fileSizeBytes  Int               @map("file_size_bytes")
+  expiresAt      DateTime          @map("expires_at")
+  consumedAt     DateTime?         @map("consumed_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
+
+  requestedBy User @relation("PresignedUploadRequestedBy", fields: [requestedById], references: [id])
+
+  @@index([expiresAt])
+  @@map("presigned_upload_intents")
+}

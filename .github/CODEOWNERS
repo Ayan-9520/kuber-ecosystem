@@ -1,0 +1,10 @@
+# KuberOne Code Owners
+* @kuberfinserve/engineering
+
+/apps/backend/     @kuberfinserve/backend
+/apps/admin/       @kuberfinserve/frontend
+/apps/mobile-*/    @kuberfinserve/mobile
+/database/         @kuberfinserve/backend @kuberfinserve/data
+/packages/         @kuberfinserve/engineering
+/deployment/       @kuberfinserve/devops
+/docs/             @kuberfinserve/architecture

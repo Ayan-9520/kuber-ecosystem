@@ -1,0 +1,32 @@
+import { LinearGradient } from 'expo-linear-gradient';
+import { StyleSheet, Text, View } from 'react-native';
+
+import { colors, typography } from '@/theme';
+
+export function SplashScreen() {
+  return (
+    <LinearGradient colors={[colors.background, colors.card, colors.background]} style={styles.container}>
+      <View style={styles.logo}>
+        <Text style={styles.logoText}>K</Text>
+      </View>
+      <Text style={styles.brand}>KuberOne DSA</Text>
+      <Text style={styles.tagline}>Partner by Kuber Finserve</Text>
+    </LinearGradient>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  logo: {
+    width: 72,
+    height: 72,
+    borderRadius: 18,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  logoText: { fontSize: 36, fontWeight: '800', color: colors.background },
+  brand: { ...typography.h1, color: colors.text },
+  tagline: { ...typography.caption, color: colors.textMuted, marginTop: 8 },
+});

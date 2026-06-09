@@ -1,0 +1,162 @@
+// ── Support & Ticket Management Domain ──
+
+model TicketCategory {
+  id          String   @id @default(uuid()) @db.Char(36)
+  code        String   @unique @db.VarChar(50)
+  name        String   @db.VarChar(100)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tickets Ticket[]
+
+  @@map("ticket_categories")
+}
+
+model Ticket {
+  id                     String                 @id @default(uuid()) @db.Char(36)
+  ticketNumber           String                 @unique @map("ticket_number") @db.VarChar(30)
+  subject                String                 @db.VarChar(300)
+  description            String                 @db.Text
+  categoryId             String                 @map("category_id") @db.Char(36)
+  priority               TicketPriority         @default(MEDIUM)
+  status                 TicketStatus           @default(OPEN)
+  customerId             String?                @map("customer_id") @db.Char(36)
+  partnerId              String?                @map("partner_id") @db.Char(36)
+  applicationId          String?                @map("application_id") @db.Char(36)
+  leadId                 String?                @map("lead_id") @db.Char(36)
+  branchId               String?                @map("branch_id") @db.Char(36)
+  regionId               String?                @map("region_id") @db.Char(36)
+  assignedToId           String?                @map("assigned_to_id") @db.Char(36)
+  assignedUserId         String?                @map("assigned_user_id") @db.Char(36)
+  escalationLevel        TicketEscalationLevel  @default(L1_SUPPORT) @map("escalation_level")
+  responseSlaDueAt       DateTime?              @map("response_sla_due_at")
+  resolutionSlaDueAt     DateTime?              @map("resolution_sla_due_at")
+  escalationSlaDueAt     DateTime?              @map("escalation_sla_due_at")
+  firstResponseAt        DateTime?              @map("first_response_at")
+  resolvedAt             DateTime?              @map("resolved_at")
+  closedAt               DateTime?              @map("closed_at")
+  slaBreached            Boolean                @default(false) @map("sla_breached")
+  metadata               Json?
+  version                Int                    @default(1)
+  createdAt              DateTime               @default(now()) @map("created_at")
+  updatedAt              DateTime               @updatedAt @map("updated_at")
+  createdById            String?                @map("created_by") @db.Char(36)
+  updatedById            String?                @map("updated_by") @db.Char(36)
+  deletedAt              DateTime?              @map("deleted_at")
+  deletedById            String?                @map("deleted_by") @db.Char(36)
+
+  category     TicketCategory     @relation(fields: [categoryId], references: [id])
+  customer     Customer?          @relation(fields: [customerId], references: [id])
+  partner      Partner?           @relation(fields: [partnerId], references: [id])
+  application  Application?       @relation(fields: [applicationId], references: [id])
+  lead         Lead?              @relation(fields: [leadId], references: [id])
+  branch       Branch?            @relation(fields: [branchId], references: [id])
+  region       Region?            @relation(fields: [regionId], references: [id])
+  assignedTo   Employee?          @relation("TicketAssignedEmployee", fields: [assignedToId], references: [id])
+  assignedUser User?              @relation("TicketAssignedUser", fields: [assignedUserId], references: [id])
+  createdBy    User?              @relation("TicketCreatedBy", fields: [createdById], references: [id])
+  updatedBy    User?              @relation("TicketUpdatedBy", fields: [updatedById], references: [id])
+  deletedBy    User?              @relation("TicketDeletedBy", fields: [deletedById], references: [id])
+  messages     TicketMessage[]
+  assignments  TicketAssignment[]
+  escalations  TicketEscalation[]
+  resolutions  TicketResolution[]
+  attachments  TicketAttachment[]
+
+  @@index([status, priority, createdAt])
+  @@index([branchId, status])
+  @@index([assignedUserId, status])
+  @@index([customerId])
+  @@index([deletedAt])
+  @@map("tickets")
+}
+
+model TicketMessage {
+  id           String            @id @default(uuid()) @db.Char(36)
+  ticketId     String            @map("ticket_id") @db.Char(36)
+  messageType  TicketMessageType @default(CUSTOMER) @map("message_type")
+  body         String            @db.Text
+  isInternal   Boolean           @default(false) @map("is_internal")
+  authorUserId String            @map("author_user_id") @db.Char(36)
+  createdAt    DateTime          @default(now()) @map("created_at")
+
+  ticket      Ticket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author      User               @relation("TicketMessageAuthor", fields: [authorUserId], references: [id])
+  attachments TicketAttachment[]
+
+  @@index([ticketId, createdAt])
+  @@map("ticket_messages")
+}
+
+model TicketAssignment {
+  id             String               @id @default(uuid()) @db.Char(36)
+  ticketId       String               @map("ticket_id") @db.Char(36)
+  assignedToId   String?              @map("assigned_to_id") @db.Char(36)
+  assignedUserId String?              @map("assigned_user_id") @db.Char(36)
+  assignedById   String               @map("assigned_by_id") @db.Char(36)
+  assignmentType TicketAssignmentType @map("assignment_type")
+  reason         String?              @db.VarChar(500)
+  createdAt      DateTime             @default(now()) @map("created_at")
+
+  ticket       Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  assignedTo   Employee? @relation("TicketAssignmentEmployee", fields: [assignedToId], references: [id])
+  assignedUser User?     @relation("TicketAssignmentUser", fields: [assignedUserId], references: [id])
+  assignedBy   User      @relation("TicketAssignmentBy", fields: [assignedById], references: [id])
+
+  @@index([ticketId, createdAt])
+  @@map("ticket_assignments")
+}
+
+model TicketEscalation {
+  id            String                @id @default(uuid()) @db.Char(36)
+  ticketId      String                @map("ticket_id") @db.Char(36)
+  fromLevel     TicketEscalationLevel @map("from_level")
+  toLevel       TicketEscalationLevel @map("to_level")
+  escalatedById String                @map("escalated_by_id") @db.Char(36)
+  reason        String?               @db.VarChar(500)
+  slaDueAt      DateTime?             @map("sla_due_at")
+  escalatedAt   DateTime              @default(now()) @map("escalated_at")
+
+  ticket      Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  escalatedBy User   @relation("TicketEscalatedBy", fields: [escalatedById], references: [id])
+
+  @@index([ticketId, escalatedAt])
+  @@map("ticket_escalations")
+}
+
+model TicketResolution {
+  id              String   @id @default(uuid()) @db.Char(36)
+  ticketId        String   @map("ticket_id") @db.Char(36)
+  resolvedById    String   @map("resolved_by_id") @db.Char(36)
+  resolutionNotes String   @map("resolution_notes") @db.Text
+  resolutionType  String?  @map("resolution_type") @db.VarChar(50)
+  resolvedAt      DateTime @default(now()) @map("resolved_at")
+
+  ticket     Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  resolvedBy User   @relation("TicketResolvedBy", fields: [resolvedById], references: [id])
+
+  @@index([ticketId, resolvedAt])
+  @@map("ticket_resolutions")
+}
+
+model TicketAttachment {
+  id            String   @id @default(uuid()) @db.Char(36)
+  ticketId      String   @map("ticket_id") @db.Char(36)
+  messageId     String?  @map("message_id") @db.Char(36)
+  fileName      String   @map("file_name") @db.VarChar(255)
+  s3Key         String   @map("s3_key") @db.VarChar(500)
+  mimeType      String   @map("mime_type") @db.VarChar(100)
+  fileSizeBytes BigInt   @map("file_size_bytes")
+  uploadedById  String   @map("uploaded_by_id") @db.Char(36)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  ticket     Ticket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  message    TicketMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  uploadedBy User           @relation("TicketAttachmentUploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([ticketId])
+  @@map("ticket_attachments")
+}

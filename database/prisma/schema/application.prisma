@@ -1,0 +1,245 @@
+model Application {
+  id                    String            @id @default(uuid()) @db.Char(36)
+  applicationNumber     String            @unique @map("application_number") @db.VarChar(30)
+  customerId            String            @map("customer_id") @db.Char(36)
+  leadId                String?           @map("lead_id") @db.Char(36)
+  productId             String            @map("product_id") @db.Char(36)
+  variantId             String?           @map("variant_id") @db.Char(36)
+  partnerId             String?           @map("partner_id") @db.Char(36)
+  branchId              String?           @map("branch_id") @db.Char(36)
+  regionId              String?           @map("region_id") @db.Char(36)
+  status                ApplicationStatus @default(DRAFT)
+  requestedAmount       Decimal           @map("requested_amount") @db.Decimal(15, 2)
+  requestedTenureMonths Int               @map("requested_tenure_months")
+  purpose               String?           @db.VarChar(200)
+  assignedSalesId       String?           @map("assigned_sales_id") @db.Char(36)
+  assignedCreditId      String?           @map("assigned_credit_id") @db.Char(36)
+  assignedOpsId         String?           @map("assigned_ops_id") @db.Char(36)
+  selectedLenderId      String?           @map("selected_lender_id") @db.Char(36)
+  approvedAmount        Decimal?          @map("approved_amount") @db.Decimal(15, 2)
+  tenureMonths          Int?              @map("tenure_months")
+  interestRate          Decimal?          @map("interest_rate") @db.Decimal(5, 2)
+  emiAmount             Decimal?          @map("emi_amount") @db.Decimal(15, 2)
+  submittedAt           DateTime?         @map("submitted_at")
+  approvedAt            DateTime?         @map("approved_at")
+  disbursedAt           DateTime?         @map("disbursed_at")
+  closedAt              DateTime?         @map("closed_at")
+  metadata              Json?
+  version               Int               @default(1)
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @updatedAt @map("updated_at")
+  createdById           String?           @map("created_by") @db.Char(36)
+  updatedById           String?           @map("updated_by") @db.Char(36)
+  deletedAt             DateTime?         @map("deleted_at")
+  deletedById           String?           @map("deleted_by") @db.Char(36)
+
+  customer         Customer          @relation(fields: [customerId], references: [id])
+  lead             Lead?             @relation(fields: [leadId], references: [id])
+  product          Product           @relation(fields: [productId], references: [id])
+  variant          ProductVariant?   @relation(fields: [variantId], references: [id])
+  partner          Partner?          @relation(fields: [partnerId], references: [id])
+  branch           Branch?           @relation(fields: [branchId], references: [id])
+  region           Region?           @relation(fields: [regionId], references: [id])
+  assignedSales    Employee?         @relation("ApplicationAssignedSales", fields: [assignedSalesId], references: [id])
+  assignedCredit   Employee?         @relation("ApplicationAssignedCredit", fields: [assignedCreditId], references: [id])
+  assignedOps      Employee?         @relation("ApplicationAssignedOps", fields: [assignedOpsId], references: [id])
+  selectedLender   Lender?           @relation("ApplicationSelectedLender", fields: [selectedLenderId], references: [id])
+  createdBy        User?             @relation("ApplicationCreatedBy", fields: [createdById], references: [id])
+  updatedBy        User?             @relation("ApplicationUpdatedBy", fields: [updatedById], references: [id])
+  statusHistory    ApplicationStatusHistory[]
+  timeline         ApplicationTimeline[]
+  eligibilityResults EligibilityResult[]
+  bankLogins       BankLogin[]
+  creditReviews    CreditReview[]
+  sanction         Sanction?
+  disbursements    Disbursement[]
+  closure          Closure?
+  documents        Document[]
+  documentRequests DocumentRequest[]
+  deficiencies     DocumentDeficiency[]
+  financeCalculations FinanceCalculation[]
+  referrals             Referral[]
+  commissionLedger      CommissionLedger[]
+  tickets               Ticket[]
+
+  @@map("applications")
+  @@index([customerId, status])
+  @@index([status, createdAt])
+  @@index([branchId, status])
+  @@index([assignedSalesId, status])
+  @@index([partnerId])
+  @@index([submittedAt])
+  @@index([deletedAt])
+}
+
+model ApplicationStatusHistory {
+  id            String             @id @default(uuid()) @db.Char(36)
+  applicationId String             @map("application_id") @db.Char(36)
+  fromStatus    ApplicationStatus? @map("from_status")
+  toStatus      ApplicationStatus  @map("to_status")
+  changedById   String             @map("changed_by_id") @db.Char(36)
+  reason        String?            @db.VarChar(200)
+  createdAt     DateTime           @default(now()) @map("created_at")
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  changedBy   User        @relation("ApplicationStatusChangedBy", fields: [changedById], references: [id])
+
+  @@index([applicationId, createdAt])
+  @@map("application_status")
+}
+
+model ApplicationTimeline {
+  id            String                       @id @default(uuid()) @db.Char(36)
+  applicationId String                       @map("application_id") @db.Char(36)
+  eventType     ApplicationTimelineEventType @map("event_type")
+  title         String                       @db.VarChar(200)
+  description   String?                      @db.Text
+  performedById String?                      @map("performed_by_id") @db.Char(36)
+  metadata      Json?
+  createdAt     DateTime                     @default(now()) @map("created_at")
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  performedBy User?       @relation("ApplicationTimelinePerformedBy", fields: [performedById], references: [id])
+
+  @@index([applicationId, createdAt])
+  @@map("application_timeline")
+}
+
+model EligibilityResult {
+  id                  String                @id @default(uuid()) @db.Char(36)
+  applicationId       String                @map("application_id") @db.Char(36)
+  customerId          String                @map("customer_id") @db.Char(36)
+  productId           String                @map("product_id") @db.Char(36)
+  result              EligibilityResultType
+  eligibleAmount      Decimal?              @map("eligible_amount") @db.Decimal(15, 2)
+  foir                Decimal?              @db.Decimal(5, 2)
+  ltv                 Decimal?              @db.Decimal(5, 2)
+  dscr                Decimal?              @db.Decimal(5, 2)
+  approvalProbability Decimal?              @map("approval_probability") @db.Decimal(5, 2)
+  riskFlags           Json?                 @map("risk_flags")
+  recommendedLenders  Json?                 @map("recommended_lenders")
+  ruleResults         Json                  @map("rule_results")
+  engineVersion       String                @map("engine_version") @db.VarChar(20)
+  checkedAt           DateTime              @map("checked_at")
+  checkedById         String?               @map("checked_by_id") @db.Char(36)
+  createdAt           DateTime              @default(now()) @map("created_at")
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  customer    Customer    @relation(fields: [customerId], references: [id])
+  product     Product     @relation(fields: [productId], references: [id])
+  checkedBy   User?       @relation("EligibilityResultCheckedBy", fields: [checkedById], references: [id])
+
+  @@index([applicationId, checkedAt(sort: Desc)])
+  @@map("eligibility_results")
+}
+
+model BankLogin {
+  id                    String          @id @default(uuid()) @db.Char(36)
+  applicationId         String          @map("application_id") @db.Char(36)
+  lenderId              String          @map("lender_id") @db.Char(36)
+  loginReference        String?         @map("login_reference") @db.VarChar(100)
+  loginDate             DateTime        @map("login_date")
+  submittedById         String          @map("submitted_by_id") @db.Char(36)
+  acknowledgmentReceived Boolean        @default(false) @map("acknowledgment_received")
+  acknowledgmentAt      DateTime?       @map("acknowledgment_at")
+  status                BankLoginStatus @default(SUBMITTED)
+  notes                 String?         @db.Text
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  lender      Lender      @relation(fields: [lenderId], references: [id])
+  submittedBy Employee    @relation("BankLoginSubmittedBy", fields: [submittedById], references: [id])
+
+  @@index([applicationId, loginDate])
+  @@index([lenderId])
+  @@map("bank_logins")
+}
+
+model CreditReview {
+  id              String           @id @default(uuid()) @db.Char(36)
+  applicationId   String           @map("application_id") @db.Char(36)
+  reviewerId      String           @map("reviewer_id") @db.Char(36)
+  reviewType      CreditReviewType @map("review_type")
+  decision        CreditDecision   @default(PENDING)
+  reviewNotes     String?          @map("review_notes") @db.Text
+  riskIndicators  Json?            @map("risk_indicators")
+  riskGrade       RiskGrade?       @map("risk_grade")
+  cibilScore      Int?             @map("cibil_score")
+  conditions      String?          @db.Text
+  rejectionReason String?          @map("rejection_reason") @db.VarChar(200)
+  reviewedAt      DateTime?        @map("reviewed_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  reviewer    Employee    @relation("CreditReviewReviewer", fields: [reviewerId], references: [id])
+
+  @@index([applicationId, createdAt])
+  @@map("credit_reviews")
+}
+
+model Sanction {
+  id                 String         @id @default(uuid()) @db.Char(36)
+  applicationId      String         @unique @map("application_id") @db.Char(36)
+  lenderId           String         @map("lender_id") @db.Char(36)
+  sanctionAmount     Decimal        @map("sanction_amount") @db.Decimal(15, 2)
+  tenureMonths       Int            @map("tenure_months")
+  interestRate       Decimal        @map("interest_rate") @db.Decimal(5, 2)
+  processingFee      Decimal?       @map("processing_fee") @db.Decimal(15, 2)
+  emiAmount          Decimal?       @map("emi_amount") @db.Decimal(15, 2)
+  sanctionDate       DateTime       @map("sanction_date") @db.Date
+  validityDate       DateTime?      @map("validity_date") @db.Date
+  conditions         String?        @db.Text
+  sanctionLetterKey  String?        @map("sanction_letter_key") @db.VarChar(500)
+  status             SanctionStatus @default(ISSUED)
+  createdById        String?        @map("created_by") @db.Char(36)
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  lender      Lender      @relation(fields: [lenderId], references: [id])
+  createdBy   User?       @relation("SanctionCreatedBy", fields: [createdById], references: [id])
+
+  @@map("sanctions")
+}
+
+model Disbursement {
+  id                 String             @id @default(uuid()) @db.Char(36)
+  applicationId      String             @map("application_id") @db.Char(36)
+  lenderId           String             @map("lender_id") @db.Char(36)
+  disbursementAmount Decimal            @map("disbursement_amount") @db.Decimal(15, 2)
+  disbursementDate   DateTime           @map("disbursement_date") @db.Date
+  bankReference      String?            @map("bank_reference") @db.VarChar(50)
+  disbursementMode   DisbursementMode   @default(FULL) @map("disbursement_mode")
+  trancheNumber      Int?               @map("tranche_number")
+  status             DisbursementStatus @default(PENDING)
+  createdById        String?            @map("created_by") @db.Char(36)
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  lender      Lender      @relation(fields: [lenderId], references: [id])
+  createdBy   User?       @relation("DisbursementCreatedBy", fields: [createdById], references: [id])
+
+  @@index([applicationId, disbursementDate])
+  @@map("disbursements")
+}
+
+model Closure {
+  id             String      @id @default(uuid()) @db.Char(36)
+  applicationId  String      @unique @map("application_id") @db.Char(36)
+  closureType    ClosureType @map("closure_type")
+  closureDate    DateTime    @map("closure_date") @db.Date
+  closureReason  String?     @map("closure_reason") @db.VarChar(200)
+  rmAssignedId   String?     @map("rm_assigned_id") @db.Char(36)
+  archivedAt     DateTime?   @map("archived_at")
+  createdById    String?     @map("created_by") @db.Char(36)
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  rmAssigned  Employee?   @relation("ClosureRmAssigned", fields: [rmAssignedId], references: [id])
+  createdBy   User?       @relation("ClosureCreatedBy", fields: [createdById], references: [id])
+
+  @@map("closures")
+}

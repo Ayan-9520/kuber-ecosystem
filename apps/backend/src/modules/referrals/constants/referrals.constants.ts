@@ -1,0 +1,25 @@
+export const REFERRAL_NUMBER_PREFIX = 'KRF';
+
+export const REFERRAL_CODE_PREFIX = 'REF';
+
+export const DEFAULT_REFERRAL_EXPIRY_DAYS = 90;
+
+export const REFERRAL_TYPE_PARTNER_CODES: Record<string, string[]> = {
+  DSA: ['DSA'],
+  BUILDER: ['BUILDER'],
+  PROPERTY_DEALER: ['BUILDER'],
+  CA: ['CA'],
+  BROKER: ['REFERRAL'],
+  CORPORATE: ['REFERRAL'],
+  CUSTOMER: [],
+};
+
+export const REFERRAL_TYPE_LEAD_SOURCE: Record<string, string> = {
+  CUSTOMER: 'REFERRAL_PARTNER',
+  DSA: 'DSA',
+  BUILDER: 'BUILDER',
+  PROPERTY_DEALER: 'PROPERTY_DEALER',
+  CA: 'CA',
+  BROKER: 'REFERRAL_PARTNER',
+  CORPORATE: 'REFERRAL_PARTNER',
+};

@@ -1,0 +1,77 @@
+// ── Referral Domain ──
+
+model ReferralType {
+  id               String           @id @default(uuid()) @db.Char(36)
+  code             ReferralTypeCode @unique
+  name             String           @db.VarChar(100)
+  description      String?          @db.Text
+  defaultRewardPct Decimal?         @map("default_reward_pct") @db.Decimal(5, 2)
+  isActive         Boolean          @default(true) @map("is_active")
+  displayOrder     Int              @default(0) @map("display_order")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  referrals Referral[]
+
+  @@map("referral_types")
+}
+
+model Referral {
+  id                 String               @id @default(uuid()) @db.Char(36)
+  referralNumber     String               @unique @map("referral_number") @db.VarChar(30)
+  referralCode       String               @unique @map("referral_code") @db.VarChar(20)
+  referralTypeId     String               @map("referral_type_id") @db.Char(36)
+  status             ReferralStatus       @default(PENDING)
+  referrerCustomerId String?              @map("referrer_customer_id") @db.Char(36)
+  referrerPartnerId  String?              @map("referrer_partner_id") @db.Char(36)
+  referrerEmployeeId String?              @map("referrer_employee_id") @db.Char(36)
+  referrerName       String               @map("referrer_name") @db.VarChar(200)
+  referrerPhone      String?              @map("referrer_phone") @db.VarChar(15)
+  referrerEmail      String?              @map("referrer_email") @db.VarChar(255)
+  refereeName        String               @map("referee_name") @db.VarChar(200)
+  refereePhone       String               @map("referee_phone") @db.VarChar(15)
+  refereeEmail       String?              @map("referee_email") @db.VarChar(255)
+  customerId         String?              @map("customer_id") @db.Char(36)
+  leadId             String?              @map("lead_id") @db.Char(36)
+  applicationId      String?              @map("application_id") @db.Char(36)
+  productId          String?              @map("product_id") @db.Char(36)
+  partnerId          String?              @map("partner_id") @db.Char(36)
+  branchId           String?              @map("branch_id") @db.Char(36)
+  requestedAmount    Decimal?             @map("requested_amount") @db.Decimal(15, 2)
+  rewardAmount       Decimal?             @map("reward_amount") @db.Decimal(15, 2)
+  rewardStatus       ReferralRewardStatus @default(NOT_APPLICABLE) @map("reward_status")
+  notes              String?              @db.Text
+  rejectionReason    String?              @map("rejection_reason") @db.VarChar(500)
+  metadata           Json?
+  expiresAt          DateTime?            @map("expires_at")
+  convertedAt        DateTime?            @map("converted_at")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+  createdById        String?              @map("created_by") @db.Char(36)
+  updatedById        String?              @map("updated_by") @db.Char(36)
+  deletedAt          DateTime?            @map("deleted_at")
+  deletedById        String?              @map("deleted_by") @db.Char(36)
+
+  referralType     ReferralType @relation(fields: [referralTypeId], references: [id])
+  referrerCustomer Customer?    @relation("ReferralReferrerCustomer", fields: [referrerCustomerId], references: [id])
+  referrerPartner  Partner?     @relation("ReferralReferrerPartner", fields: [referrerPartnerId], references: [id])
+  referrerEmployee Employee?    @relation("ReferralReferrerEmployee", fields: [referrerEmployeeId], references: [id])
+  customer         Customer?    @relation("ReferralRefereeCustomer", fields: [customerId], references: [id])
+  lead             Lead?        @relation(fields: [leadId], references: [id])
+  application      Application? @relation(fields: [applicationId], references: [id])
+  product          Product?     @relation(fields: [productId], references: [id])
+  partner          Partner?     @relation("ReferralChannelPartner", fields: [partnerId], references: [id])
+  branch           Branch?      @relation(fields: [branchId], references: [id])
+  createdBy        User?        @relation("ReferralCreatedBy", fields: [createdById], references: [id])
+  updatedBy        User?        @relation("ReferralUpdatedBy", fields: [updatedById], references: [id])
+  deletedBy        User?        @relation("ReferralDeletedBy", fields: [deletedById], references: [id])
+  commissionLedger CommissionLedger[]
+
+  @@index([referralTypeId, status])
+  @@index([referrerCustomerId])
+  @@index([referrerPartnerId])
+  @@index([refereePhone])
+  @@index([status, createdAt])
+  @@index([deletedAt])
+  @@map("referrals")
+}

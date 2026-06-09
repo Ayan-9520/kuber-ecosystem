@@ -1,0 +1,244 @@
+// ── Notification & Communication Domain ──
+
+model NotificationTemplate {
+  id               String              @id @default(uuid()) @db.Char(36)
+  code             String              @db.VarChar(50)
+  name             String              @db.VarChar(200)
+  channel          NotificationChannel
+  eventType        NotificationEventType @map("event_type")
+  version          Int                 @default(1)
+  parentTemplateId String?             @map("parent_template_id") @db.Char(36)
+  subject          String?             @db.VarChar(500)
+  body             String              @db.Text
+  variables        Json                @default("[]")
+  metadata         Json?
+  isActive         Boolean             @default(true) @map("is_active")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+  createdById      String?             @map("created_by") @db.Char(36)
+  updatedById      String?             @map("updated_by") @db.Char(36)
+  deletedAt        DateTime?           @map("deleted_at")
+  deletedById      String?             @map("deleted_by") @db.Char(36)
+
+  parentTemplate NotificationTemplate?  @relation("TemplateVersions", fields: [parentTemplateId], references: [id])
+  childVersions  NotificationTemplate[] @relation("TemplateVersions")
+  createdBy      User?                    @relation("NotificationTemplateCreatedBy", fields: [createdById], references: [id])
+  updatedBy      User?                    @relation("NotificationTemplateUpdatedBy", fields: [updatedById], references: [id])
+  deletedBy      User?                    @relation("NotificationTemplateDeletedBy", fields: [deletedById], references: [id])
+  notifications  Notification[]
+  communicationLogs CommunicationLog[]
+  emailLogs      EmailLog[]
+  smsLogs        SmsLog[]
+  whatsAppLogs   WhatsAppLog[]
+  pushNotifications PushNotification[]
+
+  @@unique([code, version])
+  @@index([eventType, channel, isActive])
+  @@index([deletedAt])
+  @@map("notification_templates")
+}
+
+model NotificationPreference {
+  id        String                @id @default(uuid()) @db.Char(36)
+  userId    String                @map("user_id") @db.Char(36)
+  eventType NotificationEventType @map("event_type")
+  channel   NotificationChannel
+  enabled   Boolean               @default(true)
+  createdAt DateTime              @default(now()) @map("created_at")
+  updatedAt DateTime              @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventType, channel])
+  @@map("notification_preferences")
+}
+
+model Notification {
+  id           String                @id @default(uuid()) @db.Char(36)
+  userId       String                @map("user_id") @db.Char(36)
+  eventType    NotificationEventType @map("event_type")
+  channel      NotificationChannel   @default(IN_APP)
+  templateId   String?               @map("template_id") @db.Char(36)
+  title        String                @db.VarChar(300)
+  body         String                @db.Text
+  payload      Json?
+  status       NotificationStatus    @default(PENDING)
+  entityType   String?               @map("entity_type") @db.VarChar(50)
+  entityId     String?               @map("entity_id") @db.Char(36)
+  readAt       DateTime?             @map("read_at")
+  sentAt       DateTime?             @map("sent_at")
+  deliveredAt  DateTime?             @map("delivered_at")
+  failedAt     DateTime?             @map("failed_at")
+  failureReason String?              @map("failure_reason") @db.VarChar(500)
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+  deletedAt    DateTime?             @map("deleted_at")
+  deletedById  String?               @map("deleted_by") @db.Char(36)
+
+  user     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template NotificationTemplate? @relation(fields: [templateId], references: [id])
+  deletedBy User?                @relation("NotificationDeletedBy", fields: [deletedById], references: [id])
+
+  @@index([userId, status, createdAt])
+  @@index([eventType])
+  @@index([deletedAt])
+  @@map("notifications")
+}
+
+model CommunicationLog {
+  id              String              @id @default(uuid()) @db.Char(36)
+  channel         NotificationChannel
+  eventType       NotificationEventType? @map("event_type")
+  templateId      String?             @map("template_id") @db.Char(36)
+  recipientUserId String?             @map("recipient_user_id") @db.Char(36)
+  recipientAddress String?            @map("recipient_address") @db.VarChar(255)
+  subject         String?             @db.VarChar(500)
+  payload         Json?
+  renderedBody    String?             @map("rendered_body") @db.Text
+  status          CommunicationStatus @default(PENDING)
+  providerRef     String?             @map("provider_ref") @db.VarChar(200)
+  sentAt          DateTime?           @map("sent_at")
+  deliveredAt     DateTime?           @map("delivered_at")
+  openedAt        DateTime?           @map("opened_at")
+  clickedAt       DateTime?           @map("clicked_at")
+  failedAt        DateTime?           @map("failed_at")
+  failureReason   String?             @map("failure_reason") @db.VarChar(500)
+  retryCount      Int                 @default(0) @map("retry_count")
+  entityType      String?             @map("entity_type") @db.VarChar(50)
+  entityId        String?             @map("entity_id") @db.Char(36)
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  template      NotificationTemplate? @relation(fields: [templateId], references: [id])
+  recipientUser User?                 @relation("CommunicationLogRecipient", fields: [recipientUserId], references: [id])
+
+  @@index([channel, status, createdAt])
+  @@index([recipientUserId])
+  @@map("communication_logs")
+}
+
+model EmailLog {
+  id           String              @id @default(uuid()) @db.Char(36)
+  templateId   String?             @map("template_id") @db.Char(36)
+  recipientUserId String?          @map("recipient_user_id") @db.Char(36)
+  toEmail      String              @map("to_email") @db.VarChar(255)
+  subject      String              @db.VarChar(500)
+  body         String              @db.Text
+  payload      Json?
+  status       CommunicationStatus @default(PENDING)
+  providerRef  String?             @map("provider_ref") @db.VarChar(200)
+  sentAt       DateTime?           @map("sent_at")
+  deliveredAt  DateTime?           @map("delivered_at")
+  openedAt     DateTime?           @map("opened_at")
+  failedAt     DateTime?           @map("failed_at")
+  failureReason String?            @map("failure_reason") @db.VarChar(500)
+  retryCount   Int                 @default(0) @map("retry_count")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  template      NotificationTemplate? @relation(fields: [templateId], references: [id])
+  recipientUser User?                 @relation("EmailLogRecipient", fields: [recipientUserId], references: [id])
+
+  @@index([toEmail, status])
+  @@map("email_logs")
+}
+
+model SmsLog {
+  id           String              @id @default(uuid()) @db.Char(36)
+  templateId   String?             @map("template_id") @db.Char(36)
+  recipientUserId String?          @map("recipient_user_id") @db.Char(36)
+  toPhone      String              @map("to_phone") @db.VarChar(15)
+  body         String              @db.Text
+  payload      Json?
+  status       CommunicationStatus @default(PENDING)
+  providerRef  String?             @map("provider_ref") @db.VarChar(200)
+  sentAt       DateTime?           @map("sent_at")
+  deliveredAt  DateTime?           @map("delivered_at")
+  failedAt     DateTime?           @map("failed_at")
+  failureReason String?            @map("failure_reason") @db.VarChar(500)
+  retryCount   Int                 @default(0) @map("retry_count")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  template      NotificationTemplate? @relation(fields: [templateId], references: [id])
+  recipientUser User?                 @relation("SmsLogRecipient", fields: [recipientUserId], references: [id])
+
+  @@index([toPhone, status])
+  @@map("sms_logs")
+}
+
+model WhatsAppLog {
+  id              String              @id @default(uuid()) @db.Char(36)
+  templateId      String?             @map("template_id") @db.Char(36)
+  recipientUserId String?             @map("recipient_user_id") @db.Char(36)
+  toPhone         String              @map("to_phone") @db.VarChar(15)
+  templateName    String?             @map("template_name") @db.VarChar(100)
+  body            String              @db.Text
+  payload         Json?
+  status          CommunicationStatus @default(PENDING)
+  providerRef     String?             @map("provider_ref") @db.VarChar(200)
+  deliveryStatus  String?             @map("delivery_status") @db.VarChar(50)
+  sentAt          DateTime?           @map("sent_at")
+  deliveredAt     DateTime?           @map("delivered_at")
+  readAt          DateTime?           @map("read_at")
+  failedAt        DateTime?           @map("failed_at")
+  failureReason   String?             @map("failure_reason") @db.VarChar(500)
+  retryCount      Int                 @default(0) @map("retry_count")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  template      NotificationTemplate? @relation(fields: [templateId], references: [id])
+  recipientUser User?                 @relation("WhatsAppLogRecipient", fields: [recipientUserId], references: [id])
+
+  @@index([toPhone, status])
+  @@map("whatsapp_logs")
+}
+
+model PushNotification {
+  id           String              @id @default(uuid()) @db.Char(36)
+  templateId   String?             @map("template_id") @db.Char(36)
+  userId       String              @map("user_id") @db.Char(36)
+  deviceId     String?             @map("device_id") @db.Char(36)
+  fcmToken     String?             @map("fcm_token") @db.VarChar(500)
+  title        String              @db.VarChar(300)
+  body         String              @db.Text
+  payload      Json?
+  status       CommunicationStatus @default(PENDING)
+  providerRef  String?             @map("provider_ref") @db.VarChar(200)
+  sentAt       DateTime?           @map("sent_at")
+  deliveredAt  DateTime?           @map("delivered_at")
+  failedAt     DateTime?           @map("failed_at")
+  failureReason String?            @map("failure_reason") @db.VarChar(500)
+  retryCount   Int                 @default(0) @map("retry_count")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  template NotificationTemplate? @relation(fields: [templateId], references: [id])
+  user     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device   Device?               @relation(fields: [deviceId], references: [id])
+
+  @@index([userId, status])
+  @@map("push_notifications")
+}
+
+model NotificationQueue {
+  id            String                  @id @default(uuid()) @db.Char(36)
+  queueType     NotificationQueueType   @map("queue_type")
+  status        NotificationQueueStatus @default(PENDING)
+  channel       NotificationChannel
+  eventType     NotificationEventType   @map("event_type")
+  recipientUserId String?               @map("recipient_user_id") @db.Char(36)
+  payload       Json
+  scheduledAt   DateTime?               @map("scheduled_at")
+  processedAt   DateTime?               @map("processed_at")
+  retryCount    Int                     @default(0) @map("retry_count")
+  maxRetries    Int                     @default(3) @map("max_retries")
+  lastError     String?                 @map("last_error") @db.VarChar(500)
+  createdAt     DateTime                @default(now()) @map("created_at")
+  updatedAt     DateTime                @updatedAt @map("updated_at")
+
+  recipientUser User? @relation("NotificationQueueRecipient", fields: [recipientUserId], references: [id])
+
+  @@index([queueType, status, scheduledAt])
+  @@map("notification_queue")
+}

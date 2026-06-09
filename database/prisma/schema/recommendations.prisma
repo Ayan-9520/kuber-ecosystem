@@ -1,0 +1,234 @@
+// ── AI Recommendation Engine Domain ──
+
+enum RecommendationEntityType {
+  CUSTOMER
+  LEAD
+  APPLICATION
+  PARTNER
+  EXECUTIVE
+  BRANCH
+  REGION
+  MANAGEMENT
+}
+
+enum RecommendationType {
+  PRODUCT
+  VARIANT
+  LENDER
+  LOAN_AMOUNT
+  EMI
+  BALANCE_TRANSFER
+  TOP_UP
+  CROSS_SELL
+  FOLLOW_UP
+  DOCUMENT
+  RISK
+  ACTION
+}
+
+enum RecommendationStatus {
+  ACTIVE
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  SUPERSEDED
+}
+
+enum RecommendationRuleType {
+  STATIC
+  CONFIG
+  DYNAMIC
+}
+
+enum RecommendationRiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RecommendationAuditAction {
+  GENERATED
+  ACCEPTED
+  REJECTED
+  RULE_CREATED
+  RULE_UPDATED
+  WEIGHT_UPDATED
+}
+
+model Recommendation {
+  id                 String                 @id @default(uuid()) @db.Char(36)
+  entityType         RecommendationEntityType @map("entity_type")
+  entityId           String                 @map("entity_id") @db.Char(36)
+  recommendationType RecommendationType     @map("recommendation_type")
+  title              String                 @db.VarChar(200)
+  description        String                 @db.Text
+  payload            Json?
+  rankScore          Int                    @default(50) @map("rank_score")
+  approvalProbability Decimal?              @map("approval_probability") @db.Decimal(5, 2)
+  disbursalProbability Decimal?            @map("disbursal_probability") @db.Decimal(5, 2)
+  status             RecommendationStatus   @default(ACTIVE)
+  accepted           Boolean?
+  acceptedAt         DateTime?              @map("accepted_at")
+  modelVersion       String                 @default("rec-v1.0") @map("model_version") @db.VarChar(20)
+  generatedById      String?                @map("generated_by_id") @db.Char(36)
+  expiresAt          DateTime?              @map("expires_at")
+  createdAt          DateTime               @default(now()) @map("created_at")
+  updatedAt          DateTime               @updatedAt @map("updated_at")
+
+  history RecommendationHistory[]
+
+  @@index([entityType, entityId])
+  @@index([recommendationType, status])
+  @@index([createdAt])
+  @@map("recommendations")
+}
+
+model RecommendationHistory {
+  id               String             @id @default(uuid()) @db.Char(36)
+  recommendationId String?            @map("recommendation_id") @db.Char(36)
+  entityType       RecommendationEntityType @map("entity_type")
+  entityId         String             @map("entity_id") @db.Char(36)
+  snapshot         Json
+  changeReason     String?            @map("change_reason") @db.VarChar(200)
+  generatedById    String?            @map("generated_by_id") @db.Char(36)
+  modelVersion     String             @map("model_version") @db.VarChar(20)
+  createdAt        DateTime           @default(now()) @map("created_at")
+
+  recommendation Recommendation? @relation(fields: [recommendationId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt])
+  @@map("recommendation_history")
+}
+
+model RecommendationRule {
+  id          String               @id @default(uuid()) @db.Char(36)
+  code        String               @unique @db.VarChar(50)
+  name        String               @db.VarChar(150)
+  ruleType    RecommendationRuleType @map("rule_type")
+  category    String               @db.VarChar(50)
+  condition   Json
+  scoreImpact Int                  @map("score_impact")
+  priority    Int                  @default(50)
+  isActive    Boolean              @default(true) @map("is_active")
+  version     Int                  @default(1)
+  description String?              @db.Text
+  createdById String?              @map("created_by") @db.Char(36)
+  updatedById String?              @map("updated_by") @db.Char(36)
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  @@index([category, isActive])
+  @@map("recommendation_rules")
+}
+
+model RecommendationWeight {
+  id            String    @id @default(uuid()) @db.Char(36)
+  version       String    @db.VarChar(20)
+  factor        String    @db.VarChar(50)
+  weight        Decimal   @db.Decimal(5, 4)
+  isActive      Boolean   @default(true) @map("is_active")
+  effectiveFrom DateTime  @map("effective_from")
+  effectiveTo   DateTime? @map("effective_to")
+  createdById   String?   @map("created_by") @db.Char(36)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@unique([version, factor])
+  @@index([isActive, effectiveFrom])
+  @@map("recommendation_weights")
+}
+
+model RecommendationAudit {
+  id         String                    @id @default(uuid()) @db.Char(36)
+  userId     String                    @map("user_id") @db.Char(36)
+  action     RecommendationAuditAction
+  entityType String                    @map("entity_type") @db.VarChar(50)
+  entityId   String?                   @map("entity_id") @db.Char(36)
+  oldValues  Json?                     @map("old_values")
+  newValues  Json?                     @map("new_values")
+  ipAddress  String?                   @map("ip_address") @db.VarChar(45)
+  userAgent  String?                   @map("user_agent") @db.Text
+  requestId  String?                   @map("request_id") @db.VarChar(64)
+  createdAt  DateTime                  @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@index([action])
+  @@map("recommendation_audits")
+}
+
+model LenderMatch {
+  id                  String   @id @default(uuid()) @db.Char(36)
+  entityType          RecommendationEntityType @map("entity_type")
+  entityId            String   @map("entity_id") @db.Char(36)
+  lenderId            String   @map("lender_id") @db.Char(36)
+  lenderName          String   @map("lender_name") @db.VarChar(150)
+  rankScore           Int      @map("rank_score")
+  rankPosition        Int      @map("rank_position")
+  approvalProbability Decimal? @map("approval_probability") @db.Decimal(5, 2)
+  expectedRoi         Decimal? @map("expected_roi") @db.Decimal(5, 2)
+  expectedTatDays     Int?     @map("expected_tat_days")
+  estimatedEmi        Decimal? @map("estimated_emi") @db.Decimal(15, 2)
+  reason              String?  @db.Text
+  modelVersion        String   @map("model_version") @db.VarChar(20)
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId, rankPosition])
+  @@index([lenderId])
+  @@map("lender_matches")
+}
+
+model ProductMatch {
+  id                  String   @id @default(uuid()) @db.Char(36)
+  entityType          RecommendationEntityType @map("entity_type")
+  entityId            String   @map("entity_id") @db.Char(36)
+  productId           String?  @map("product_id") @db.Char(36)
+  variantId           String?  @map("variant_id") @db.Char(36)
+  productName         String   @map("product_name") @db.VarChar(150)
+  variantName         String?  @map("variant_name") @db.VarChar(150)
+  rankScore           Int      @map("rank_score")
+  rankPosition        Int      @map("rank_position")
+  recommendedAmount   Decimal? @map("recommended_amount") @db.Decimal(15, 2)
+  recommendedTenure   Int?     @map("recommended_tenure")
+  recommendedEmi      Decimal? @map("recommended_emi") @db.Decimal(15, 2)
+  approvalProbability Decimal? @map("approval_probability") @db.Decimal(5, 2)
+  reason              String?  @db.Text
+  modelVersion        String   @map("model_version") @db.VarChar(20)
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId, rankPosition])
+  @@map("product_matches")
+}
+
+model CrossSellRecommendation {
+  id          String   @id @default(uuid()) @db.Char(36)
+  entityType  RecommendationEntityType @map("entity_type")
+  entityId    String   @map("entity_id") @db.Char(36)
+  productCode String   @map("product_code") @db.VarChar(50)
+  label       String   @db.VarChar(150)
+  description String   @db.Text
+  matchScore  Int      @map("match_score")
+  rankPosition Int     @map("rank_position")
+  modelVersion String  @map("model_version") @db.VarChar(20)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@map("cross_sell_recommendations")
+}
+
+model ActionRecommendation {
+  id          String   @id @default(uuid()) @db.Char(36)
+  entityType  RecommendationEntityType @map("entity_type")
+  entityId    String   @map("entity_id") @db.Char(36)
+  actionType  String   @map("action_type") @db.VarChar(50)
+  title       String   @db.VarChar(200)
+  description String   @db.Text
+  priority    Int      @default(50)
+  dueAt       DateTime? @map("due_at")
+  completed   Boolean  @default(false)
+  modelVersion String  @map("model_version") @db.VarChar(20)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId, priority])
+  @@map("action_recommendations")
+}

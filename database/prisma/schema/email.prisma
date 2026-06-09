@@ -1,0 +1,266 @@
+// ── KuberOne Enterprise Email Infrastructure ──
+
+enum EmailProviderType {
+  SMTP
+  SENDGRID
+  AWS_SES
+  MOCK
+}
+
+enum EmailCategory {
+  TRANSACTIONAL
+  MARKETING
+  SYSTEM
+  SUPPORT
+  COMPLIANCE
+}
+
+enum EmailPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum EmailQueueType {
+  NOTIFICATION
+  RETRY
+  FAILED
+  PRIORITY
+  SCHEDULED
+}
+
+enum EmailQueueStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum EmailDeliveryStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  FAILED
+  BOUNCED
+  UNSUBSCRIBED
+}
+
+enum EmailEventType {
+  QUEUED
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  FAILED
+  BOUNCED
+  COMPLAINED
+  UNSUBSCRIBED
+  DEFERRED
+}
+
+model EmailProvider {
+  id           String            @id @default(uuid()) @db.Char(36)
+  code         String            @unique @db.VarChar(50)
+  name         String            @db.VarChar(100)
+  providerType EmailProviderType @map("provider_type")
+  isActive     Boolean           @default(true) @map("is_active")
+  isDefault    Boolean           @default(false) @map("is_default")
+  config       Json?
+  rateLimit    Int?              @map("rate_limit")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  deliveries EmailDelivery[]
+  queueItems EmailQueue[]
+
+  @@index([isActive, isDefault])
+  @@map("email_providers")
+}
+
+model EmailTemplate {
+  id             String        @id @default(uuid()) @db.Char(36)
+  code           String        @unique @db.VarChar(80)
+  name           String        @db.VarChar(200)
+  category       EmailCategory @default(TRANSACTIONAL)
+  eventType      String?       @map("event_type") @db.VarChar(50)
+  subject        String        @db.VarChar(500)
+  htmlBody       String        @map("html_body") @db.LongText
+  textBody       String?       @map("text_body") @db.Text
+  variables      Json          @default("[]")
+  locale         String        @default("en") @db.VarChar(10)
+  currentVersion Int           @default(1) @map("current_version")
+  isActive       Boolean       @default(true) @map("is_active")
+  metadata       Json?
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  createdById    String?       @map("created_by") @db.Char(36)
+  updatedById    String?       @map("updated_by") @db.Char(36)
+  deletedAt      DateTime?     @map("deleted_at")
+
+  versions   EmailTemplateVersion[]
+  queueItems EmailQueue[]
+  analytics  EmailAnalytics[]
+
+  createdBy User? @relation("EmailTemplateCreatedBy", fields: [createdById], references: [id])
+  updatedBy User? @relation("EmailTemplateUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([category, isActive])
+  @@index([eventType, isActive])
+  @@index([deletedAt])
+  @@map("email_templates")
+}
+
+model EmailTemplateVersion {
+  id         String   @id @default(uuid()) @db.Char(36)
+  templateId String   @map("template_id") @db.Char(36)
+  version    Int
+  subject    String   @db.VarChar(500)
+  htmlBody   String   @map("html_body") @db.LongText
+  textBody   String?  @map("text_body") @db.Text
+  variables  Json     @default("[]")
+  createdAt  DateTime @default(now()) @map("created_at")
+  createdById String? @map("created_by") @db.Char(36)
+
+  template  EmailTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  createdBy User?         @relation("EmailTemplateVersionCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([templateId, version])
+  @@map("email_template_versions")
+}
+
+model EmailQueue {
+  id              String           @id @default(uuid()) @db.Char(36)
+  queueType       EmailQueueType   @map("queue_type")
+  status          EmailQueueStatus @default(PENDING)
+  priority        EmailPriority    @default(NORMAL)
+  toEmail         String           @map("to_email") @db.VarChar(255)
+  recipientUserId String?          @map("recipient_user_id") @db.Char(36)
+  templateId      String?          @map("template_id") @db.Char(36)
+  templateCode    String?          @map("template_code") @db.VarChar(80)
+  subject         String?          @db.VarChar(500)
+  htmlBody        String?          @map("html_body") @db.LongText
+  textBody        String?          @map("text_body") @db.Text
+  variables       Json?
+  payload         Json?
+  providerId      String?          @map("provider_id") @db.Char(36)
+  scheduledAt     DateTime?        @map("scheduled_at")
+  processedAt     DateTime?        @map("processed_at")
+  retryCount      Int              @default(0) @map("retry_count")
+  maxRetries      Int              @default(3) @map("max_retries")
+  lastError       String?          @map("last_error") @db.VarChar(500)
+  emailLogId      String?          @map("email_log_id") @db.Char(36)
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  template      EmailTemplate? @relation(fields: [templateId], references: [id])
+  provider      EmailProvider? @relation(fields: [providerId], references: [id])
+  recipientUser User?          @relation("EmailQueueRecipient", fields: [recipientUserId], references: [id])
+
+  @@index([status, priority, scheduledAt])
+  @@index([queueType, status])
+  @@map("email_queue")
+}
+
+model EmailDelivery {
+  id            String              @id @default(uuid()) @db.Char(36)
+  emailLogId    String              @unique @map("email_log_id") @db.Char(36)
+  providerId    String?             @map("provider_id") @db.Char(36)
+  templateId    String?             @map("template_id") @db.Char(36)
+  status        EmailDeliveryStatus @default(QUEUED)
+  providerRef   String?             @map("provider_ref") @db.VarChar(200)
+  queuedAt      DateTime?           @map("queued_at")
+  sentAt        DateTime?           @map("sent_at")
+  deliveredAt   DateTime?           @map("delivered_at")
+  openedAt      DateTime?           @map("opened_at")
+  clickedAt     DateTime?           @map("clicked_at")
+  failedAt      DateTime?           @map("failed_at")
+  bouncedAt     DateTime?           @map("bounced_at")
+  unsubscribedAt DateTime?          @map("unsubscribed_at")
+  failureReason String?             @map("failure_reason") @db.VarChar(500)
+  retryCount    Int                 @default(0) @map("retry_count")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  provider EmailProvider? @relation(fields: [providerId], references: [id])
+  events   EmailEvent[]
+  attachments EmailAttachment[]
+
+  @@index([status, createdAt])
+  @@index([providerRef])
+  @@map("email_deliveries")
+}
+
+model EmailEvent {
+  id         String         @id @default(uuid()) @db.Char(36)
+  deliveryId String         @map("delivery_id") @db.Char(36)
+  eventType  EmailEventType @map("event_type")
+  metadata   Json?
+  occurredAt DateTime       @default(now()) @map("occurred_at")
+
+  delivery EmailDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryId, occurredAt])
+  @@index([eventType])
+  @@map("email_events")
+}
+
+model EmailAttachment {
+  id          String   @id @default(uuid()) @db.Char(36)
+  deliveryId  String   @map("delivery_id") @db.Char(36)
+  filename    String   @db.VarChar(255)
+  contentType String   @map("content_type") @db.VarChar(100)
+  sizeBytes   Int      @map("size_bytes")
+  storageKey  String   @map("storage_key") @db.VarChar(500)
+  checksum    String?  @db.VarChar(64)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  delivery EmailDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryId])
+  @@map("email_attachments")
+}
+
+model EmailPreference {
+  id              String         @id @default(uuid()) @db.Char(36)
+  userId          String         @map("user_id") @db.Char(36)
+  category        EmailCategory?
+  eventType       String?        @map("event_type") @db.VarChar(50)
+  enabled         Boolean        @default(true)
+  marketingOptIn  Boolean        @default(false) @map("marketing_opt_in")
+  unsubscribedAt  DateTime?      @map("unsubscribed_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  user User @relation("EmailPreferences", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, category, eventType])
+  @@index([userId])
+  @@map("email_preferences")
+}
+
+model EmailAnalytics {
+  id             String         @id @default(uuid()) @db.Char(36)
+  date           DateTime       @db.Date
+  templateId     String?        @map("template_id") @db.Char(36)
+  category       EmailCategory?
+  campaignId     String?        @map("campaign_id") @db.Char(36)
+  sentCount      Int            @default(0) @map("sent_count")
+  deliveredCount Int            @default(0) @map("delivered_count")
+  openedCount    Int            @default(0) @map("opened_count")
+  clickedCount   Int            @default(0) @map("clicked_count")
+  bouncedCount   Int            @default(0) @map("bounced_count")
+  failedCount    Int            @default(0) @map("failed_count")
+  unsubscribedCount Int         @default(0) @map("unsubscribed_count")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  template EmailTemplate? @relation(fields: [templateId], references: [id])
+
+  @@unique([date, templateId, category, campaignId])
+  @@index([date])
+  @@map("email_analytics")
+}

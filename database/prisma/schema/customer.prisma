@@ -1,0 +1,203 @@
+// ── Customer Domain ──
+
+model Customer {
+  id                   String            @id @default(uuid()) @db.Char(36)
+  userId               String            @unique @map("user_id") @db.Char(36)
+  customerCode         String            @unique @map("customer_code") @db.VarChar(20)
+  firstName            String            @map("first_name") @db.VarChar(100)
+  lastName             String?           @map("last_name") @db.VarChar(100)
+  fullName             String            @map("full_name") @db.VarChar(200)
+  dateOfBirth          DateTime?         @map("date_of_birth") @db.Date
+  gender               Gender?
+  maritalStatus        MaritalStatus?    @map("marital_status")
+  profileCompletionPct Int               @default(0) @map("profile_completion_pct")
+  kycStatus            CustomerKycStatus @default(NOT_STARTED) @map("kyc_status")
+  rmEmployeeId         String?           @map("rm_employee_id") @db.Char(36)
+  branchId             String?           @map("branch_id") @db.Char(36)
+  source               CustomerSource    @default(DIRECT)
+  metadata             Json?
+  createdAt            DateTime          @default(now()) @map("created_at")
+  updatedAt            DateTime          @updatedAt @map("updated_at")
+  createdById          String?           @map("created_by") @db.Char(36)
+  updatedById          String?           @map("updated_by") @db.Char(36)
+  deletedAt            DateTime?         @map("deleted_at")
+  deletedById          String?           @map("deleted_by") @db.Char(36)
+  version              Int               @default(1)
+
+  user       User      @relation(fields: [userId], references: [id])
+  rmEmployee Employee? @relation("CustomerRmEmployee", fields: [rmEmployeeId], references: [id])
+  branch     Branch?   @relation(fields: [branchId], references: [id])
+  createdBy  User?     @relation("CustomerCreatedBy", fields: [createdById], references: [id])
+  updatedBy  User?     @relation("CustomerUpdatedBy", fields: [updatedById], references: [id])
+  deletedBy  User?     @relation("CustomerDeletedBy", fields: [deletedById], references: [id])
+
+  profile      CustomerProfile?
+  preferences  CustomerPreferences?
+  addresses    CustomerAddress[]
+  employments  CustomerEmployment[]
+  incomes      CustomerIncome[]
+  consents     CustomerConsent[]
+  leads        Lead[]
+  applications Application[]
+  eligibilityResults EligibilityResult[]
+  documents          Document[]
+  documentRequests   DocumentRequest[]
+  deficiencies       DocumentDeficiency[]
+  financeCalculations FinanceCalculation[]
+  referralsAsReferrer Referral[] @relation("ReferralReferrerCustomer")
+  referralsAsReferee  Referral[] @relation("ReferralRefereeCustomer")
+  tickets             Ticket[]
+
+  @@index([branchId])
+  @@index([kycStatus])
+  @@index([fullName])
+  @@index([deletedAt])
+  @@map("customers")
+}
+
+model CustomerProfile {
+  id                      String                  @id @default(uuid()) @db.Char(36)
+  customerId              String                  @unique @map("customer_id") @db.Char(36)
+  photoS3Key              String?                 @map("photo_s3_key") @db.VarChar(500)
+  alternatePhone          String?                 @map("alternate_phone") @db.VarChar(15)
+  alternateEmail          String?                 @map("alternate_email") @db.VarChar(255)
+  preferredLanguage       PreferredLanguage       @default(EN) @map("preferred_language")
+  preferredContactChannel PreferredContactChannel @default(WHATSAPP) @map("preferred_contact_channel")
+  nationality             String                  @default("INDIA") @db.VarChar(50)
+  residentialStatus       ResidentialStatus?      @map("residential_status")
+  createdAt               DateTime                @default(now()) @map("created_at")
+  updatedAt               DateTime                @updatedAt @map("updated_at")
+  createdById             String?                 @map("created_by") @db.Char(36)
+  updatedById             String?                 @map("updated_by") @db.Char(36)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("customer_profiles")
+}
+
+model CustomerAddress {
+  id          String      @id @default(uuid()) @db.Char(36)
+  customerId  String      @map("customer_id") @db.Char(36)
+  addressType AddressType @map("address_type")
+  line1       String      @db.VarChar(255)
+  line2       String?     @db.VarChar(255)
+  landmark    String?     @db.VarChar(100)
+  city        String      @db.VarChar(100)
+  stateId     String?     @map("state_id") @db.Char(36)
+  stateName   String      @map("state_name") @db.VarChar(100)
+  pincode     String      @db.VarChar(10)
+  countryId   String      @map("country_id") @db.Char(36)
+  isPrimary   Boolean     @default(false) @map("is_primary")
+  verifiedAt  DateTime?   @map("verified_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  createdById String?     @map("created_by") @db.Char(36)
+  updatedById String?     @map("updated_by") @db.Char(36)
+  deletedAt   DateTime?   @map("deleted_at")
+  deletedById String?     @map("deleted_by") @db.Char(36)
+
+  customer         Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  state            State?               @relation(fields: [stateId], references: [id])
+  country          Country              @relation(fields: [countryId], references: [id])
+  officeEmployments CustomerEmployment[] @relation("EmploymentOfficeAddress")
+
+  @@index([customerId])
+  @@index([pincode])
+  @@map("customer_addresses")
+}
+
+model CustomerEmployment {
+  id                   String         @id @default(uuid()) @db.Char(36)
+  customerId           String         @map("customer_id") @db.Char(36)
+  employmentType       EmploymentType @map("employment_type")
+  employerName         String?        @map("employer_name") @db.VarChar(200)
+  designation          String?        @db.VarChar(100)
+  industryId           String?        @map("industry_id") @db.Char(36)
+  occupationId         String?        @map("occupation_id") @db.Char(36)
+  yearsInCurrentJob    Decimal?       @map("years_in_current_job") @db.Decimal(4, 1)
+  totalExperienceYears Decimal?       @map("total_experience_years") @db.Decimal(4, 1)
+  officeAddressId      String?        @map("office_address_id") @db.Char(36)
+  isCurrent            Boolean        @default(true) @map("is_current")
+  startDate            DateTime?      @map("start_date") @db.Date
+  endDate              DateTime?      @map("end_date") @db.Date
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+  createdById          String?        @map("created_by") @db.Char(36)
+  updatedById          String?        @map("updated_by") @db.Char(36)
+  deletedAt            DateTime?      @map("deleted_at")
+  deletedById          String?        @map("deleted_by") @db.Char(36)
+
+  customer      Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  industry      Industry?        @relation(fields: [industryId], references: [id])
+  occupation    Occupation?      @relation(fields: [occupationId], references: [id])
+  officeAddress CustomerAddress? @relation("EmploymentOfficeAddress", fields: [officeAddressId], references: [id])
+  incomes       CustomerIncome[]
+
+  @@index([customerId])
+  @@index([customerId, isCurrent])
+  @@map("customer_employment")
+}
+
+model CustomerIncome {
+  id            String          @id @default(uuid()) @db.Char(36)
+  customerId    String          @map("customer_id") @db.Char(36)
+  employmentId  String?         @map("employment_id") @db.Char(36)
+  incomeType    IncomeType      @map("income_type")
+  grossAmount   Decimal         @map("gross_amount") @db.Decimal(15, 2)
+  netAmount     Decimal?        @map("net_amount") @db.Decimal(15, 2)
+  frequency     IncomeFrequency @default(MONTHLY)
+  currency      String          @default("INR") @db.Char(3)
+  declaredAt    DateTime        @map("declared_at")
+  verifiedAt    DateTime?       @map("verified_at")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  createdById   String?         @map("created_by") @db.Char(36)
+  updatedById   String?         @map("updated_by") @db.Char(36)
+  deletedAt     DateTime?       @map("deleted_at")
+  deletedById   String?         @map("deleted_by") @db.Char(36)
+
+  customer   Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  employment CustomerEmployment? @relation(fields: [employmentId], references: [id])
+
+  @@index([customerId])
+  @@map("customer_income")
+}
+
+model CustomerPreferences {
+  id               String   @id @default(uuid()) @db.Char(36)
+  customerId       String   @unique @map("customer_id") @db.Char(36)
+  pushEnabled      Boolean  @default(true) @map("push_enabled")
+  smsEnabled       Boolean  @default(true) @map("sms_enabled")
+  emailEnabled     Boolean  @default(true) @map("email_enabled")
+  whatsappEnabled  Boolean  @default(true) @map("whatsapp_enabled")
+  marketingOptIn   Boolean  @default(false) @map("marketing_opt_in")
+  aiAdvisorEnabled Boolean  @default(true) @map("ai_advisor_enabled")
+  voiceAiEnabled   Boolean  @default(false) @map("voice_ai_enabled")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  createdById      String?  @map("created_by") @db.Char(36)
+  updatedById      String?  @map("updated_by") @db.Char(36)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("customer_preferences")
+}
+
+model CustomerConsent {
+  id              String      @id @default(uuid()) @db.Char(36)
+  customerId      String      @map("customer_id") @db.Char(36)
+  consentType     ConsentType @map("consent_type")
+  consentVersion  String      @map("consent_version") @db.VarChar(20)
+  granted         Boolean
+  grantedAt       DateTime?   @map("granted_at")
+  revokedAt       DateTime?   @map("revoked_at")
+  ipAddress       String?     @map("ip_address") @db.VarChar(45)
+  userAgent       String?     @map("user_agent") @db.VarChar(500)
+  createdAt       DateTime    @default(now()) @map("created_at")
+  createdById     String?     @map("created_by") @db.Char(36)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, consentType])
+  @@map("customer_consents")
+}

@@ -1,0 +1,755 @@
+// ── Customer ──
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+}
+
+enum CustomerKycStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum CustomerSource {
+  DIRECT
+  DSA
+  REFERRAL
+  CAMPAIGN
+  WALK_IN
+}
+
+enum PreferredLanguage {
+  EN
+  HI
+  TA
+  TE
+  MR
+  BN
+  GU
+  KN
+  ML
+}
+
+enum PreferredContactChannel {
+  SMS
+  WHATSAPP
+  EMAIL
+  PUSH
+  CALL
+}
+
+enum ResidentialStatus {
+  RESIDENT
+  NRI
+  PIO
+}
+
+enum AddressType {
+  CURRENT
+  PERMANENT
+  OFFICE
+  PROPERTY
+}
+
+enum EmploymentType {
+  SALARIED
+  SELF_EMPLOYED
+  BUSINESS_OWNER
+  PROFESSIONAL
+  RETIRED
+  OTHER
+}
+
+enum IncomeType {
+  MONTHLY_SALARY
+  ANNUAL_INCOME
+  BUSINESS_INCOME
+  RENTAL
+  OTHER
+}
+
+enum IncomeFrequency {
+  MONTHLY
+  ANNUAL
+}
+
+enum ConsentType {
+  TERMS
+  PRIVACY
+  KYC
+  CREDIT_CHECK
+  MARKETING
+  DATA_SHARING
+}
+
+// ── KYC ──
+
+enum KycEntityType {
+  CUSTOMER
+  PARTNER
+}
+
+enum AddressProofStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  VERIFIED
+  REJECTED
+}
+
+enum KycOverallStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
+  REJECTED
+  EXPIRED
+}
+
+enum PanVerificationStatus {
+  PENDING
+  VERIFIED
+  FAILED
+  NAME_MISMATCH
+}
+
+enum PanVerificationProvider {
+  NSDL
+  KARZA
+  MANUAL
+}
+
+enum AadhaarVerificationMethod {
+  OTP
+  OFFLINE_XML
+  VIDEO_KYC
+}
+
+enum AadhaarVerificationStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum KycAuditAction {
+  VERIFY
+  REJECT
+  EXPIRE
+  RE_VERIFY
+  OVERRIDE
+}
+
+// ── Product ──
+
+enum ProductPriority {
+  P0
+  P1
+  P2
+  P3
+}
+
+enum ProductVariantCode {
+  FRESH
+  BT
+  TOP_UP
+  BT_TOP_UP
+  WORKING_CAPITAL
+  OD
+  CC
+}
+
+enum EligibilityRuleType {
+  AGE
+  INCOME
+  FOIR
+  LTV
+  CIBIL
+  EMPLOYMENT
+  CUSTOM
+}
+
+enum LosStage {
+  S01
+  S02
+  S03
+  S04
+  S05
+  S06
+  S07
+  S08
+  S09
+}
+
+enum DocumentTypeCategory {
+  KYC
+  INCOME
+  PROPERTY
+  VEHICLE
+  BUSINESS
+  AGREEMENT
+  IDENTITY
+  OTHER
+}
+
+enum DocumentStatus {
+  UPLOADED
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+  DEFICIENT
+  EXPIRED
+}
+
+enum DocumentOwnerType {
+  CUSTOMER
+  LEAD
+  APPLICATION
+  PARTNER
+  EMPLOYEE
+}
+
+enum DocumentUploadReason {
+  INITIAL
+  REUPLOAD
+  CORRECTION
+}
+
+enum DocumentRequestStatus {
+  PENDING
+  FULFILLED
+  WAIVED
+  EXPIRED
+}
+
+enum OcrProvider {
+  INTERNAL
+  AWS_TEXTRACT
+  THIRD_PARTY
+}
+
+enum VerificationResultType {
+  APPROVED
+  REJECTED
+  NEEDS_REVIEW
+}
+
+enum VerificationMode {
+  AUTO
+  MANUAL
+}
+
+enum DeficiencyType {
+  MISSING
+  ILLEGIBLE
+  EXPIRED
+  MISMATCH
+  INSUFFICIENT
+}
+
+enum DeficiencyStatus {
+  OPEN
+  RESOLVED
+  WAIVED
+}
+
+enum LenderType {
+  BANK
+  NBFC
+  HFC
+}
+
+enum LenderIntegrationType {
+  MANUAL
+  API
+  EMAIL
+}
+
+// ── Master Data ──
+
+enum CityTier {
+  TIER_1
+  TIER_2
+  TIER_3
+}
+
+enum OccupationCategory {
+  SALARIED
+  SELF_EMPLOYED
+  PROFESSIONAL
+}
+
+enum VehicleCategory {
+  HATCHBACK
+  SEDAN
+  SUV
+  MUV
+  LUXURY
+  COMMERCIAL
+  TWO_WHEELER
+  OTHER
+}
+
+// ── Workflow / LMS Config ──
+
+enum SlaDomain {
+  LMS
+  LOS
+  SUPPORT
+  COMMISSION
+}
+
+enum SlaTargetUnit {
+  MINUTES
+  HOURS
+  DAYS
+  PERCENT
+}
+
+enum NotificationAudienceType {
+  ASSIGNEE
+  ROLE
+  CUSTOMER
+  PARTNER
+  MANAGEMENT
+}
+
+enum ApprovalConfigEntityType {
+  APPLICATION
+  COMMISSION
+  WORKFLOW_CONFIG
+  PARTNER
+}
+
+enum ApprovalConfigType {
+  SEQUENTIAL
+  PARALLEL
+  ANY_ONE
+}
+
+enum LeadGrade {
+  A_PLUS
+  A
+  B
+  C
+  REJECTED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  DOCUMENT_PENDING
+  IN_PROCESS
+  APPLICATION_CREATED
+  SANCTIONED
+  DISBURSED
+  REJECTED
+  LOST
+}
+
+enum LeadPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum LeadSourceChannel {
+  DIGITAL
+  PARTNER
+  DIRECT
+  INBOUND
+}
+
+enum LeadAssignmentType {
+  AUTO
+  MANUAL
+  ROUND_ROBIN
+  LOAD_BALANCE
+  ESCALATION
+  BRANCH
+}
+
+enum LeadActivityType {
+  CALL
+  SMS
+  EMAIL
+  WHATSAPP
+  MEETING
+  NOTE
+  STATUS_CHANGE
+  ASSIGNMENT
+  DOCUMENT
+}
+
+enum LeadActivityDisposition {
+  CONNECTED
+  NO_ANSWER
+  CALLBACK
+  NOT_INTERESTED
+  INTERESTED
+  BUSY
+  WRONG_NUMBER
+}
+
+enum LeadFollowUpType {
+  CALL
+  WHATSAPP
+  SMS
+  EMAIL
+  MEETING
+  DOCUMENT_REQUEST
+}
+
+enum LeadFollowUpStatus {
+  PENDING
+  COMPLETED
+  MISSED
+  CANCELLED
+  ESCALATED
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  DOCUMENT_PENDING
+  BANK_LOGIN
+  CREDIT_REVIEW
+  SANCTIONED
+  DISBURSED
+  REJECTED
+  CLOSED
+}
+
+enum EligibilityResultType {
+  ELIGIBLE
+  CONDITIONALLY_ELIGIBLE
+  NOT_ELIGIBLE
+}
+
+enum BankLoginStatus {
+  PENDING
+  SUBMITTED
+  ACKNOWLEDGED
+  QUERY_RAISED
+  REJECTED
+}
+
+enum CreditReviewType {
+  INTERNAL
+  LENDER_QUERY
+  REWORK
+}
+
+enum CreditDecision {
+  PENDING
+  APPROVED
+  REJECTED
+  QUERY
+}
+
+enum RiskGrade {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum SanctionStatus {
+  ISSUED
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
+enum DisbursementMode {
+  FULL
+  PARTIAL
+  TRANCHE
+}
+
+enum DisbursementStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+enum ClosureType {
+  DISBURSED_COMPLETE
+  REJECTED
+  WITHDRAWN
+  CANCELLED
+}
+
+enum ApplicationTimelineEventType {
+  STATUS_CHANGE
+  ASSIGNMENT
+  DOCUMENT
+  BANK_UPDATE
+  CREDIT_REVIEW
+  SANCTION
+  DISBURSEMENT
+  CLOSURE
+  NOTE
+}
+
+enum FinanceCalculationKind {
+  EMI
+  ELIGIBILITY
+  SAVINGS
+  LOAN_COMPARISON
+  APPROVAL_PROBABILITY
+}
+
+enum FinanceProductSlug {
+  HOME_LOAN
+  HOME_LOAN_BT
+  HOME_LOAN_TOP_UP
+  HOME_LOAN_BT_TOP_UP
+  LAP
+  LAP_BT
+  LAP_TOP_UP
+  LAP_BT_TOP_UP
+  BUSINESS_LOAN
+  MSME_LOAN
+  WORKING_CAPITAL
+  OD
+  CC
+  NEW_CAR_LOAN
+  USED_CAR_LOAN
+  COMMERCIAL_VEHICLE
+  EV_LOAN
+  CAR_LOAN_BT
+  CAR_LOAN_TOP_UP
+  CAR_REFINANCE
+}
+
+enum ApprovalGrade {
+  A_PLUS
+  A
+  B
+  C
+  REJECTED
+}
+
+enum ReferralTypeCode {
+  CUSTOMER
+  DSA
+  BUILDER
+  PROPERTY_DEALER
+  CA
+  BROKER
+  CORPORATE
+}
+
+enum ReferralStatus {
+  PENDING
+  ACTIVE
+  CONVERTED
+  EXPIRED
+  CANCELLED
+  REJECTED
+}
+
+enum ReferralRewardStatus {
+  NOT_APPLICABLE
+  PENDING
+  APPROVED
+  PAID
+  REJECTED
+}
+
+enum CommissionPartnerType {
+  DSA
+  BUILDER
+  PROPERTY_DEALER
+  CA
+  BROKER
+  CORPORATE
+  CHANNEL_PARTNER
+}
+
+enum CommissionEventType {
+  LEAD_GENERATION
+  APPLICATION_LOGIN
+  SANCTION
+  DISBURSEMENT
+  RENEWAL
+  CROSS_SELL
+  CAMPAIGN_BONUS
+}
+
+enum CommissionStatus {
+  PENDING
+  CALCULATED
+  APPROVED
+  REJECTED
+  PAID
+  RECOVERED
+  ADJUSTED
+}
+
+enum CommissionCalculationMethod {
+  FIXED_AMOUNT
+  PERCENTAGE
+  SLAB_BASED
+  PRODUCT_BASED
+  LENDER_BASED
+  CAMPAIGN_BASED
+}
+
+enum CommissionLedgerEntryType {
+  CREDIT
+  DEBIT
+  ADJUSTMENT
+  RECOVERY
+  PAYMENT
+}
+
+enum CommissionApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CommissionPaymentStatus {
+  PENDING
+  APPROVED
+  RELEASED
+  FAILED
+  CANCELLED
+}
+
+enum CommissionAdjustmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  APPLIED
+}
+
+enum CommissionRecoveryStatus {
+  PENDING
+  APPROVED
+  RECOVERED
+  REJECTED
+  CANCELLED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  WHATSAPP
+  PUSH
+}
+
+enum NotificationEventType {
+  LEAD_CREATED
+  LEAD_ASSIGNED
+  LEAD_QUALIFIED
+  APPLICATION_CREATED
+  APPLICATION_SUBMITTED
+  DOCUMENT_REQUESTED
+  DOCUMENT_UPLOADED
+  DOCUMENT_VERIFIED
+  DOCUMENT_REJECTED
+  ELIGIBILITY_GENERATED
+  SANCTION_ISSUED
+  DISBURSEMENT_COMPLETED
+  REFERRAL_CREATED
+  REFERRAL_CONVERTED
+  REWARD_APPROVED
+  COMMISSION_APPROVED
+  COMMISSION_PAID
+  SUPPORT_TICKET_CREATED
+  SUPPORT_TICKET_CLOSED
+  LOGIN_OTP
+  PASSWORD_RESET
+}
+
+enum CommunicationStatus {
+  PENDING
+  QUEUED
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  FAILED
+  CANCELLED
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  CANCELLED
+}
+
+enum NotificationQueueType {
+  NOTIFICATION
+  RETRY
+  FAILED
+  SCHEDULED
+}
+
+enum NotificationQueueStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  SCHEDULED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TicketStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  PENDING_CUSTOMER
+  PENDING_INTERNAL
+  RESOLVED
+  CLOSED
+  REJECTED
+}
+
+enum TicketEscalationLevel {
+  L1_SUPPORT
+  L2_SUPPORT
+  SUPPORT_MANAGER
+  BRANCH_MANAGER
+  REGIONAL_MANAGER
+  ADMIN
+}
+
+enum TicketMessageType {
+  CUSTOMER
+  AGENT
+  INTERNAL
+  SYSTEM
+}
+
+enum TicketAssignmentType {
+  ASSIGN
+  REASSIGN
+  AUTO
+}

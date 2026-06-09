@@ -1,0 +1,241 @@
+// ── KuberOne Enterprise SMS Infrastructure ──
+
+enum SmsProviderType {
+  MSG91
+  TWILIO
+  AWS_SNS
+  MOCK
+}
+
+enum SmsCategory {
+  OTP
+  TRANSACTIONAL
+  SUPPORT
+  COMPLIANCE
+  MARKETING
+}
+
+enum SmsPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum SmsQueueType {
+  NOTIFICATION
+  RETRY
+  FAILED
+  PRIORITY
+  SCHEDULED
+  OTP
+}
+
+enum SmsQueueStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum SmsDeliveryStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+  EXPIRED
+  REJECTED
+}
+
+enum SmsEventType {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+  EXPIRED
+  REJECTED
+  BOUNCED
+  DEFERRED
+}
+
+model SmsProvider {
+  id           String          @id @default(uuid()) @db.Char(36)
+  code         String          @unique @db.VarChar(50)
+  name         String          @db.VarChar(100)
+  providerType SmsProviderType @map("provider_type")
+  isActive     Boolean         @default(true) @map("is_active")
+  isDefault    Boolean         @default(false) @map("is_default")
+  config       Json?
+  rateLimit    Int?            @map("rate_limit")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  deliveries SmsDelivery[]
+  queueItems SmsQueue[]
+
+  @@index([isActive, isDefault])
+  @@map("sms_providers")
+}
+
+model SmsTemplate {
+  id             String      @id @default(uuid()) @db.Char(36)
+  code           String      @unique @db.VarChar(80)
+  name           String      @db.VarChar(200)
+  category       SmsCategory @default(TRANSACTIONAL)
+  eventType      String?     @map("event_type") @db.VarChar(50)
+  body           String      @db.VarChar(1000)
+  dltTemplateId  String?     @map("dlt_template_id") @db.VarChar(50)
+  variables      Json        @default("[]")
+  locale         String      @default("en") @db.VarChar(10)
+  currentVersion Int         @default(1) @map("current_version")
+  isActive       Boolean     @default(true) @map("is_active")
+  metadata       Json?
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  createdById    String?     @map("created_by") @db.Char(36)
+  updatedById    String?     @map("updated_by") @db.Char(36)
+  deletedAt      DateTime?   @map("deleted_at")
+
+  versions   SmsTemplateVersion[]
+  queueItems SmsQueue[]
+  analytics  SmsAnalytics[]
+
+  createdBy User? @relation("SmsTemplateCreatedBy", fields: [createdById], references: [id])
+  updatedBy User? @relation("SmsTemplateUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([category, isActive])
+  @@index([eventType, isActive])
+  @@index([deletedAt])
+  @@map("sms_templates")
+}
+
+model SmsTemplateVersion {
+  id            String   @id @default(uuid()) @db.Char(36)
+  templateId    String   @map("template_id") @db.Char(36)
+  version       Int
+  body          String   @db.VarChar(1000)
+  dltTemplateId String?  @map("dlt_template_id") @db.VarChar(50)
+  variables     Json     @default("[]")
+  createdAt     DateTime @default(now()) @map("created_at")
+  createdById   String?  @map("created_by") @db.Char(36)
+
+  template  SmsTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  createdBy User?       @relation("SmsTemplateVersionCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([templateId, version])
+  @@map("sms_template_versions")
+}
+
+model SmsQueue {
+  id              String         @id @default(uuid()) @db.Char(36)
+  queueType       SmsQueueType   @map("queue_type")
+  status          SmsQueueStatus @default(PENDING)
+  priority        SmsPriority    @default(NORMAL)
+  toPhone         String         @map("to_phone") @db.VarChar(15)
+  recipientUserId String?        @map("recipient_user_id") @db.Char(36)
+  templateId      String?        @map("template_id") @db.Char(36)
+  templateCode    String?        @map("template_code") @db.VarChar(80)
+  body            String?        @db.VarChar(1000)
+  variables       Json?
+  payload         Json?
+  providerId      String?        @map("provider_id") @db.Char(36)
+  scheduledAt     DateTime?      @map("scheduled_at")
+  processedAt     DateTime?      @map("processed_at")
+  retryCount      Int            @default(0) @map("retry_count")
+  maxRetries      Int            @default(3) @map("max_retries")
+  lastError       String?        @map("last_error") @db.VarChar(500)
+  smsLogId        String?        @map("sms_log_id") @db.Char(36)
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  template      SmsTemplate? @relation(fields: [templateId], references: [id])
+  provider      SmsProvider? @relation(fields: [providerId], references: [id])
+  recipientUser User?        @relation("SmsQueueRecipient", fields: [recipientUserId], references: [id])
+
+  @@index([status, priority, scheduledAt])
+  @@index([queueType, status])
+  @@map("sms_queue")
+}
+
+model SmsDelivery {
+  id            String            @id @default(uuid()) @db.Char(36)
+  smsLogId      String            @unique @map("sms_log_id") @db.Char(36)
+  providerId    String?           @map("provider_id") @db.Char(36)
+  templateId    String?           @map("template_id") @db.Char(36)
+  status        SmsDeliveryStatus @default(QUEUED)
+  providerRef   String?           @map("provider_ref") @db.VarChar(200)
+  isOtp         Boolean           @default(false) @map("is_otp")
+  otpPurpose    String?           @map("otp_purpose") @db.VarChar(30)
+  queuedAt      DateTime?         @map("queued_at")
+  sentAt        DateTime?         @map("sent_at")
+  deliveredAt   DateTime?         @map("delivered_at")
+  failedAt      DateTime?         @map("failed_at")
+  expiredAt     DateTime?         @map("expired_at")
+  rejectedAt    DateTime?         @map("rejected_at")
+  failureReason String?           @map("failure_reason") @db.VarChar(500)
+  retryCount    Int               @default(0) @map("retry_count")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  provider SmsProvider? @relation(fields: [providerId], references: [id])
+  events   SmsEvent[]
+
+  @@index([status, createdAt])
+  @@index([providerRef])
+  @@index([isOtp, otpPurpose])
+  @@map("sms_deliveries")
+}
+
+model SmsEvent {
+  id         String       @id @default(uuid()) @db.Char(36)
+  deliveryId String       @map("delivery_id") @db.Char(36)
+  eventType  SmsEventType @map("event_type")
+  metadata   Json?
+  occurredAt DateTime     @default(now()) @map("occurred_at")
+
+  delivery SmsDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryId, occurredAt])
+  @@index([eventType])
+  @@map("sms_events")
+}
+
+model SmsPreference {
+  id             String       @id @default(uuid()) @db.Char(36)
+  userId         String       @map("user_id") @db.Char(36)
+  category       SmsCategory?
+  eventType      String?      @map("event_type") @db.VarChar(50)
+  enabled        Boolean      @default(true)
+  marketingOptIn Boolean      @default(false) @map("marketing_opt_in")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  user User @relation("SmsPreferences", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, category, eventType])
+  @@index([userId])
+  @@map("sms_preferences")
+}
+
+model SmsAnalytics {
+  id               String       @id @default(uuid()) @db.Char(36)
+  date             DateTime     @db.Date
+  templateId       String?      @map("template_id") @db.Char(36)
+  category         SmsCategory?
+  providerId       String?      @map("provider_id") @db.Char(36)
+  sentCount        Int          @default(0) @map("sent_count")
+  deliveredCount   Int          @default(0) @map("delivered_count")
+  failedCount      Int          @default(0) @map("failed_count")
+  rejectedCount    Int          @default(0) @map("rejected_count")
+  otpSentCount     Int          @default(0) @map("otp_sent_count")
+  otpVerifiedCount Int          @default(0) @map("otp_verified_count")
+  otpFailedCount   Int          @default(0) @map("otp_failed_count")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  template SmsTemplate? @relation(fields: [templateId], references: [id])
+
+  @@index([date])
+  @@map("sms_analytics")
+}

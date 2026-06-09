@@ -1,0 +1,93 @@
+// ── KYC Domain ──
+
+model KycProfile {
+  id                 String             @id @default(uuid()) @db.Char(36)
+  entityType         KycEntityType      @map("entity_type")
+  entityId           String             @map("entity_id") @db.Char(36)
+  panEncrypted       String?            @map("pan_encrypted") @db.Text
+  panMasked          String?            @map("pan_masked") @db.VarChar(10)
+  panVerified        Boolean            @default(false) @map("pan_verified")
+  panVerifiedAt      DateTime?          @map("pan_verified_at")
+  aadhaarEncrypted   String?            @map("aadhaar_encrypted") @db.Text
+  aadhaarMasked      String?            @map("aadhaar_masked") @db.VarChar(12)
+  aadhaarVerified    Boolean            @default(false) @map("aadhaar_verified")
+  aadhaarVerifiedAt  DateTime?          @map("aadhaar_verified_at")
+  ckycNumber         String?            @map("ckyc_number") @db.VarChar(20)
+  photoS3Key         String?            @map("photo_s3_key") @db.VarChar(500)
+  addressProofStatus AddressProofStatus @default(NOT_SUBMITTED) @map("address_proof_status")
+  overallStatus      KycOverallStatus   @default(NOT_STARTED) @map("overall_status")
+  completionPct      Int                @default(0) @map("completion_pct")
+  expiresAt          DateTime?          @map("expires_at")
+  lastReviewedAt     DateTime?          @map("last_reviewed_at")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  createdById        String?            @map("created_by") @db.Char(36)
+  updatedById        String?            @map("updated_by") @db.Char(36)
+  deletedAt          DateTime?          @map("deleted_at")
+  deletedById        String?            @map("deleted_by") @db.Char(36)
+
+  panVerifications      PanVerification[]
+  aadhaarVerifications  AadhaarVerification[]
+  auditLogs             KycAuditLog[]
+
+  @@unique([entityType, entityId])
+  @@index([overallStatus])
+  @@index([entityType, entityId])
+  @@map("kyc_profiles")
+}
+
+model PanVerification {
+  id                   String                  @id @default(uuid()) @db.Char(36)
+  kycProfileId         String                  @map("kyc_profile_id") @db.Char(36)
+  panEncrypted         String                  @map("pan_encrypted") @db.Text
+  panMasked            String                  @map("pan_masked") @db.VarChar(10)
+  nameOnPan            String?                 @map("name_on_pan") @db.VarChar(200)
+  verificationStatus   PanVerificationStatus   @map("verification_status")
+  verificationProvider PanVerificationProvider @map("verification_provider")
+  providerReference    String?                 @map("provider_reference") @db.VarChar(100)
+  verifiedAt           DateTime?               @map("verified_at")
+  failureReason        String?                 @map("failure_reason") @db.VarChar(200)
+  createdAt            DateTime                @default(now()) @map("created_at")
+  createdById          String?                 @map("created_by") @db.Char(36)
+
+  kycProfile KycProfile @relation(fields: [kycProfileId], references: [id], onDelete: Cascade)
+
+  @@index([kycProfileId, createdAt])
+  @@map("pan_verifications")
+}
+
+model AadhaarVerification {
+  id                   String                    @id @default(uuid()) @db.Char(36)
+  kycProfileId         String                    @map("kyc_profile_id") @db.Char(36)
+  aadhaarEncrypted     String                    @map("aadhaar_encrypted") @db.Text
+  aadhaarMasked        String                    @map("aadhaar_masked") @db.VarChar(12)
+  verificationMethod   AadhaarVerificationMethod @map("verification_method")
+  verificationStatus   AadhaarVerificationStatus @map("verification_status")
+  providerReference    String?                   @map("provider_reference") @db.VarChar(100)
+  verifiedAt           DateTime?                 @map("verified_at")
+  createdAt            DateTime                  @default(now()) @map("created_at")
+  createdById          String?                   @map("created_by") @db.Char(36)
+
+  kycProfile KycProfile @relation(fields: [kycProfileId], references: [id], onDelete: Cascade)
+
+  @@index([kycProfileId, createdAt])
+  @@map("aadhaar_verifications")
+}
+
+model KycAuditLog {
+  id              String           @id @default(uuid()) @db.Char(36)
+  kycProfileId    String           @map("kyc_profile_id") @db.Char(36)
+  action          KycAuditAction
+  performedById   String           @map("performed_by_id") @db.Char(36)
+  previousStatus  KycOverallStatus? @map("previous_status")
+  newStatus       KycOverallStatus @map("new_status")
+  reason          String?          @db.Text
+  ipAddress       String?          @map("ip_address") @db.VarChar(45)
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  kycProfile  KycProfile @relation(fields: [kycProfileId], references: [id], onDelete: Cascade)
+  performedBy User       @relation("KycAuditPerformedBy", fields: [performedById], references: [id])
+
+  @@index([kycProfileId, createdAt])
+  @@map("kyc_audit_logs")
+}

@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "isolatedModules": true,
+    "paths": {
+      "@kuberone/shared-types": ["./packages/shared-types/src/index.ts"],
+      "@kuberone/shared-types/*": ["./packages/shared-types/src/*"],
+      "@kuberone/shared-utils": ["./packages/shared-utils/src/index.ts"],
+      "@kuberone/shared-utils/*": ["./packages/shared-utils/src/*"],
+      "@kuberone/shared-config": ["./packages/shared-config/src/index.ts"],
+      "@kuberone/shared-config/*": ["./packages/shared-config/src/*"],
+      "@kuberone/shared-validation": ["./packages/shared-validation/src/index.ts"],
+      "@kuberone/shared-validation/*": ["./packages/shared-validation/src/*"],
+      "@kuberone/database": ["./database/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "build", ".expo"]
+}

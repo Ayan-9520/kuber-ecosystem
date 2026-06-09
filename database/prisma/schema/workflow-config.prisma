@@ -1,0 +1,218 @@
+// ── Workflow & LMS Configuration (Canonical §4.24, A4) ──
+
+model WorkflowDefinition {
+  id                      String    @id @default(uuid()) @db.Char(36)
+  productVariantId        String    @map("product_variant_id") @db.Char(36)
+  workflowCode            String    @map("workflow_code") @db.VarChar(32)
+  version                 Int
+  effectiveFrom           DateTime  @map("effective_from")
+  effectiveTo             DateTime? @map("effective_to")
+  isActive                Boolean   @default(true) @map("is_active")
+  stageSequence           Json      @map("stage_sequence")
+  approvalGates           Json      @map("approval_gates")
+  reworkRules             Json      @map("rework_rules")
+  mandatoryDocumentCodes  Json      @map("mandatory_document_codes")
+  metadata                Json?
+  createdById             String    @map("created_by") @db.Char(36)
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+  updatedById             String?   @map("updated_by") @db.Char(36)
+  approvedById            String?   @map("approved_by") @db.Char(36)
+  approvedAt              DateTime? @map("approved_at")
+
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
+  createdBy      Employee       @relation("WorkflowDefinitionCreatedBy", fields: [createdById], references: [id])
+  updatedBy      Employee?      @relation("WorkflowDefinitionUpdatedBy", fields: [updatedById], references: [id])
+  approvedBy     Employee?      @relation("WorkflowDefinitionApprovedBy", fields: [approvedById], references: [id])
+  stageConfigs   WorkflowStageConfig[]
+
+  @@unique([productVariantId, version])
+  @@index([productVariantId, isActive])
+  @@map("workflow_definitions")
+}
+
+model WorkflowStageConfig {
+  id                   String    @id @default(uuid()) @db.Char(36)
+  workflowDefinitionId String    @map("workflow_definition_id") @db.Char(36)
+  stageCode            LosStage  @map("stage_code")
+  slaDays              Int?      @map("sla_days")
+  slaBusinessDaysOnly  Boolean   @default(true) @map("sla_business_days_only")
+  mandatoryRoleCode    String?   @map("mandatory_role_code") @db.VarChar(64)
+  autoTransitionRules  Json?     @map("auto_transition_rules")
+  handlerModule        String?   @map("handler_module") @db.VarChar(64)
+  isSkippable          Boolean   @default(false) @map("is_skippable")
+  metadata             Json?
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  workflowDefinition WorkflowDefinition @relation(fields: [workflowDefinitionId], references: [id], onDelete: Cascade)
+  slaRules           LmsSlaRule[]
+
+  @@unique([workflowDefinitionId, stageCode])
+  @@index([workflowDefinitionId])
+  @@map("workflow_stage_configs")
+}
+
+model LmsAssignmentRule {
+  id            String    @id @default(uuid()) @db.Char(36)
+  name          String    @db.VarChar(128)
+  version       Int
+  branchId      String?   @map("branch_id") @db.Char(36)
+  regionId      String?   @map("region_id") @db.Char(36)
+  rules         Json
+  effectiveFrom DateTime  @map("effective_from")
+  effectiveTo   DateTime? @map("effective_to")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdById   String    @map("created_by") @db.Char(36)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  updatedById   String?   @map("updated_by") @db.Char(36)
+
+  branch    Branch?   @relation(fields: [branchId], references: [id])
+  region    Region?   @relation(fields: [regionId], references: [id])
+  createdBy Employee  @relation("LmsAssignmentRuleCreatedBy", fields: [createdById], references: [id])
+  updatedBy Employee? @relation("LmsAssignmentRuleUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([branchId, isActive])
+  @@index([regionId, isActive])
+  @@map("lms_assignment_rules")
+}
+
+model LmsScoringConfig {
+  id                            String    @id @default(uuid()) @db.Char(36)
+  productFamilyId               String?   @map("product_family_id") @db.Char(36)
+  version                       Int
+  factorWeights                 Json      @map("factor_weights")
+  gradeThresholds               Json      @map("grade_thresholds")
+  aiWeight                      Decimal   @default(0.30) @map("ai_weight") @db.Decimal(3, 2)
+  ruleWeight                    Decimal   @default(0.70) @map("rule_weight") @db.Decimal(3, 2)
+  gateRules                     Json      @map("gate_rules")
+  conversionProbabilityDefaults Json?     @map("conversion_probability_defaults")
+  effectiveFrom                 DateTime  @map("effective_from")
+  effectiveTo                   DateTime? @map("effective_to")
+  isActive                      Boolean   @default(true) @map("is_active")
+  createdById                   String    @map("created_by") @db.Char(36)
+  createdAt                     DateTime  @default(now()) @map("created_at")
+  updatedAt                     DateTime  @updatedAt @map("updated_at")
+  updatedById                   String?   @map("updated_by") @db.Char(36)
+
+  productFamily ProductFamily? @relation(fields: [productFamilyId], references: [id])
+  createdBy     Employee       @relation("LmsScoringConfigCreatedBy", fields: [createdById], references: [id])
+  updatedBy     Employee?      @relation("LmsScoringConfigUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([productFamilyId, isActive])
+  @@map("lms_scoring_config")
+}
+
+model LmsSlaRule {
+  id                     String        @id @default(uuid()) @db.Char(36)
+  domain                 SlaDomain
+  slaName                String        @map("sla_name") @db.VarChar(128)
+  slaCode                String        @map("sla_code") @db.VarChar(64)
+  targetValue            Decimal       @map("target_value") @db.Decimal(10, 2)
+  targetUnit             SlaTargetUnit @map("target_unit")
+  measurementFormula     String?       @map("measurement_formula") @db.Text
+  gradeFilter            String?       @map("grade_filter") @db.VarChar(8)
+  stageCode              LosStage?     @map("stage_code")
+  workflowStageConfigId  String?       @map("workflow_stage_config_id") @db.Char(36)
+  effectiveFrom          DateTime      @map("effective_from")
+  effectiveTo            DateTime?     @map("effective_to")
+  isActive               Boolean       @default(true) @map("is_active")
+  createdAt              DateTime      @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
+
+  workflowStageConfig WorkflowStageConfig? @relation(fields: [workflowStageConfigId], references: [id])
+  escalationRules     LmsEscalationRule[]
+
+  @@unique([slaCode, effectiveFrom])
+  @@index([domain, isActive])
+  @@map("lms_sla_rules")
+}
+
+model LmsEscalationRule {
+  id                    String   @id @default(uuid()) @db.Char(36)
+  slaRuleId             String?  @map("sla_rule_id") @db.Char(36)
+  triggerEvent          String   @map("trigger_event") @db.VarChar(64)
+  triggerCondition      Json?    @map("trigger_condition")
+  escalationLevel       Int      @map("escalation_level")
+  escalateToRole        String?  @map("escalate_to_role") @db.VarChar(64)
+  escalateToEmployeeId  String?  @map("escalate_to_employee_id") @db.Char(36)
+  notifyChannels        Json     @map("notify_channels")
+  cooldownMinutes       Int      @default(60) @map("cooldown_minutes")
+  isActive              Boolean  @default(true) @map("is_active")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  slaRule              LmsSlaRule? @relation(fields: [slaRuleId], references: [id])
+  escalateToEmployee   Employee?   @relation("LmsEscalationEmployee", fields: [escalateToEmployeeId], references: [id])
+
+  @@index([slaRuleId, isActive])
+  @@index([triggerEvent, isActive])
+  @@map("lms_escalation_rules")
+}
+
+model NotificationRuleConfig {
+  id             String                   @id @default(uuid()) @db.Char(36)
+  eventCode      String                   @map("event_code") @db.VarChar(64)
+  channels       Json
+  templateCodes  Json                     @map("template_codes")
+  delayMinutes   Int                      @default(0) @map("delay_minutes")
+  conditions     Json?
+  audienceType   NotificationAudienceType @map("audience_type")
+  audienceConfig Json?                    @map("audience_config")
+  isEnabled      Boolean                  @default(true) @map("is_enabled")
+  version        Int
+  effectiveFrom  DateTime                 @map("effective_from")
+  effectiveTo    DateTime?                @map("effective_to")
+  createdAt      DateTime                 @default(now()) @map("created_at")
+  updatedAt      DateTime                 @updatedAt @map("updated_at")
+  createdById    String?                  @map("created_by") @db.Char(36)
+  updatedById    String?                  @map("updated_by") @db.Char(36)
+
+  createdBy Employee? @relation("NotificationRuleConfigCreatedBy", fields: [createdById], references: [id])
+  updatedBy Employee? @relation("NotificationRuleConfigUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([eventCode, isEnabled])
+  @@index([effectiveFrom, effectiveTo])
+  @@map("notification_rule_configs")
+}
+
+model ApprovalRuleConfig {
+  id                    String                   @id @default(uuid()) @db.Char(36)
+  entityType            ApprovalConfigEntityType @map("entity_type")
+  stageCode             LosStage?                @map("stage_code")
+  approvalType          ApprovalConfigType       @map("approval_type")
+  requiredRoleCodes     Json                     @map("required_role_codes")
+  minApprovers          Int                      @map("min_approvers")
+  sodRules              Json?                    @map("sod_rules")
+  escalationAfterHours  Int?                     @map("escalation_after_hours")
+  amountThresholds      Json?                    @map("amount_thresholds")
+  version               Int
+  effectiveFrom         DateTime                 @map("effective_from")
+  effectiveTo           DateTime?                @map("effective_to")
+  isActive              Boolean                  @default(true) @map("is_active")
+  createdById           String                   @map("created_by") @db.Char(36)
+  createdAt             DateTime                 @default(now()) @map("created_at")
+  updatedAt             DateTime                 @updatedAt @map("updated_at")
+  updatedById           String?                  @map("updated_by") @db.Char(36)
+
+  createdBy Employee  @relation("ApprovalRuleConfigCreatedBy", fields: [createdById], references: [id])
+  updatedBy Employee? @relation("ApprovalRuleConfigUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([entityType, stageCode, isActive])
+  @@map("approval_rule_configs")
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid()) @db.Char(36)
+  key         String   @unique @db.VarChar(100)
+  value       Json
+  category    String   @db.VarChar(50)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdById String?  @map("created_by") @db.Char(36)
+  updatedById String?  @map("updated_by") @db.Char(36)
+
+  @@index([category])
+  @@map("system_settings")
+}

@@ -1,0 +1,95 @@
+// ── Communication Channel Providers & Queue Extensions ──
+
+enum CommunicationProviderType {
+  SMTP
+  SENDGRID
+  MSG91
+  TWILIO
+  META_WHATSAPP
+  FCM
+  MOCK
+}
+
+model CommunicationProvider {
+  id           String                    @id @default(uuid()) @db.Char(36)
+  code         String                    @unique @db.VarChar(50)
+  name         String                    @db.VarChar(100)
+  channel      NotificationChannel
+  providerType CommunicationProviderType @map("provider_type")
+  isActive     Boolean                   @default(true) @map("is_active")
+  isDefault    Boolean                   @default(false) @map("is_default")
+  config       Json?
+  rateLimit    Int?                      @map("rate_limit")
+  createdAt    DateTime                  @default(now()) @map("created_at")
+  updatedAt    DateTime                  @updatedAt @map("updated_at")
+
+  @@index([channel, isActive])
+  @@map("communication_providers")
+}
+
+model NotificationDeadLetter {
+  id              String              @id @default(uuid()) @db.Char(36)
+  queueId         String?             @map("queue_id") @db.Char(36)
+  channel         NotificationChannel
+  eventType       NotificationEventType @map("event_type")
+  recipientUserId String?             @map("recipient_user_id") @db.Char(36)
+  payload         Json
+  errorMessage    String              @map("error_message") @db.Text
+  retryCount      Int                 @default(0) @map("retry_count")
+  resolvedAt      DateTime?           @map("resolved_at")
+  createdAt       DateTime            @default(now()) @map("created_at")
+
+  @@index([channel, createdAt])
+  @@index([resolvedAt])
+  @@map("notification_dead_letters")
+}
+
+model PushTopic {
+  id          String        @id @default(uuid()) @db.Char(36)
+  code        String        @unique @db.VarChar(80)
+  name        String        @db.VarChar(150)
+  description String?       @db.Text
+  topicType   PushTopicType @default(CUSTOM) @map("topic_type")
+  appTarget   String        @default("ALL") @map("app_target") @db.VarChar(30)
+  isActive    Boolean       @default(true) @map("is_active")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  subscriptions PushTopicSubscription[]
+
+  @@index([topicType, isActive])
+  @@map("push_topics")
+}
+
+model PushTopicSubscription {
+  id        String   @id @default(uuid()) @db.Char(36)
+  topicId   String   @map("topic_id") @db.Char(36)
+  userId    String   @map("user_id") @db.Char(36)
+  deviceId  String?  @map("device_id") @db.Char(36)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  topic PushTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  user  User      @relation("PushTopicSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([topicId, userId, deviceId])
+  @@index([userId])
+  @@map("push_topic_subscriptions")
+}
+
+model WhatsAppTemplateRegistry {
+  id           String   @id @default(uuid()) @db.Char(36)
+  code         String   @unique @db.VarChar(80)
+  metaName     String   @map("meta_name") @db.VarChar(100)
+  language     String   @default("en") @db.VarChar(10)
+  category     String   @default("UTILITY") @db.VarChar(30)
+  variables    Json     @default("[]")
+  eventType    NotificationEventType? @map("event_type")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([eventType, isActive])
+  @@map("whatsapp_template_registry")
+}

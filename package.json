@@ -1,0 +1,58 @@
+{
+  "name": "kuberone",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KuberOne — AI-Powered Financial Services Ecosystem by Kuber Finserve",
+  "author": "Kuber Finserve",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "dev:backend": "turbo run dev --filter=@kuberone/backend",
+    "dev:admin": "turbo run dev --filter=@kuberone/admin",
+    "dev:mobile-customer": "turbo run dev --filter=@kuberone/mobile-customer",
+    "dev:mobile-dsa": "turbo run dev --filter=@kuberone/mobile-dsa",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+    "db:generate": "pnpm --filter @kuberone/database generate",
+    "db:migrate": "pnpm --filter @kuberone/database migrate:dev",
+    "db:migrate:deploy": "pnpm --filter @kuberone/database migrate:deploy",
+    "db:seed": "pnpm --filter @kuberone/database seed",
+    "db:setup": "node database/scripts/setup-local.mjs",
+    "db:studio": "pnpm --filter @kuberone/database studio",
+    "clean": "turbo run clean && rimraf node_modules",
+    "prepare": "husky || true"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^20.17.10",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.31.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.11",
+    "prettier": "^3.4.2",
+    "rimraf": "^6.0.1",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
+  }
+}

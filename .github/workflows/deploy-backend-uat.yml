@@ -1,0 +1,28 @@
+name: Deploy — Backend UAT
+
+on:
+  push:
+    branches: ['release/*']
+    paths:
+      - 'apps/backend/**'
+      - 'packages/**'
+      - 'database/**'
+      - 'deployment/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: uat
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to UAT EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.UAT_EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /opt/kuberone
+            git pull
+            bash deployment/scripts/deploy-backend.sh uat

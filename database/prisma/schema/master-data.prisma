@@ -1,0 +1,125 @@
+// ── Master Data Domain ──
+
+model Country {
+  id        String   @id @default(uuid()) @db.Char(36)
+  isoCode   String   @unique @map("iso_code") @db.Char(2)
+  name      String   @db.VarChar(100)
+  phoneCode String   @map("phone_code") @db.VarChar(5)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  states    State[]
+  addresses CustomerAddress[]
+
+  @@map("countries")
+}
+
+model State {
+  id        String   @id @default(uuid()) @db.Char(36)
+  countryId String   @map("country_id") @db.Char(36)
+  code      String   @db.VarChar(10)
+  name      String   @db.VarChar(100)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  country   Country           @relation(fields: [countryId], references: [id])
+  cities    City[]
+  addresses CustomerAddress[]
+
+  @@unique([countryId, code])
+  @@index([countryId])
+  @@map("states")
+}
+
+model City {
+  id        String    @id @default(uuid()) @db.Char(36)
+  stateId   String    @map("state_id") @db.Char(36)
+  name      String    @db.VarChar(100)
+  tier      CityTier?
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  state State @relation(fields: [stateId], references: [id])
+
+  @@index([stateId])
+  @@index([name])
+  @@map("cities")
+}
+
+model Occupation {
+  id        String             @id @default(uuid()) @db.Char(36)
+  code      String             @unique @db.VarChar(20)
+  name      String             @db.VarChar(100)
+  category  OccupationCategory
+  isActive  Boolean            @default(true) @map("is_active")
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+
+  employments CustomerEmployment[]
+
+  @@map("occupations")
+}
+
+model Industry {
+  id        String   @id @default(uuid()) @db.Char(36)
+  code      String   @unique @db.VarChar(20)
+  name      String   @db.VarChar(100)
+  sector    String?  @db.VarChar(50)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  employments CustomerEmployment[]
+
+  @@map("industries")
+}
+
+model Bank {
+  id         String   @id @default(uuid()) @db.Char(36)
+  code       String   @unique @db.VarChar(20)
+  name       String   @db.VarChar(200)
+  ifscPrefix String?  @map("ifsc_prefix") @db.VarChar(4)
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("banks")
+}
+
+model VehicleManufacturer {
+  id              String   @id @default(uuid()) @db.Char(36)
+  code            String   @unique @db.VarChar(20)
+  name            String   @db.VarChar(100)
+  countryOfOrigin String?  @map("country_of_origin") @db.VarChar(50)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  models VehicleModel[]
+
+  @@map("vehicle_manufacturers")
+}
+
+model VehicleModel {
+  id                   String          @id @default(uuid()) @db.Char(36)
+  manufacturerId       String          @map("manufacturer_id") @db.Char(36)
+  code                 String          @db.VarChar(20)
+  name                 String          @db.VarChar(100)
+  category             VehicleCategory
+  fuelTypes            Json?           @map("fuel_types")
+  isElectric           Boolean         @default(false) @map("is_electric")
+  exShowroomPriceMin   Decimal?        @map("ex_showroom_price_min") @db.Decimal(15, 2)
+  exShowroomPriceMax   Decimal?        @map("ex_showroom_price_max") @db.Decimal(15, 2)
+  isActive             Boolean         @default(true) @map("is_active")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
+
+  manufacturer VehicleManufacturer @relation(fields: [manufacturerId], references: [id])
+
+  @@unique([manufacturerId, code])
+  @@index([manufacturerId])
+  @@map("vehicle_models")
+}

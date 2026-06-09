@@ -1,0 +1,318 @@
+// ── KuberOne Enterprise Push Notification Infrastructure ──
+
+enum PushProviderType {
+  FCM
+  ONESIGNAL
+  AZURE_NOTIFICATION_HUB
+  MOCK
+}
+
+enum PushCategory {
+  AUTH
+  TRANSACTIONAL
+  SUPPORT
+  MARKETING
+  AI
+  REMINDER
+}
+
+enum PushPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum PushQueueType {
+  NOTIFICATION
+  RETRY
+  FAILED
+  PRIORITY
+  SCHEDULED
+  TOPIC
+}
+
+enum PushQueueStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PushDeliveryStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  DISMISSED
+  FAILED
+  EXPIRED
+}
+
+enum PushEventType {
+  QUEUED
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  DISMISSED
+  FAILED
+  EXPIRED
+}
+
+enum PushAppTarget {
+  CUSTOMER
+  DSA
+  EMPLOYEE
+  ALL
+}
+
+enum PushTopicType {
+  BRANCH
+  REGION
+  ROLE
+  CAMPAIGN
+  CUSTOM
+}
+
+model PushProvider {
+  id           String           @id @default(uuid()) @db.Char(36)
+  code         String           @unique @db.VarChar(50)
+  name         String           @db.VarChar(100)
+  providerType PushProviderType @map("provider_type")
+  isActive     Boolean          @default(true) @map("is_active")
+  isDefault    Boolean          @default(false) @map("is_default")
+  config       Json?
+  rateLimit    Int?             @map("rate_limit")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  deliveries PushNotificationDelivery[]
+  queueItems PushQueue[]
+
+  @@index([isActive, isDefault])
+  @@map("push_providers")
+}
+
+model PushTemplate {
+  id             String       @id @default(uuid()) @db.Char(36)
+  code           String       @unique @db.VarChar(80)
+  name           String       @db.VarChar(200)
+  category       PushCategory @default(TRANSACTIONAL)
+  eventType      String?      @map("event_type") @db.VarChar(50)
+  title          String       @db.VarChar(300)
+  body           String       @db.VarChar(1000)
+  variables      Json         @default("[]")
+  locale         String       @default("en") @db.VarChar(10)
+  currentVersion Int          @default(1) @map("current_version")
+  isActive       Boolean      @default(true) @map("is_active")
+  metadata       Json?
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  createdById    String?      @map("created_by") @db.Char(36)
+  updatedById    String?      @map("updated_by") @db.Char(36)
+  deletedAt      DateTime?    @map("deleted_at")
+
+  versions  PushTemplateVersion[]
+  queueItems PushQueue[]
+  analytics PushAnalytics[]
+
+  createdBy User? @relation("PushTemplateCreatedBy", fields: [createdById], references: [id])
+  updatedBy User? @relation("PushTemplateUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([category, isActive])
+  @@index([eventType, isActive])
+  @@index([deletedAt])
+  @@map("push_templates")
+}
+
+model PushTemplateVersion {
+  id          String   @id @default(uuid()) @db.Char(36)
+  templateId  String   @map("template_id") @db.Char(36)
+  version     Int
+  title       String   @db.VarChar(300)
+  body        String   @db.VarChar(1000)
+  variables   Json     @default("[]")
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdById String?  @map("created_by") @db.Char(36)
+
+  template  PushTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  createdBy User?        @relation("PushTemplateVersionCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([templateId, version])
+  @@map("push_template_versions")
+}
+
+model PushDevice {
+  id             String        @id @default(uuid()) @db.Char(36)
+  userId         String        @map("user_id") @db.Char(36)
+  deviceId       String        @map("device_id") @db.VarChar(100)
+  platform       String        @db.VarChar(20)
+  appTarget      PushAppTarget @default(CUSTOMER) @map("app_target")
+  appVersion     String?       @map("app_version") @db.VarChar(20)
+  legacyDeviceId String?       @map("legacy_device_id") @db.Char(36)
+  isActive       Boolean       @default(true) @map("is_active")
+  lastActiveAt   DateTime      @default(now()) @map("last_active_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  user   User        @relation("PushDevices", fields: [userId], references: [id], onDelete: Cascade)
+  tokens PushToken[]
+
+  @@unique([userId, deviceId, appTarget])
+  @@index([userId, isActive])
+  @@map("push_devices")
+}
+
+model PushToken {
+  id           String    @id @default(uuid()) @db.Char(36)
+  pushDeviceId String    @map("push_device_id") @db.Char(36)
+  token        String    @db.VarChar(500)
+  provider     String    @default("FCM") @db.VarChar(20)
+  isActive     Boolean   @default(true) @map("is_active")
+  rotatedAt    DateTime? @map("rotated_at")
+  expiresAt    DateTime? @map("expires_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  pushDevice PushDevice @relation(fields: [pushDeviceId], references: [id], onDelete: Cascade)
+
+  @@index([token(length: 191)])
+  @@index([pushDeviceId, isActive])
+  @@map("push_tokens")
+}
+
+model PushQueue {
+  id                 String          @id @default(uuid()) @db.Char(36)
+  queueType          PushQueueType   @map("queue_type")
+  status             PushQueueStatus @default(PENDING)
+  priority           PushPriority    @default(NORMAL)
+  recipientUserId    String?         @map("recipient_user_id") @db.Char(36)
+  pushDeviceId       String?         @map("push_device_id") @db.Char(36)
+  topicCode          String?         @map("topic_code") @db.VarChar(80)
+  templateId         String?         @map("template_id") @db.Char(36)
+  templateCode       String?         @map("template_code") @db.VarChar(80)
+  title              String?         @db.VarChar(300)
+  body               String?         @db.VarChar(1000)
+  variables          Json?
+  payload            Json?
+  providerId         String?         @map("provider_id") @db.Char(36)
+  scheduledAt        DateTime?       @map("scheduled_at")
+  processedAt        DateTime?       @map("processed_at")
+  retryCount         Int             @default(0) @map("retry_count")
+  maxRetries         Int             @default(3) @map("max_retries")
+  lastError          String?         @map("last_error") @db.VarChar(500)
+  pushNotificationId String?         @map("push_notification_id") @db.Char(36)
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+
+  template      PushTemplate? @relation(fields: [templateId], references: [id])
+  provider      PushProvider? @relation(fields: [providerId], references: [id])
+  recipientUser User?         @relation("PushQueueRecipient", fields: [recipientUserId], references: [id])
+
+  @@index([status, priority, scheduledAt])
+  @@index([queueType, status])
+  @@map("push_queue")
+}
+
+model PushNotificationDelivery {
+  id                 String             @id @default(uuid()) @db.Char(36)
+  pushNotificationId String             @unique @map("push_notification_id") @db.Char(36)
+  providerId         String?            @map("provider_id") @db.Char(36)
+  templateId         String?            @map("template_id") @db.Char(36)
+  pushDeviceId       String?            @map("push_device_id") @db.Char(36)
+  status             PushDeliveryStatus @default(QUEUED)
+  providerRef        String?            @map("provider_ref") @db.VarChar(200)
+  queuedAt           DateTime?          @map("queued_at")
+  sentAt             DateTime?          @map("sent_at")
+  deliveredAt        DateTime?          @map("delivered_at")
+  openedAt           DateTime?          @map("opened_at")
+  clickedAt          DateTime?          @map("clicked_at")
+  dismissedAt        DateTime?          @map("dismissed_at")
+  failedAt           DateTime?          @map("failed_at")
+  expiredAt          DateTime?          @map("expired_at")
+  failureReason      String?            @map("failure_reason") @db.VarChar(500)
+  retryCount         Int                @default(0) @map("retry_count")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  provider PushProvider? @relation(fields: [providerId], references: [id])
+  events   PushEvent[]
+  logs     PushNotificationLog[]
+
+  @@index([status, createdAt])
+  @@index([providerRef])
+  @@map("push_notification_deliveries")
+}
+
+model PushNotificationLog {
+  id         String   @id @default(uuid()) @db.Char(36)
+  deliveryId String   @map("delivery_id") @db.Char(36)
+  action     String   @db.VarChar(30)
+  status     String   @db.VarChar(30)
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  delivery PushNotificationDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryId, createdAt])
+  @@map("push_notification_logs")
+}
+
+model PushEvent {
+  id         String        @id @default(uuid()) @db.Char(36)
+  deliveryId String        @map("delivery_id") @db.Char(36)
+  eventType  PushEventType @map("event_type")
+  metadata   Json?
+  occurredAt DateTime      @default(now()) @map("occurred_at")
+
+  delivery PushNotificationDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryId, occurredAt])
+  @@index([eventType])
+  @@map("push_events")
+}
+
+model PushPreference {
+  id             String        @id @default(uuid()) @db.Char(36)
+  userId         String        @map("user_id") @db.Char(36)
+  pushDeviceId   String?       @map("push_device_id") @db.Char(36)
+  category       PushCategory?
+  eventType      String?       @map("event_type") @db.VarChar(50)
+  enabled        Boolean       @default(true)
+  marketingOptIn Boolean       @default(false) @map("marketing_opt_in")
+  doNotDisturb   Boolean       @default(false) @map("do_not_disturb")
+  muteUntil      DateTime?     @map("mute_until")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  user User @relation("PushPreferences", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pushDeviceId, category, eventType])
+  @@index([userId])
+  @@map("push_preferences")
+}
+
+model PushAnalytics {
+  id             String        @id @default(uuid()) @db.Char(36)
+  date           DateTime      @db.Date
+  templateId     String?       @map("template_id") @db.Char(36)
+  category       PushCategory?
+  providerId     String?       @map("provider_id") @db.Char(36)
+  topicCode      String?       @map("topic_code") @db.VarChar(80)
+  sentCount      Int           @default(0) @map("sent_count")
+  deliveredCount Int           @default(0) @map("delivered_count")
+  openedCount    Int           @default(0) @map("opened_count")
+  clickedCount   Int           @default(0) @map("clicked_count")
+  failedCount    Int           @default(0) @map("failed_count")
+  dismissedCount Int           @default(0) @map("dismissed_count")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  template PushTemplate? @relation(fields: [templateId], references: [id])
+
+  @@index([date])
+  @@map("push_analytics")
+}

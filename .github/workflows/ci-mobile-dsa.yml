@@ -1,0 +1,35 @@
+name: CI — Mobile DSA
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/mobile-dsa/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'apps/mobile-dsa/**'
+      - 'packages/**'
+
+jobs:
+  mobile-dsa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter @kuberone/mobile-dsa typecheck
+
+      - run: pnpm --filter @kuberone/mobile-dsa lint

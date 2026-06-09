@@ -1,0 +1,40 @@
+{
+  "name": "@kuberone/admin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KuberOne CRM Admin Panel",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --max-warnings 0",
+    "lint:fix": "eslint src --fix",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@kuberone/shared-theme": "workspace:*",
+    "@kuberone/shared-types": "workspace:*",
+    "@kuberone/shared-utils": "workspace:*",
+    "@kuberone/shared-validation": "workspace:*",
+    "@reduxjs/toolkit": "^2.5.0",
+    "@tanstack/react-query": "^5.62.8",
+    "axios": "^1.7.9",
+    "lucide-react": "^1.17.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-redux": "^9.2.0",
+    "react-router-dom": "^7.1.1",
+    "recharts": "^3.8.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  }
+}

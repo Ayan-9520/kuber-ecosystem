@@ -1,0 +1,224 @@
+// ── Commission Engine Domain ──
+
+model CommissionRule {
+  id                 String                      @id @default(uuid()) @db.Char(36)
+  ruleCode           String                      @unique @map("rule_code") @db.VarChar(30)
+  name               String                      @db.VarChar(200)
+  description        String?                     @db.Text
+  partnerType        CommissionPartnerType?      @map("partner_type")
+  commissionType     CommissionEventType         @map("commission_type")
+  calculationMethod  CommissionCalculationMethod @map("calculation_method")
+  fixedAmount        Decimal?                    @map("fixed_amount") @db.Decimal(15, 2)
+  percentage         Decimal?                    @db.Decimal(7, 4)
+  slabDefinition     Json?                       @map("slab_definition")
+  productId          String?                     @map("product_id") @db.Char(36)
+  lenderId           String?                     @map("lender_id") @db.Char(36)
+  campaignId         String?                     @map("campaign_id") @db.VarChar(36)
+  minBaseAmount      Decimal?                    @map("min_base_amount") @db.Decimal(15, 2)
+  maxBaseAmount      Decimal?                    @map("max_base_amount") @db.Decimal(15, 2)
+  minCommission      Decimal?                    @map("min_commission") @db.Decimal(15, 2)
+  maxCommission      Decimal?                    @map("max_commission") @db.Decimal(15, 2)
+  priority           Int                         @default(0)
+  isActive           Boolean                     @default(true) @map("is_active")
+  effectiveFrom      DateTime                    @map("effective_from") @db.Date
+  effectiveTo        DateTime?                   @map("effective_to") @db.Date
+  createdAt          DateTime                    @default(now()) @map("created_at")
+  updatedAt          DateTime                    @updatedAt @map("updated_at")
+  createdById        String?                     @map("created_by") @db.Char(36)
+  updatedById        String?                     @map("updated_by") @db.Char(36)
+  deletedAt          DateTime?                   @map("deleted_at")
+  deletedById        String?                     @map("deleted_by") @db.Char(36)
+
+  product   Product? @relation(fields: [productId], references: [id])
+  lender    Lender?  @relation(fields: [lenderId], references: [id])
+  createdBy User?    @relation("CommissionRuleCreatedBy", fields: [createdById], references: [id])
+  updatedBy User?    @relation("CommissionRuleUpdatedBy", fields: [updatedById], references: [id])
+  deletedBy User?    @relation("CommissionRuleDeletedBy", fields: [deletedById], references: [id])
+  ledgerEntries CommissionLedger[]
+
+  @@index([commissionType, isActive])
+  @@index([partnerType, isActive])
+  @@index([deletedAt])
+  @@map("commission_rules")
+}
+
+model CommissionLedger {
+  id                 String                    @id @default(uuid()) @db.Char(36)
+  ledgerNumber       String                    @unique @map("ledger_number") @db.VarChar(30)
+  partnerId          String                    @map("partner_id") @db.Char(36)
+  commissionType     CommissionEventType       @map("commission_type")
+  entryType          CommissionLedgerEntryType @default(CREDIT) @map("entry_type")
+  status             CommissionStatus          @default(PENDING)
+  baseAmount         Decimal                   @map("base_amount") @db.Decimal(15, 2)
+  commissionAmount   Decimal                   @map("commission_amount") @db.Decimal(15, 2)
+  currency           String                    @default("INR") @db.VarChar(3)
+  ruleId             String?                   @map("rule_id") @db.Char(36)
+  leadId             String?                   @map("lead_id") @db.Char(36)
+  applicationId      String?                   @map("application_id") @db.Char(36)
+  referralId         String?                   @map("referral_id") @db.Char(36)
+  branchId           String?                   @map("branch_id") @db.Char(36)
+  productId          String?                   @map("product_id") @db.Char(36)
+  lenderId           String?                   @map("lender_id") @db.Char(36)
+  campaignId         String?                   @map("campaign_id") @db.VarChar(36)
+  calculationMethod  CommissionCalculationMethod? @map("calculation_method")
+  calculationDetails Json?                     @map("calculation_details")
+  notes              String?                   @db.Text
+  metadata           Json?
+  calculatedAt       DateTime?                 @map("calculated_at")
+  createdAt          DateTime                  @default(now()) @map("created_at")
+  updatedAt          DateTime                  @updatedAt @map("updated_at")
+  createdById        String?                   @map("created_by") @db.Char(36)
+  updatedById        String?                   @map("updated_by") @db.Char(36)
+  deletedAt          DateTime?                 @map("deleted_at")
+  deletedById        String?                   @map("deleted_by") @db.Char(36)
+
+  partner     Partner         @relation(fields: [partnerId], references: [id])
+  rule        CommissionRule? @relation(fields: [ruleId], references: [id])
+  lead        Lead?           @relation(fields: [leadId], references: [id])
+  application Application?    @relation(fields: [applicationId], references: [id])
+  referral    Referral?       @relation(fields: [referralId], references: [id])
+  branch      Branch?         @relation(fields: [branchId], references: [id])
+  product     Product?        @relation(fields: [productId], references: [id])
+  lender      Lender?         @relation(fields: [lenderId], references: [id])
+  createdBy   User?           @relation("CommissionLedgerCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User?           @relation("CommissionLedgerUpdatedBy", fields: [updatedById], references: [id])
+  deletedBy   User?           @relation("CommissionLedgerDeletedBy", fields: [deletedById], references: [id])
+  approvals   CommissionApproval[]
+  paymentItems CommissionPaymentItem[]
+  adjustments CommissionAdjustment[]
+  recoveries  CommissionRecovery[]
+
+  @@index([partnerId, status])
+  @@index([commissionType, status])
+  @@index([branchId, createdAt])
+  @@index([deletedAt])
+  @@map("commission_ledger")
+}
+
+model CommissionApproval {
+  id              String                   @id @default(uuid()) @db.Char(36)
+  approvalNumber  String                   @unique @map("approval_number") @db.VarChar(30)
+  ledgerId        String                   @map("ledger_id") @db.Char(36)
+  status          CommissionApprovalStatus @default(PENDING)
+  requestedAmount Decimal                  @map("requested_amount") @db.Decimal(15, 2)
+  approvedAmount  Decimal?                 @map("approved_amount") @db.Decimal(15, 2)
+  notes           String?                  @db.Text
+  rejectionReason String?                  @map("rejection_reason") @db.VarChar(500)
+  approvedAt      DateTime?                @map("approved_at")
+  createdAt       DateTime                 @default(now()) @map("created_at")
+  updatedAt       DateTime                 @updatedAt @map("updated_at")
+  requestedById   String?                  @map("requested_by") @db.Char(36)
+  approvedById    String?                  @map("approved_by") @db.Char(36)
+
+  ledger      CommissionLedger @relation(fields: [ledgerId], references: [id], onDelete: Cascade)
+  requestedBy User?            @relation("CommissionApprovalRequestedBy", fields: [requestedById], references: [id])
+  approvedBy  User?            @relation("CommissionApprovalApprovedBy", fields: [approvedById], references: [id])
+
+  @@index([ledgerId, status])
+  @@map("commission_approvals")
+}
+
+model CommissionPayment {
+  id               String                  @id @default(uuid()) @db.Char(36)
+  paymentNumber    String                  @unique @map("payment_number") @db.VarChar(30)
+  partnerId        String                  @map("partner_id") @db.Char(36)
+  totalAmount      Decimal                 @map("total_amount") @db.Decimal(15, 2)
+  currency         String                  @default("INR") @db.VarChar(3)
+  status           CommissionPaymentStatus @default(PENDING)
+  paymentMethod    String?                 @map("payment_method") @db.VarChar(50)
+  paymentReference String?                 @map("payment_reference") @db.VarChar(100)
+  bankAccountRef   String?                 @map("bank_account_ref") @db.VarChar(100)
+  notes            String?                 @db.Text
+  approvedAt       DateTime?               @map("approved_at")
+  releasedAt       DateTime?               @map("released_at")
+  createdAt        DateTime                @default(now()) @map("created_at")
+  updatedAt        DateTime                @updatedAt @map("updated_at")
+  createdById      String?                 @map("created_by") @db.Char(36)
+  approvedById     String?                 @map("approved_by") @db.Char(36)
+  releasedById     String?                 @map("released_by") @db.Char(36)
+  deletedAt        DateTime?               @map("deleted_at")
+  deletedById      String?                 @map("deleted_by") @db.Char(36)
+
+  partner    Partner                 @relation(fields: [partnerId], references: [id])
+  createdBy  User?                   @relation("CommissionPaymentCreatedBy", fields: [createdById], references: [id])
+  approvedBy User?                   @relation("CommissionPaymentApprovedBy", fields: [approvedById], references: [id])
+  releasedBy User?                   @relation("CommissionPaymentReleasedBy", fields: [releasedById], references: [id])
+  deletedBy  User?                   @relation("CommissionPaymentDeletedBy", fields: [deletedById], references: [id])
+  items      CommissionPaymentItem[]
+
+  @@index([partnerId, status])
+  @@index([deletedAt])
+  @@map("commission_payments")
+}
+
+model CommissionPaymentItem {
+  id        String   @id @default(uuid()) @db.Char(36)
+  paymentId String   @map("payment_id") @db.Char(36)
+  ledgerId  String   @map("ledger_id") @db.Char(36)
+  amount    Decimal  @db.Decimal(15, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  payment CommissionPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  ledger  CommissionLedger  @relation(fields: [ledgerId], references: [id])
+
+  @@unique([paymentId, ledgerId])
+  @@map("commission_payment_items")
+}
+
+model CommissionAdjustment {
+  id               String                     @id @default(uuid()) @db.Char(36)
+  adjustmentNumber String                     @unique @map("adjustment_number") @db.VarChar(30)
+  partnerId        String                     @map("partner_id") @db.Char(36)
+  ledgerId         String?                    @map("ledger_id") @db.Char(36)
+  entryType        CommissionLedgerEntryType  @default(ADJUSTMENT) @map("entry_type")
+  amount           Decimal                    @db.Decimal(15, 2)
+  status           CommissionAdjustmentStatus @default(PENDING)
+  reason           String                     @db.VarChar(500)
+  notes            String?                    @db.Text
+  appliedAt        DateTime?                  @map("applied_at")
+  createdAt        DateTime                   @default(now()) @map("created_at")
+  updatedAt        DateTime                   @updatedAt @map("updated_at")
+  createdById      String?                    @map("created_by") @db.Char(36)
+  approvedById     String?                    @map("approved_by") @db.Char(36)
+  deletedAt        DateTime?                  @map("deleted_at")
+  deletedById      String?                    @map("deleted_by") @db.Char(36)
+
+  partner    Partner           @relation(fields: [partnerId], references: [id])
+  ledger     CommissionLedger? @relation(fields: [ledgerId], references: [id])
+  createdBy  User?             @relation("CommissionAdjustmentCreatedBy", fields: [createdById], references: [id])
+  approvedBy User?             @relation("CommissionAdjustmentApprovedBy", fields: [approvedById], references: [id])
+  deletedBy  User?             @relation("CommissionAdjustmentDeletedBy", fields: [deletedById], references: [id])
+
+  @@index([partnerId, status])
+  @@index([deletedAt])
+  @@map("commission_adjustments")
+}
+
+model CommissionRecovery {
+  id             String                   @id @default(uuid()) @db.Char(36)
+  recoveryNumber String                   @unique @map("recovery_number") @db.VarChar(30)
+  partnerId      String                   @map("partner_id") @db.Char(36)
+  ledgerId       String                   @map("ledger_id") @db.Char(36)
+  amount         Decimal                  @db.Decimal(15, 2)
+  status         CommissionRecoveryStatus @default(PENDING)
+  reason         String                   @db.VarChar(500)
+  notes          String?                  @db.Text
+  recoveredAt    DateTime?                @map("recovered_at")
+  createdAt      DateTime                 @default(now()) @map("created_at")
+  updatedAt      DateTime                 @updatedAt @map("updated_at")
+  createdById    String?                  @map("created_by") @db.Char(36)
+  approvedById   String?                  @map("approved_by") @db.Char(36)
+  deletedAt      DateTime?                @map("deleted_at")
+  deletedById    String?                  @map("deleted_by") @db.Char(36)
+
+  partner    Partner          @relation(fields: [partnerId], references: [id])
+  ledger     CommissionLedger @relation(fields: [ledgerId], references: [id])
+  createdBy  User?            @relation("CommissionRecoveryCreatedBy", fields: [createdById], references: [id])
+  approvedBy User?            @relation("CommissionRecoveryApprovedBy", fields: [approvedById], references: [id])
+  deletedBy  User?            @relation("CommissionRecoveryDeletedBy", fields: [deletedById], references: [id])
+
+  @@index([partnerId, status])
+  @@index([ledgerId])
+  @@index([deletedAt])
+  @@map("commission_recoveries")
+}

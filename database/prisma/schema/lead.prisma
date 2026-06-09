@@ -1,0 +1,213 @@
+model LeadSource {
+  id        String            @id @default(uuid()) @db.Char(36)
+  code      String            @unique @db.VarChar(20)
+  name      String            @db.VarChar(100)
+  channel   LeadSourceChannel
+  isActive  Boolean           @default(true) @map("is_active")
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  leads Lead[]
+
+  @@map("lead_sources")
+}
+
+model Lead {
+  id              String        @id @default(uuid()) @db.Char(36)
+  leadNumber      String        @unique @map("lead_number") @db.VarChar(30)
+  customerId      String?       @map("customer_id") @db.Char(36)
+  prospectName    String        @map("prospect_name") @db.VarChar(200)
+  prospectPhone   String        @map("prospect_phone") @db.VarChar(15)
+  prospectEmail   String?       @map("prospect_email") @db.VarChar(255)
+  productId       String        @map("product_id") @db.Char(36)
+  variantId       String?       @map("variant_id") @db.Char(36)
+  sourceId        String        @map("source_id") @db.Char(36)
+  partnerId       String?       @map("partner_id") @db.Char(36)
+  branchId        String?       @map("branch_id") @db.Char(36)
+  regionId        String?       @map("region_id") @db.Char(36)
+  status          LeadStatus    @default(NEW)
+  grade           LeadGrade?
+  score           Decimal?      @db.Decimal(5, 2)
+  priority        LeadPriority  @default(MEDIUM)
+  requestedAmount Decimal?      @map("requested_amount") @db.Decimal(15, 2)
+  assignedToId    String?       @map("assigned_to_id") @db.Char(36)
+  slaDeadline     DateTime?     @map("sla_deadline")
+  convertedAt     DateTime?     @map("converted_at")
+  lostReason      String?       @map("lost_reason") @db.VarChar(200)
+  metadata        Json?
+  version         Int           @default(1)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  createdById     String?       @map("created_by") @db.Char(36)
+  updatedById     String?       @map("updated_by") @db.Char(36)
+  deletedAt       DateTime?     @map("deleted_at")
+  deletedById     String?       @map("deleted_by") @db.Char(36)
+
+  customer     Customer?        @relation(fields: [customerId], references: [id])
+  partner      Partner?         @relation(fields: [partnerId], references: [id])
+  product      Product          @relation(fields: [productId], references: [id])
+  variant      ProductVariant?  @relation(fields: [variantId], references: [id])
+  source       LeadSource       @relation(fields: [sourceId], references: [id])
+  branch       Branch?          @relation(fields: [branchId], references: [id])
+  region       Region?          @relation(fields: [regionId], references: [id])
+  assignedTo   Employee?        @relation("LeadAssignedTo", fields: [assignedToId], references: [id])
+  createdBy    User?            @relation("LeadCreatedBy", fields: [createdById], references: [id])
+  updatedBy    User?            @relation("LeadUpdatedBy", fields: [updatedById], references: [id])
+  applications Application[]
+  scores       LeadScore[]
+  assignments  LeadAssignment[]
+  activities   LeadActivity[]
+  statusHistory LeadStatusHistory[]
+  leadNotes    LeadNote[]
+  followUps    LeadFollowUp[]
+  documents    Document[]
+  documentRequests DocumentRequest[]
+  deficiencies DocumentDeficiency[]
+  financeCalculations FinanceCalculation[]
+  referrals             Referral[]
+  commissionLedger      CommissionLedger[]
+  tickets               Ticket[]
+  scoreHistory          LeadScoreHistory[]
+  riskProfiles          LeadRiskProfile[]
+  predictions           LeadPrediction[]
+  scoringAudits         LeadScoringAudit[]
+
+  @@map("leads")
+  @@index([status, grade])
+  @@index([partnerId, createdAt])
+  @@index([assignedToId, status])
+  @@index([branchId, status, createdAt])
+  @@index([sourceId])
+  @@index([prospectPhone])
+  @@index([slaDeadline])
+  @@index([deletedAt])
+}
+
+model LeadScore {
+  id                    String             @id @default(uuid()) @db.Char(36)
+  leadId                String             @map("lead_id") @db.Char(36)
+  score                 Int
+  grade                 LeadGrade
+  classification        String?            @db.VarChar(50)
+  ruleScore             Int?               @map("rule_score")
+  aiScore               Int?               @map("ai_score")
+  approvalProbability   Decimal?           @map("approval_probability") @db.Decimal(5, 2)
+  disbursalProbability  Decimal?           @map("disbursal_probability") @db.Decimal(5, 2)
+  conversionProbability Decimal?           @map("conversion_probability") @db.Decimal(5, 2)
+  riskRating            LeadRiskRating?    @map("risk_rating")
+  priorityLevel         LeadScorePriority? @map("priority_level")
+  riskIndicators        Json?              @map("risk_indicators")
+  factorBreakdown       Json               @map("factor_breakdown")
+  modelVersion          String             @map("model_version") @db.VarChar(20)
+  weightVersion         String?            @map("weight_version") @db.VarChar(20)
+  calculatedAt          DateTime           @map("calculated_at")
+  createdAt             DateTime           @default(now()) @map("created_at")
+
+  lead    Lead               @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  history LeadScoreHistory[]
+
+  @@index([leadId, calculatedAt(sort: Desc)])
+  @@index([grade])
+  @@index([riskRating])
+  @@index([priorityLevel])
+  @@map("lead_scores")
+}
+
+model LeadAssignment {
+  id             String             @id @default(uuid()) @db.Char(36)
+  leadId         String             @map("lead_id") @db.Char(36)
+  assignedToId   String             @map("assigned_to_id") @db.Char(36)
+  assignedById   String?            @map("assigned_by_id") @db.Char(36)
+  branchId       String?            @map("branch_id") @db.Char(36)
+  assignmentType LeadAssignmentType @map("assignment_type")
+  assignedAt     DateTime           @map("assigned_at")
+  unassignedAt   DateTime?          @map("unassigned_at")
+  isCurrent      Boolean            @default(true) @map("is_current")
+  notes          String?            @db.Text
+  createdAt      DateTime           @default(now()) @map("created_at")
+
+  lead       Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  assignedTo Employee  @relation("LeadAssignmentAssignee", fields: [assignedToId], references: [id])
+  assignedBy Employee? @relation("LeadAssignmentAssigner", fields: [assignedById], references: [id])
+  branch     Branch?   @relation(fields: [branchId], references: [id])
+
+  @@index([leadId, isCurrent])
+  @@index([assignedToId, isCurrent])
+  @@map("lead_assignments")
+}
+
+model LeadStatusHistory {
+  id          String      @id @default(uuid()) @db.Char(36)
+  leadId      String      @map("lead_id") @db.Char(36)
+  fromStatus  LeadStatus? @map("from_status")
+  toStatus    LeadStatus  @map("to_status")
+  changedById String      @map("changed_by_id") @db.Char(36)
+  reason      String?     @db.VarChar(200)
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  lead      Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  changedBy User @relation("LeadStatusChangedBy", fields: [changedById], references: [id])
+
+  @@index([leadId, createdAt])
+  @@map("lead_status_history")
+}
+
+model LeadActivity {
+  id              String                   @id @default(uuid()) @db.Char(36)
+  leadId          String                   @map("lead_id") @db.Char(36)
+  activityType    LeadActivityType         @map("activity_type")
+  performedById   String                   @map("performed_by_id") @db.Char(36)
+  description     String?                  @db.Text
+  disposition     LeadActivityDisposition?
+  durationSeconds Int?                     @map("duration_seconds")
+  scheduledAt     DateTime?                @map("scheduled_at")
+  completedAt     DateTime?                @map("completed_at")
+  metadata        Json?
+  createdAt       DateTime                 @default(now()) @map("created_at")
+
+  lead        Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  performedBy User @relation("LeadActivityPerformedBy", fields: [performedById], references: [id])
+
+  @@index([leadId, createdAt])
+  @@map("lead_activities")
+}
+
+model LeadNote {
+  id        String   @id @default(uuid()) @db.Char(36)
+  leadId    String   @map("lead_id") @db.Char(36)
+  authorId  String   @map("author_id") @db.Char(36)
+  content   String   @db.Text
+  isPinned  Boolean  @default(false) @map("is_pinned")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  lead   Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  author User @relation("LeadNoteAuthor", fields: [authorId], references: [id])
+
+  @@index([leadId, createdAt])
+  @@map("lead_notes")
+}
+
+model LeadFollowUp {
+  id           String             @id @default(uuid()) @db.Char(36)
+  leadId       String             @map("lead_id") @db.Char(36)
+  assignedToId String             @map("assigned_to_id") @db.Char(36)
+  followUpType LeadFollowUpType   @map("followup_type")
+  scheduledAt  DateTime           @map("scheduled_at")
+  completedAt  DateTime?          @map("completed_at")
+  status       LeadFollowUpStatus @default(PENDING)
+  notes        String?            @db.Text
+  reminderSent Boolean            @default(false) @map("reminder_sent")
+  escalatedAt  DateTime?          @map("escalated_at")
+  createdById  String?            @map("created_by") @db.Char(36)
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  assignedTo Employee @relation("LeadFollowUpAssignee", fields: [assignedToId], references: [id])
+  createdBy  User?    @relation("LeadFollowUpCreatedBy", fields: [createdById], references: [id])
+
+  @@index([assignedToId, scheduledAt])
+  @@index([leadId, status])
+  @@map("lead_followups")
+}

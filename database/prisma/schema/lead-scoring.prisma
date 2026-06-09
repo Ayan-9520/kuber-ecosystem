@@ -1,0 +1,162 @@
+// ── AI Lead Scoring Engine Domain ──
+
+enum LeadRiskRating {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum LeadScorePriority {
+  HOT
+  WARM
+  NORMAL
+  LOW
+}
+
+enum LeadScoringRuleType {
+  STATIC
+  DYNAMIC
+  CONFIG
+}
+
+enum LeadScoringPredictionType {
+  APPROVAL
+  DISBURSAL
+  CONVERSION
+  DROPOFF
+  DOCUMENT
+  FRAUD
+}
+
+enum LeadScoringAuditAction {
+  SCORE_CALCULATED
+  BULK_SCORE_CALCULATED
+  RULE_CREATED
+  RULE_UPDATED
+  WEIGHT_CREATED
+  WEIGHT_UPDATED
+  THRESHOLD_UPDATED
+}
+
+model LeadScoreHistory {
+  id                    String    @id @default(uuid()) @db.Char(36)
+  leadId                String    @map("lead_id") @db.Char(36)
+  leadScoreId           String?   @map("lead_score_id") @db.Char(36)
+  previousScore         Int?      @map("previous_score")
+  previousGrade         LeadGrade? @map("previous_grade")
+  newScore              Int       @map("new_score")
+  newGrade              LeadGrade @map("new_grade")
+  changeReason          String?   @map("change_reason") @db.VarChar(200)
+  snapshot              Json
+  calculatedById        String?   @map("calculated_by_id") @db.Char(36)
+  modelVersion          String    @map("model_version") @db.VarChar(20)
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  lead      Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadScore LeadScore? @relation(fields: [leadScoreId], references: [id], onDelete: SetNull)
+
+  @@index([leadId, createdAt(sort: Desc)])
+  @@index([leadScoreId])
+  @@map("lead_score_history")
+}
+
+model LeadScoringRule {
+  id              String              @id @default(uuid()) @db.Char(36)
+  code            String              @unique @db.VarChar(50)
+  name            String              @db.VarChar(150)
+  factor          String              @db.VarChar(50)
+  ruleType        LeadScoringRuleType @map("rule_type")
+  condition       Json
+  scoreImpact     Int                 @map("score_impact")
+  priority        Int                 @default(50)
+  isActive        Boolean             @default(true) @map("is_active")
+  version         Int                 @default(1)
+  description     String?             @db.Text
+  createdById     String?             @map("created_by") @db.Char(36)
+  updatedById     String?             @map("updated_by") @db.Char(36)
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  @@index([factor, isActive])
+  @@index([ruleType, isActive])
+  @@map("lead_scoring_rules")
+}
+
+model LeadWeightConfig {
+  id              String    @id @default(uuid()) @db.Char(36)
+  version         String    @db.VarChar(20)
+  factor          String    @db.VarChar(50)
+  weight          Decimal   @db.Decimal(5, 4)
+  isActive        Boolean   @default(true) @map("is_active")
+  effectiveFrom   DateTime  @map("effective_from")
+  effectiveTo     DateTime? @map("effective_to")
+  createdById     String?   @map("created_by") @db.Char(36)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@unique([version, factor])
+  @@index([isActive, effectiveFrom])
+  @@map("lead_weight_configs")
+}
+
+model LeadRiskProfile {
+  id              String         @id @default(uuid()) @db.Char(36)
+  leadId          String         @map("lead_id") @db.Char(36)
+  riskRating      LeadRiskRating @map("risk_rating")
+  riskScore       Int            @map("risk_score")
+  riskFactors     Json           @map("risk_factors")
+  fraudRisk       Int            @default(0) @map("fraud_risk")
+  documentRisk    Int            @default(0) @map("document_risk")
+  dropOffRisk     Int            @default(0) @map("drop_off_risk")
+  modelVersion    String         @map("model_version") @db.VarChar(20)
+  calculatedAt    DateTime       @map("calculated_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, calculatedAt(sort: Desc)])
+  @@index([riskRating])
+  @@map("lead_risk_profiles")
+}
+
+model LeadPrediction {
+  id              String                    @id @default(uuid()) @db.Char(36)
+  leadId          String                    @map("lead_id") @db.Char(36)
+  predictionType  LeadScoringPredictionType @map("prediction_type")
+  probability     Decimal                   @db.Decimal(5, 2)
+  factors         Json?
+  actualOutcome   String?                   @map("actual_outcome") @db.VarChar(50)
+  wasAccurate     Boolean?                  @map("was_accurate")
+  modelVersion    String                    @map("model_version") @db.VarChar(20)
+  calculatedAt    DateTime                  @map("calculated_at")
+  createdAt       DateTime                  @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, predictionType])
+  @@index([predictionType, calculatedAt])
+  @@map("lead_predictions")
+}
+
+model LeadScoringAudit {
+  id          String                 @id @default(uuid()) @db.Char(36)
+  userId      String                 @map("user_id") @db.Char(36)
+  action      LeadScoringAuditAction
+  entityType  String                 @map("entity_type") @db.VarChar(50)
+  entityId    String?                @map("entity_id") @db.Char(36)
+  leadId      String?                @map("lead_id") @db.Char(36)
+  oldValues   Json?                  @map("old_values")
+  newValues   Json?                  @map("new_values")
+  ipAddress   String?                @map("ip_address") @db.VarChar(45)
+  userAgent   String?                @map("user_agent") @db.Text
+  requestId   String?                @map("request_id") @db.VarChar(64)
+  createdAt   DateTime               @default(now()) @map("created_at")
+
+  lead Lead? @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([leadId, createdAt])
+  @@index([action])
+  @@map("lead_scoring_audits")
+}

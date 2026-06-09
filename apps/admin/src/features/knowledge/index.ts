@@ -1,0 +1,9 @@
+export { KnowledgeDashboardPage } from './pages/KnowledgeDashboardPage';
+export { KnowledgeArticlesPage } from './pages/KnowledgeArticlesPage';
+export { KnowledgeArticleDetailPage } from './pages/KnowledgeArticleDetailPage';
+export { KnowledgeCategoriesPage } from './pages/KnowledgeCategoriesPage';
+export { KnowledgeTagsPage } from './pages/KnowledgeTagsPage';
+export { KnowledgeSearchPage } from './pages/KnowledgeSearchPage';
+export { KnowledgeApprovalQueuePage } from './pages/KnowledgeApprovalQueuePage';
+export { KnowledgeReviewQueuePage } from './pages/KnowledgeReviewQueuePage';
+export { KnowledgeAnalyticsPage } from './pages/KnowledgeAnalyticsPage';

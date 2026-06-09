@@ -1,0 +1,249 @@
+// ── RAG Pipeline Domain ──
+
+enum RagDocumentSourceType {
+  KNOWLEDGE_ARTICLE
+  PDF
+  DOCX
+  TXT
+  MD
+  HTML
+  POLICY
+  FAQ
+  SOP
+  PRODUCT_GUIDELINE
+  ELIGIBILITY_RULE
+  LENDER_POLICY
+}
+
+enum RagDocumentStatus {
+  PENDING
+  PROCESSING
+  INDEXED
+  FAILED
+  ARCHIVED
+}
+
+enum RagIngestionStatus {
+  QUEUED
+  CHUNKING
+  EMBEDDING
+  INDEXING
+  COMPLETED
+  FAILED
+}
+
+enum RagVectorProvider {
+  LOCAL
+  PGVECTOR
+  QDRANT
+  PINECONE
+  WEAVIATE
+}
+
+enum RagEmbeddingProvider {
+  OPENAI
+  LOCAL_HASH
+  FUTURE
+}
+
+enum RagQuerySource {
+  AI_ADVISOR
+  VOICE_AI
+  COPILOT
+  RECOMMENDATION
+  ADMIN
+  API
+}
+
+model KnowledgeDocument {
+  id              String              @id @default(uuid()) @db.Char(36)
+  title           String              @db.VarChar(300)
+  sourceType      RagDocumentSourceType @map("source_type")
+  sourceId        String?             @map("source_id") @db.Char(36)
+  fileName        String?             @map("file_name") @db.VarChar(255)
+  mimeType        String?             @map("mime_type") @db.VarChar(100)
+  rawContent      String?             @map("raw_content") @db.LongText
+  contentHash     String?             @map("content_hash") @db.VarChar(64)
+  version         Int                 @default(1)
+  status          RagDocumentStatus   @default(PENDING)
+  categoryCode    String?             @map("category_code") @db.VarChar(50)
+  productCode     String?             @map("product_code") @db.VarChar(50)
+  lenderCode      String?             @map("lender_code") @db.VarChar(50)
+  chunkCount      Int                 @default(0) @map("chunk_count")
+  embeddingCount  Int                 @default(0) @map("embedding_count")
+  indexedAt       DateTime?           @map("indexed_at")
+  ingestionStatus RagIngestionStatus  @default(QUEUED) @map("ingestion_status")
+  errorMessage    String?             @map("error_message") @db.Text
+  metadata        Json?
+  createdById     String?             @map("created_by_id") @db.Char(36)
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  chunks     KnowledgeChunk[]
+  embeddings EmbeddingRecord[]
+
+  @@index([sourceType, sourceId])
+  @@index([status, ingestionStatus])
+  @@index([categoryCode])
+  @@index([productCode])
+  @@map("rag_knowledge_documents")
+}
+
+model KnowledgeChunk {
+  id           String   @id @default(uuid()) @db.Char(36)
+  documentId   String   @map("document_id") @db.Char(36)
+  chunkIndex   Int      @map("chunk_index")
+  content      String   @db.Text
+  tokenCount   Int?     @map("token_count")
+  version      Int      @default(1)
+  startOffset  Int?     @map("start_offset")
+  endOffset    Int?     @map("end_offset")
+  metadata     Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  document   KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  embeddings EmbeddingRecord[]
+
+  @@unique([documentId, chunkIndex, version])
+  @@index([documentId])
+  @@map("rag_knowledge_chunks")
+}
+
+model EmbeddingRecord {
+  id              String               @id @default(uuid()) @db.Char(36)
+  documentId      String               @map("document_id") @db.Char(36)
+  chunkId         String               @map("chunk_id") @db.Char(36)
+  vectorIndexId   String?              @map("vector_index_id") @db.Char(36)
+  provider        RagEmbeddingProvider
+  model           String               @db.VarChar(50)
+  dimensions      Int
+  embedding       Json
+  externalId      String?              @map("external_id") @db.VarChar(200)
+  version         Int                  @default(1)
+  createdAt       DateTime             @default(now()) @map("created_at")
+
+  document    KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunk       KnowledgeChunk    @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+  vectorIndex VectorIndex?      @relation(fields: [vectorIndexId], references: [id], onDelete: SetNull)
+
+  @@index([documentId])
+  @@index([chunkId])
+  @@index([vectorIndexId])
+  @@map("rag_embedding_records")
+}
+
+model VectorIndex {
+  id            String            @id @default(uuid()) @db.Char(36)
+  name          String            @db.VarChar(100)
+  provider      RagVectorProvider
+  collectionId  String?           @map("collection_id") @db.VarChar(200)
+  dimensions    Int
+  documentCount Int               @default(0) @map("document_count")
+  chunkCount    Int               @default(0) @map("chunk_count")
+  isActive      Boolean           @default(true) @map("is_active")
+  config        Json?
+  lastSyncedAt  DateTime?         @map("last_synced_at")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  embeddings EmbeddingRecord[]
+
+  @@unique([name, provider])
+  @@index([isActive])
+  @@map("rag_vector_indexes")
+}
+
+model RetrievalLog {
+  id              String        @id @default(uuid()) @db.Char(36)
+  queryId         String?       @map("query_id") @db.Char(36)
+  userId          String?       @map("user_id") @db.Char(36)
+  queryText       String        @map("query_text") @db.Text
+  source          RagQuerySource
+  topK            Int           @map("top_k")
+  chunkIds        Json          @map("chunk_ids")
+  scores          Json
+  latencyMs       Int?          @map("latency_ms")
+  vectorProvider  RagVectorProvider @map("vector_provider")
+  reranked        Boolean       @default(false)
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  query RagQuery? @relation(fields: [queryId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([source])
+  @@map("rag_retrieval_logs")
+}
+
+model RagQuery {
+  id            String         @id @default(uuid()) @db.Char(36)
+  userId        String?        @map("user_id") @db.Char(36)
+  queryText     String         @map("query_text") @db.Text
+  source        RagQuerySource
+  filters       Json?
+  topK          Int            @default(5) @map("top_k")
+  chunkCount    Int            @default(0) @map("chunk_count")
+  latencyMs     Int?           @map("latency_ms")
+  ipAddress     String?        @map("ip_address") @db.VarChar(45)
+  requestId     String?        @map("request_id") @db.VarChar(64)
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  retrievals RetrievalLog[]
+  responses  RagResponse[]
+
+  @@index([userId, createdAt])
+  @@index([source])
+  @@map("rag_queries")
+}
+
+model RagResponse {
+  id            String   @id @default(uuid()) @db.Char(36)
+  queryId       String   @map("query_id") @db.Char(36)
+  answer        String   @db.LongText
+  contextUsed   Json     @map("context_used")
+  model         String?  @db.VarChar(50)
+  provider      String?  @db.VarChar(30)
+  tokensUsed    Int?     @map("tokens_used")
+  latencyMs     Int?     @map("latency_ms")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  query    RagQuery       @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  feedback RagFeedback[]
+
+  @@index([queryId])
+  @@map("rag_responses")
+}
+
+model RagFeedback {
+  id         String   @id @default(uuid()) @db.Char(36)
+  responseId String   @map("response_id") @db.Char(36)
+  userId     String   @map("user_id") @db.Char(36)
+  rating     Int
+  helpful    Boolean?
+  comment    String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  response RagResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+
+  @@index([responseId])
+  @@index([userId])
+  @@map("rag_feedback")
+}
+
+model RagAnalytics {
+  id                  String   @id @default(uuid()) @db.Char(36)
+  date                DateTime @db.Date
+  totalQueries        Int      @default(0) @map("total_queries")
+  totalRetrievals     Int      @default(0) @map("total_retrievals")
+  avgLatencyMs        Int      @default(0) @map("avg_latency_ms")
+  avgFeedbackRating   Decimal? @map("avg_feedback_rating") @db.Decimal(3, 2)
+  topDocumentId       String?  @map("top_document_id") @db.Char(36)
+  topCategoryCode     String?  @map("top_category_code") @db.VarChar(50)
+  retrievalAccuracy   Decimal? @map("retrieval_accuracy") @db.Decimal(5, 2)
+  searchEffectiveness Decimal? @map("search_effectiveness") @db.Decimal(5, 2)
+  metadata            Json?
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@unique([date])
+  @@map("rag_analytics")
+}
