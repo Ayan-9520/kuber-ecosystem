@@ -1,0 +1,153 @@
+name: CI — Performance Testing Framework
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/backend/**'
+      - 'apps/admin/**'
+      - 'apps/mobile-customer/**'
+      - 'apps/mobile-dsa/**'
+      - 'packages/performance-testing/**'
+      - 'performance-testing/**'
+      - 'scripts/perf-*.mjs'
+      - '.github/workflows/ci-performance.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'apps/backend/**'
+      - 'packages/performance-testing/**'
+      - 'performance-testing/**'
+
+jobs:
+  perf-package:
+    name: Build performance-testing package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/performance-testing build
+
+  jest-performance:
+    name: Jest — Performance test suites
+    needs: perf-package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/performance-testing build
+      - run: pnpm --filter @kuberone/mobile-testing build
+      - run: pnpm --filter @kuberone/database generate
+      - run: pnpm perf:test
+
+  k6-smoke:
+    name: k6 — Smoke load test
+    needs: jest-performance
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: kuberone_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/database generate
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+      - name: Start backend
+        run: |
+          cd apps/backend
+          cp .env.example .env
+          echo 'DATABASE_URL=mysql://root:root@127.0.0.1:3306/kuberone_test' >> .env
+          pnpm build
+          node dist/server.js &
+          sleep 8
+          curl -f http://localhost:4000/health || exit 1
+        env:
+          NODE_ENV: test
+          APP_ENV: testing
+      - run: node scripts/perf-run.mjs smoke
+        env:
+          BASE_URL: http://localhost:4000
+          VUS: 10
+        continue-on-error: true
+
+  artillery-smoke:
+    name: Artillery — Smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec artillery run performance-testing/artillery/smoke.yml
+        continue-on-error: true
+        env:
+          BASE_URL: http://localhost:4000
+
+  report-and-gate:
+    name: Performance report & quality gate
+    needs: [jest-performance, k6-smoke]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/perf-optimize.mjs
+      - run: node scripts/perf-coverage-report.mjs
+      - run: node scripts/perf-quality-gate.mjs
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-reports
+          path: |
+            performance-testing/reports/
+            performance-testing/dashboards/

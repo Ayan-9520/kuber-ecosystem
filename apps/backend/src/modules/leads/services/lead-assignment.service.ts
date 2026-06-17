@@ -7,6 +7,7 @@ import type {
 
 import { prisma } from '../../../config/database.js';
 import { NotFoundError } from '../../../shared/errors/app-error.js';
+import { emitAutomationEvent } from '../../../shared/utils/automation-emitter.util.js';
 import { authAuditRepository } from '../../auth/repositories/audit.repository.js';
 import { leadActivityRepository } from '../repositories/lead-activity.repository.js';
 import { leadAssignmentRepository } from '../repositories/lead-assignment.repository.js';
@@ -80,6 +81,13 @@ export const leadAssignmentService = {
     });
 
     await auditLeadMutation(authAuditRepository.log, ctx, 'LEAD_ASSIGNED', 'lead', leadId, input);
+    emitAutomationEvent({
+      triggerType: 'LEAD_ASSIGNED',
+      subjectType: 'lead',
+      subjectId: leadId,
+      userId: ctx.actorId,
+      context: { assignedToId: input.assignedToId, branchId: input.branchId ?? employee.branchId },
+    });
     return assignment;
   },
 

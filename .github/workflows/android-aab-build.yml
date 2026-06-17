@@ -1,0 +1,81 @@
+name: Android AAB Build (Play Store)
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: 'App'
+        required: true
+        type: choice
+        options: [customer, dsa]
+  push:
+    tags:
+      - 'mobile-v*'
+
+jobs:
+  build-aab:
+    name: AAB — ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - app: mobile-customer
+            pkg: customer
+          - app: mobile-dsa
+            pkg: dsa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/android-release-gate.mjs
+
+      - name: Decode keystore
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/release.keystore
+
+      - name: Prebuild
+        env:
+          EXPO_PUBLIC_APP_ENV: production
+        run: |
+          cd apps/${{ matrix.app }}
+          npx expo prebuild --platform android --clean --non-interactive
+
+      - name: Build AAB
+        working-directory: apps/${{ matrix.app }}/android
+        env:
+          EXPO_PUBLIC_APP_ENV: production
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.app }}-aab-production
+          path: apps/${{ matrix.app }}/android/app/build/outputs/bundle/release/
+          retention-days: 90
+
+      - name: Record AAB build
+        if: always()
+        env:
+          MOBILE_APP: ${{ matrix.pkg }}
+          BUILD_TYPE: aab
+          EXPO_PUBLIC_APP_ENV: production
+          VERSION_NAME: '1.0.0'
+          VERSION_CODE: '10000'
+          BUILD_STATUS: ${{ job.status == 'success' && 'SUCCESS' || 'FAILED' }}
+          MOBILE_WEBHOOK_BACKEND: ${{ secrets.MOBILE_WEBHOOK_BACKEND }}
+          MOBILE_WEBHOOK_SECRET: ${{ secrets.MOBILE_WEBHOOK_SECRET }}
+        run: node scripts/android-record-build.mjs

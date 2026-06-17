@@ -4,12 +4,12 @@ import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Card, Screen } from '@/components/ui';
-import { LOAN_PRODUCTS } from '@/constants/products';
+import { Card, EmptyState, Screen } from '@/components/ui';
 import { useAuth } from '@/hooks';
+import { flattenProductsWithVariants } from '@/lib/product-mapper';
 import { formatCurrency } from '@/lib/utils';
 import type { ProductsStackParamList } from '@/navigation/types';
-import { recommendationsService } from '@/services/recommendations.service';
+import { productsService, recommendationsService } from '@/services';
 import { colors, radius, spacing, typography } from '@/theme';
 
 export function LoanProductsScreen() {
@@ -22,13 +22,29 @@ export function LoanProductsScreen() {
     enabled: !!customerId,
   });
 
+  const productsQuery = useQuery({
+    queryKey: ['loan-products'],
+    queryFn: async () => {
+      const [products, variants] = await Promise.all([
+        productsService.list({ limit: 50, isActive: true }),
+        productsService.variants(),
+      ]);
+      return flattenProductsWithVariants(products.items, variants.items);
+    },
+  });
+
   const recData = recommendations.data as {
     products?: Array<{ productName: string; reason: string; approvalProbability: number }>;
-    lenders?: Array<{ lenderName: string; reason: string }>;
   } | undefined;
 
+  const products = productsQuery.data ?? [];
+
   return (
-    <Screen title="Loan Products" subtitle="Explore premium financing options">
+    <Screen title="Loan Products" subtitle="Explore premium financing options" loading={productsQuery.isLoading}>
+      {productsQuery.isError ? (
+        <EmptyState title="Unable to load products" description="Please try again later" />
+      ) : null}
+
       {recData?.products && recData.products.length > 0 && (
         <Card>
           <Text style={styles.recTitle}>Recommended For You</Text>
@@ -40,42 +56,40 @@ export function LoanProductsScreen() {
           ))}
         </Card>
       )}
-      {LOAN_PRODUCTS.map((product) => (
-          <Card
-            key={`${product.slug}-${product.variant}`}
-            onPress={() =>
-              navigation.navigate('ProductDetail', {
-                slug: product.slug,
-                name: product.name,
-                variant: product.variant,
-              })
-            }
-          >
-            <View style={styles.productRow}>
-              <View style={styles.iconWrap}>
-                <Ionicons
-                  name={product.icon as keyof typeof Ionicons.glyphMap}
-                  size={24}
-                  color={colors.primary}
-                />
-              </View>
-              <View style={styles.productInfo}>
-                <Text style={styles.productName}>{product.name}</Text>
-                <Text style={styles.productDesc} numberOfLines={2}>
-                  {product.description}
-                </Text>
-                <View style={styles.metaRow}>
-                  <Text style={styles.meta}>
-                    {product.interestMin}% – {product.interestMax}% p.a.
-                  </Text>
-                  <Text style={styles.metaDot}>·</Text>
-                  <Text style={styles.meta}>Up to {formatCurrency(product.maxAmount)}</Text>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+
+      {products.map((product) => (
+        <Card
+          key={`${product.productId}-${product.variant}`}
+          onPress={() =>
+            navigation.navigate('ProductDetail', {
+              slug: product.slug,
+              name: product.name,
+              variant: product.variant,
+              id: product.productId,
+            })
+          }
+        >
+          <View style={styles.productRow}>
+            <View style={styles.iconWrap}>
+              <Ionicons name={product.icon} size={24} color={colors.primary} />
             </View>
-          </Card>
-        ))}
+            <View style={styles.productInfo}>
+              <Text style={styles.productName}>{product.name}</Text>
+              <Text style={styles.productDesc} numberOfLines={2}>
+                {product.description}
+              </Text>
+              <View style={styles.metaRow}>
+                <Text style={styles.meta}>
+                  {product.interestMin}% – {product.interestMax}% p.a.
+                </Text>
+                <Text style={styles.metaDot}>·</Text>
+                <Text style={styles.meta}>Up to {formatCurrency(product.maxAmount)}</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </View>
+        </Card>
+      ))}
     </Screen>
   );
 }

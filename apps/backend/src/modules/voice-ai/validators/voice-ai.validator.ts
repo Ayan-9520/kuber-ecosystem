@@ -31,3 +31,8 @@ export const voiceAudioSchema = z.object({
 export type CreateVoiceSessionInput = z.infer<typeof createVoiceSessionSchema>;
 export type VoiceMessageInput = z.infer<typeof voiceMessageSchema>;
 export type VoiceAudioInput = z.infer<typeof voiceAudioSchema>;
+
+export const listVoiceSessionsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});

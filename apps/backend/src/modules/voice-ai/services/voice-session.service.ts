@@ -22,6 +22,19 @@ import type {
 } from '../validators/voice-ai.validator.js';
 
 export const voiceSessionService = {
+  async listSessions(actor: AuthenticatedUser, page = 1, limit = 20) {
+    const result = await voiceSessionRepository.listSessions(actor.id, page, limit);
+    return {
+      items: result.items,
+      meta: {
+        page,
+        limit,
+        total: result.total,
+        totalPages: Math.max(1, Math.ceil(result.total / limit)),
+      },
+    };
+  },
+
   async createSession(
     actor: AuthenticatedUser,
     input: CreateVoiceSessionInput,

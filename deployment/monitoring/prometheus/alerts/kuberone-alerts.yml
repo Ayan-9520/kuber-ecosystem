@@ -1,0 +1,122 @@
+groups:
+  - name: kuberone_critical
+    rules:
+      - alert: KuberOneApiDown
+        expr: up{job="kuberone-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: application
+        annotations:
+          summary: KuberOne API is down
+          description: Backend scrape target has been unreachable for over 1 minute.
+
+      - alert: KuberOneHighErrorRate
+        expr: rate(kuberone_http_errors_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: high
+          component: application
+        annotations:
+          summary: High API error rate
+          description: HTTP error rate exceeds threshold.
+
+      - alert: KuberOneHighLatency
+        expr: histogram_quantile(0.95, rate(kuberone_http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: high
+          component: application
+        annotations:
+          summary: High API latency P95
+          description: 95th percentile latency exceeds 2 seconds.
+
+      - alert: KuberOneDatabaseDown
+        expr: mysql_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: Database unreachable
+          description: MySQL exporter reports database is down.
+
+      - alert: KuberOneMemoryLeak
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 90
+        for: 10m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: High memory usage
+          description: Node memory usage exceeds 90%.
+
+      - alert: KuberOneCpuSpike
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels:
+          severity: high
+          component: system
+        annotations:
+          summary: CPU spike detected
+          description: CPU usage exceeds 85% for 10 minutes.
+
+      - alert: KuberOneDiskFull
+        expr: (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: Disk nearly full
+          description: Filesystem usage exceeds 90%.
+
+      - alert: KuberOneQueueBacklog
+        expr: kuberone_notification_queue_depth > 1000
+        for: 15m
+        labels:
+          severity: high
+          component: queue
+        annotations:
+          summary: Notification queue backlog
+          description: Queue depth exceeds 1000 items.
+
+      - alert: KuberOneNotificationFailure
+        expr: increase(kuberone_email_failed_total[15m]) > 50
+        for: 5m
+        labels:
+          severity: high
+          component: notification
+        annotations:
+          summary: Notification delivery failures
+          description: Email failure spike detected.
+
+      - alert: KuberOneAiFailure
+        expr: increase(kuberone_ai_failures_total[15m]) > 20
+        for: 5m
+        labels:
+          severity: high
+          component: ai
+        annotations:
+          summary: AI request failures
+          description: AI failure count exceeds threshold.
+
+      - alert: KuberOneHighOpenAiCost
+        expr: increase(kuberone_ai_cost_usd[1h]) > 500
+        for: 0m
+        labels:
+          severity: medium
+          component: ai
+        annotations:
+          summary: High OpenAI cost
+          description: AI cost exceeded $500 in the last hour.
+
+      - alert: KuberOneAuthAttack
+        expr: increase(kuberone_failed_logins_total[15m]) > 100
+        for: 5m
+        labels:
+          severity: high
+          component: auth
+        annotations:
+          summary: Suspicious authentication activity
+          description: Failed login spike detected.

@@ -1,0 +1,145 @@
+name: CI — Security Testing Framework
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/backend/**'
+      - 'apps/admin/**'
+      - 'apps/mobile-customer/**'
+      - 'apps/mobile-dsa/**'
+      - 'packages/security-testing/**'
+      - 'security-testing/**'
+      - 'scripts/security-*.mjs'
+      - '.github/workflows/ci-security.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'apps/backend/**'
+      - 'apps/admin/**'
+      - 'apps/mobile-customer/**'
+      - 'apps/mobile-dsa/**'
+      - 'packages/security-testing/**'
+
+jobs:
+  security-package:
+    name: Build security-testing package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/security-testing build
+
+  backend-security-tests:
+    name: Backend — Security test suites
+    needs: security-package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/security-testing build
+      - run: pnpm --filter @kuberone/database generate
+      - run: pnpm --filter @kuberone/backend test:security
+
+  admin-security-tests:
+    name: CRM — Security test suites
+    needs: security-package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/security-testing build
+      - run: pnpm --filter @kuberone/admin exec vitest run tests/security
+
+  mobile-security-tests:
+    name: Mobile — Security test suites
+    needs: security-package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/security-testing build
+      - run: pnpm --filter @kuberone/mobile-testing build
+      - run: pnpm --filter @kuberone/mobile-customer exec jest tests/security --runInBand
+      - run: pnpm --filter @kuberone/mobile-dsa exec jest tests/security --runInBand
+
+  dependency-and-secret-scan:
+    name: Dependency & secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/security-scan.mjs
+        continue-on-error: false
+
+  semgrep:
+    name: Semgrep code scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: returntocorp/semgrep-action@v1
+        with:
+          config: security-testing/config/semgrep.yml
+        continue-on-error: true
+
+  security-report-and-gate:
+    name: Security report & quality gate
+    needs: [backend-security-tests, admin-security-tests, mobile-security-tests, dependency-and-secret-scan]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/security-testing build
+      - run: node scripts/security-coverage-report.mjs
+        continue-on-error: true
+      - run: node scripts/security-quality-gate.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            security-testing/reports/
+            security-testing/dashboards/

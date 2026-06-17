@@ -1,3 +1,4 @@
+import { emptyBodySchema, emptyQuerySchema } from '@kuberone/shared-validation';
 import { Router } from 'express';
 
 import { asyncHandler } from '../../../shared/middleware/async-handler.middleware.js';
@@ -35,10 +36,16 @@ authRoutes.post(
 authRoutes.post(
   '/logout-all',
   authenticateWithSessionMiddleware,
+  validateMiddleware(emptyBodySchema),
   asyncHandler(sessionController.logoutAll),
 );
 
-authRoutes.get('/me', authenticateWithSessionMiddleware, asyncHandler(sessionController.me));
+authRoutes.get(
+  '/me',
+  authenticateWithSessionMiddleware,
+  validateMiddleware(emptyQuerySchema, 'query'),
+  asyncHandler(sessionController.me),
+);
 
 authRoutes.post(
   '/change-mobile/send-otp',

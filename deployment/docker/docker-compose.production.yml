@@ -1,0 +1,145 @@
+# KuberOne Production Stack — Docker Compose
+# Target: 1000+ concurrent users on multi-node deployment
+# Kubernetes-ready: each service maps to a K8s Deployment
+
+name: kuberone-production
+
+x-common-env: &common-env
+  NODE_ENV: production
+  APP_ENV: production
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../nginx/kuberone-production.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../nginx/ssl:/etc/nginx/ssl:ro
+      - ../../apps/admin/dist:/usr/share/nginx/html/admin:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [kuberone]
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/backend/Dockerfile
+    environment:
+      <<: *common-env
+      API_PORT: 4000
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel:4317
+    deploy:
+      replicas: 4
+      resources:
+        limits: { cpus: "2", memory: 2G }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks: [kuberone]
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/worker/Dockerfile
+    environment:
+      <<: *common-env
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
+      AUTOMATION_WORKER_ENABLED: "true"
+      CONTENT_WORKER_ENABLED: "true"
+      BACKUP_WORKER_ENABLED: "true"
+    deploy:
+      replicas: 2
+    networks: [kuberone]
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.2-alpine
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - ../redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - redis_data:/data
+    networks: [kuberone]
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: kuberone
+      MYSQL_USER: ${MYSQL_USER:-kuberone}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    networks: [kuberone]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    volumes:
+      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../monitoring/prometheus/alerts:/etc/prometheus/alerts:ro
+    ports: ["9090:9090"]
+    networks: [kuberone]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3000:3000"]
+    networks: [kuberone]
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.0.0
+    volumes:
+      - ../monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+    ports: ["3100:3100"]
+    networks: [kuberone]
+    restart: unless-stopped
+
+  otel:
+    image: otel/opentelemetry-collector-contrib:0.104.0
+    volumes:
+      - ../monitoring/otel/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports: ["4317:4317", "4318:4318"]
+    networks: [kuberone]
+    restart: unless-stopped
+
+networks:
+  kuberone:
+    driver: bridge
+
+volumes:
+  redis_data:
+  mysql_data:

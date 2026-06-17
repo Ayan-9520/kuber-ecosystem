@@ -1,3 +1,7 @@
+/**
+ * Vector store factory — production uses MySQL-backed local embeddings (VECTOR_DB_PROVIDER=local).
+ * External providers (qdrant, pinecone, weaviate, pgvector) are reserved for future scale-out.
+ */
 import { env } from '../../../../config/env.js';
 import type { VectorStoreProvider } from '../../types/rag.types.js';
 

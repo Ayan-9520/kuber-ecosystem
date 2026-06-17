@@ -1,0 +1,9 @@
+appId: com.kuberfinserve.kuberone.customer
+---
+- launchApp
+- runFlow: auth-login.yaml
+- tapOn: "Applications"
+- assertVisible: "Applications"
+- tapOn: "Home"
+- tapOn: "Profile"
+- assertVisible: "Profile"

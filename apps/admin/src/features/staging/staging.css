@@ -1,0 +1,24 @@
+.staging-hub .domain-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.staging-hub .domain-card {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--color-surface-elevated, #f4f4f5);
+  font-size: 0.875rem;
+}
+
+.staging-hub .checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+
+.staging-hub .checklist li {
+  padding: 0.25rem 0;
+  font-size: 0.875rem;
+}

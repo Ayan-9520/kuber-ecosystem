@@ -1,0 +1,14 @@
+{
+  "uid": "kuberone-errors-notification",
+  "title": "KuberOne Notification Error Dashboard",
+  "tags": ["kuberone", "errors", "notification"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    { "type": "stat", "title": "Email Failures", "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "increase(kuberone_email_failed_total[1h])", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "SMS Failures", "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "increase(kuberone_sms_failed_total[1h])", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "Push Failures", "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "increase(kuberone_push_failed_total[1h])", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "Dead Letter Queue", "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "kuberone_notification_dead_letter_total", "datasource": "Prometheus" }] },
+    { "type": "timeseries", "title": "Notification Failure Trend", "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 }, "targets": [{ "expr": "rate(kuberone_notification_failures_total[5m])", "datasource": "Prometheus" }] }
+  ]
+}

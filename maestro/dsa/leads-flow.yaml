@@ -1,0 +1,9 @@
+appId: com.kuberfinserve.kuberone.dsa
+---
+- launchApp
+- runFlow: auth-login.yaml
+- tapOn: "Leads"
+- assertVisible: "Leads"
+- tapOn: "Home"
+- tapOn: "Earnings"
+- assertVisible: "Commission"

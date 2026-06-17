@@ -1,0 +1,1 @@
+-- iOS mobile release tables are covered by mobile-release schema; no additional DDL required.

@@ -1,12 +1,3 @@
--- CreateEnum
-CREATE TYPE `RegionalPeriodType` AS ENUM ('DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY');
-
--- CreateEnum
-CREATE TYPE `RegionalRankingType` AS ENUM ('REGION', 'BRANCH', 'PRODUCT', 'PARTNER', 'EXECUTIVE');
-
--- CreateEnum
-CREATE TYPE `RegionalMetricCategory` AS ENUM ('OVERVIEW', 'LEAD', 'APPLICATION', 'REVENUE', 'PRODUCT', 'EXECUTIVE', 'PARTNER', 'COMMISSION', 'SUPPORT', 'AI', 'GROWTH');
-
 -- CreateTable
 CREATE TABLE `regional_metrics` (
     `id` CHAR(36) NOT NULL,
@@ -111,7 +102,7 @@ CREATE TABLE `regional_rankings` (
     `metrics` JSON NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,
-    INDEX `regional_rankings_ranking_type_period_type_period_start_rank_idx`(`ranking_type`, `period_type`, `period_start`, `rank`),
+    INDEX `regional_rankings_type_period_rank_idx`(`ranking_type`, `period_type`, `period_start`, `rank`),
     INDEX `regional_rankings_region_id_period_type_idx`(`region_id`, `period_type`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

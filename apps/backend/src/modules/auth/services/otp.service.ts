@@ -8,6 +8,7 @@ import {
   ValidationError,
 } from '../../../shared/errors/app-error.js';
 import { compareSecret, generateOtp, hashSecret } from '../../../shared/utils/crypto.js';
+import { channelStatusService } from '../../notifications/services/channel-status.service.js';
 import { OTP_TEMPLATE_MAP } from '../../sms/constants/sms.constants.js';
 import { smsOrchestratorService } from '../../sms/sms.module.js';
 import { authAuditRepository } from '../repositories/audit.repository.js';
@@ -31,7 +32,7 @@ async function dispatchOtp(
 
   await otpRepository.invalidatePending(input.phone, input.purpose);
 
-  const otp = env.NODE_ENV === 'production' ? generateOtp() : '123456';
+  const otp = env.APP_ENV === 'production' ? generateOtp() : '123456';
   const otpHash = await hashSecret(otp);
   const expiresAt = new Date(Date.now() + env.OTP_EXPIRY_SECONDS * 1000);
 
@@ -43,9 +44,27 @@ async function dispatchOtp(
     expiresAt,
   });
 
-  if (env.NODE_ENV !== 'production') {
-    console.info(`[DEV OTP] ${input.phone} → ${otp} (${input.purpose})`);
+  const windowStart = new Date(Date.now() - env.SMS_OTP_RATE_LIMIT_WINDOW_MS);
+  const recentCount = await otpRepository.countRecentByPhone(input.phone, windowStart);
+  if (recentCount >= env.SMS_OTP_RATE_LIMIT_PER_PHONE) {
+    throw new ValidationError({ phone: ['OTP rate limit exceeded for this number'] });
+  }
+
+  if (env.APP_ENV !== 'production') {
+    if (env.NODE_ENV === 'development') {
+      console.info(`[DEV OTP] ${input.phone} → ${input.purpose}`);
+    }
   } else {
+    const smsChannel = channelStatusService.getStatus('sms');
+    if (!smsChannel.deliverable) {
+      throw new ValidationError({
+        phone: [
+          smsChannel.status === 'disabled'
+            ? 'SMS OTP is temporarily disabled. Use password login or contact support.'
+            : 'SMS OTP is not configured yet. Use password login or contact your administrator.',
+        ],
+      });
+    }
     const templateCode = OTP_TEMPLATE_MAP[input.purpose] ?? 'LOGIN_OTP';
     await smsOrchestratorService.send({
       userId: input.userId,
@@ -169,6 +188,10 @@ export const otpService = {
     const record = await otpRepository.findLatestValid(newPhone, 'CHANGE_MOBILE');
     if (!record) {
       throw new ValidationError({ otp: ['OTP expired or not found'] });
+    }
+
+    if (record.attempts >= env.OTP_MAX_ATTEMPTS) {
+      throw new ValidationError({ otp: ['Maximum OTP attempts exceeded'] });
     }
 
     const valid = await compareSecret(otp, record.otpHash);

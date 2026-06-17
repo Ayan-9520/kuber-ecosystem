@@ -1,10 +1,41 @@
 import type { ApiResponse, AuthTokens } from '@kuberone/shared-types';
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from './storage';
+import { getWebHostname } from './webStorage';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:4000/api/v1';
+function resolveDevMachineHost(): string | null {
+  const hostUri =
+    Constants.expoConfig?.hostUri ??
+    (Constants.expoGoConfig as { debuggerHost?: string } | undefined)?.debuggerHost;
+  if (!hostUri) return null;
+  const host = hostUri.split(':')[0];
+  if (!host || host === 'localhost' || host === '127.0.0.1') return null;
+  return host;
+}
+
+function resolveApiBaseUrl(): string {
+  const configured = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:4000/api/v1';
+
+  if (getWebHostname() === 'localhost') {
+    return 'http://localhost:4000/api/v1';
+  }
+
+  if (Platform.OS === 'android' && !Constants.isDevice) {
+    return 'http://10.0.2.2:4000/api/v1';
+  }
+
+  const devHost = resolveDevMachineHost();
+  if (devHost) {
+    return `http://${devHost}:4000/api/v1`;
+  }
+
+  return configured;
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

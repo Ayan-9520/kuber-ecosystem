@@ -17,6 +17,7 @@ model Region {
   regionalForecasts   RegionalForecast[]
   regionalRankings    RegionalRanking[]
   regionalSnapshots   RegionalAnalyticsSnapshot[]
+  automationWorkflows AutomationWorkflow[]
 
   @@map("regions")
 }
@@ -51,6 +52,8 @@ model Branch {
   branchRankings     BranchRanking[]
   branchSnapshots    BranchAnalyticsSnapshot[]
   regionalRankings   RegionalRanking[]
+  automationWorkflows AutomationWorkflow[]
+  campaigns           Campaign[]
 
   @@index([regionId, isActive])
   @@map("branches")

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import {
   Button,
@@ -44,7 +44,14 @@ function InfoItem({ label, value }: { label: string; value: string }) {
 export function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [tab, setTab] = useState('profile');
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') ?? 'profile';
+  const [tab, setTab] = useState(initialTab);
+
+  useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    if (urlTab) setTab(urlTab);
+  }, [searchParams]);
 
   const customer = useQuery({
     queryKey: ['customer', id],

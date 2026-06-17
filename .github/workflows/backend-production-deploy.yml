@@ -1,0 +1,87 @@
+name: Backend Production Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      strategy:
+        description: Deployment strategy
+        type: choice
+        options: [rolling, blue-green, canary]
+        default: blue-green
+      version:
+        description: Version tag (semver)
+        required: true
+        default: '1.0.0'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/backend/**'
+      - 'packages/**'
+      - 'deployment/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/backend-deployment-gate.mjs
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm build
+      - run: pnpm test
+      - run: pnpm test:integration
+      - run: pnpm security:test
+
+  approve:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - run: echo "Backend production deployment approved"
+
+  deploy:
+    needs: approve
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Go-live gates
+        run: |
+          node scripts/production-go-live-gate.mjs
+          node scripts/prisma-migration-gate.mjs
+
+      - name: Deploy backend to production
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /opt/kuberone
+            export DEPLOY_STRATEGY="${{ inputs.strategy || 'blue-green' }}"
+            git pull origin main
+            bash deployment/scripts/deploy-backend.sh production
+
+      - name: Post-deploy validation
+        run: node scripts/production-deploy-validate.mjs
+        env:
+          PRODUCTION_API_URL: ${{ secrets.PRODUCTION_API_URL || 'https://api.kuberone.com' }}
+          PRODUCTION_WEBHOOK_SECRET: ${{ secrets.PRODUCTION_WEBHOOK_SECRET }}
+          BACKEND_DEPLOYMENT_WEBHOOK_SECRET: ${{ secrets.BACKEND_DEPLOYMENT_WEBHOOK_SECRET }}
+          PRODUCTION_WEBHOOK_BACKEND: ${{ secrets.DEVOPS_API_URL }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF_NAME: main
+          DEPLOY_STRATEGY: ${{ inputs.strategy || 'blue-green' }}
+          PRODUCTION_COMPONENT: backend
+
+      - name: Readiness report
+        run: node scripts/backend-deployment-readiness-report.mjs

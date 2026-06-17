@@ -19,7 +19,7 @@ const EVENT_STATUS_MAP: Record<string, { status: string; field: 'deliveredCount'
 export const pushTrackingService = {
   async trackEvent(input: TrackPushEventInput) {
     const rateKey = `push-track:${input.deliveryId ?? input.providerRef ?? 'anon'}`;
-    if (!rateLimitService.check(rateKey, 60)) {
+    if (!(await rateLimitService.checkAsync(rateKey, 60))) {
       return { success: false, reason: 'Rate limit exceeded' };
     }
 

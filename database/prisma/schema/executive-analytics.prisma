@@ -110,7 +110,7 @@ model ExecutiveLeaderboard {
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  @@index([executiveRole, periodType, periodStart, rank])
+  @@index([executiveRole, periodType, periodStart, rank], map: "exec_leaderboards_role_period_rank_idx")
   @@index([employeeId, periodType])
   @@map("executive_leaderboards")
 }

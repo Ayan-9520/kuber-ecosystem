@@ -1,0 +1,118 @@
+.go-live-hub .readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.go-live-hub .section-scores {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.go-live-hub .section-score-card {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px;
+  background: var(--surface-secondary, #f9fafb);
+}
+
+.go-live-hub .approval-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.go-live-hub .gate-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.go-live-hub .checklist-section {
+  margin-bottom: 1.5rem;
+}
+
+.go-live-hub .launch-checklist ul {
+  margin: 0.5rem 0 0 1.25rem;
+  padding: 0;
+}
+
+.go-live-hub .verdict-banner {
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.go-live-hub .verdict-ready {
+  background: color-mix(in srgb, var(--color-success, #16a34a) 15%, transparent);
+  border: 1px solid var(--color-success, #16a34a);
+}
+
+.go-live-hub .verdict-blocked {
+  background: color-mix(in srgb, var(--color-danger, #dc2626) 12%, transparent);
+  border: 1px solid var(--color-danger, #dc2626);
+}
+
+.go-live-hub .verdict-partial {
+  background: color-mix(in srgb, #ca8a04 12%, transparent);
+  border: 1px solid #ca8a04;
+}
+
+.go-live-hub .workflow-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.go-live-hub .workflow-step {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  font-size: 0.875rem;
+}
+
+.go-live-hub .workflow-step.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  font-weight: 600;
+}
+
+.go-live-hub .workflow-step.done {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.go-live-hub .war-room-teams,
+.go-live-hub .prelaunch-grid,
+.go-live-hub .criteria-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.go-live-hub .war-room-team-card,
+.go-live-hub .prelaunch-item,
+.go-live-hub .criteria-item {
+  padding: 0.75rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px;
+}
+
+.go-live-hub .prelaunch-item.pass,
+.go-live-hub .criteria-item.met {
+  background: #f0fdf4;
+}
+
+.go-live-hub .event-row,
+.go-live-hub .incident-row {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}

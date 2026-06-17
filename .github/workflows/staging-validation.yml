@@ -1,0 +1,84 @@
+name: Staging Validation Pipeline
+
+on:
+  push:
+    branches: [staging, 'release/**']
+  workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: staging-validation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Full Staging Validation
+    runs-on: ubuntu-latest
+    environment: staging
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: kuberone_staging
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: mysql://root:root@localhost:3306/kuberone_staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/database generate
+
+      - name: Lint & Typecheck
+        run: pnpm lint && pnpm typecheck
+
+      - name: Build all targets
+        run: |
+          pnpm build --filter=@kuberone/backend...
+          pnpm build --filter=@kuberone/admin...
+          pnpm --filter @kuberone/mobile-customer exec tsc --noEmit || true
+          pnpm --filter @kuberone/mobile-dsa exec tsc --noEmit || true
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Integration tests
+        run: pnpm test:integration
+
+      - name: Mobile tests
+        run: pnpm test:mobile
+
+      - name: Security tests
+        run: pnpm security:test
+
+      - name: Performance smoke
+        run: pnpm perf:smoke
+        continue-on-error: true
+
+      - name: Migration gate
+        run: node scripts/prisma-migration-gate.mjs
+
+      - name: OpenAPI validation
+        run: node scripts/openapi-validate.mjs
+
+      - name: Record validation
+        if: success()
+        run: |
+          node scripts/staging-deploy-validate.mjs
+        env:
+          STAGING_API_URL: ${{ secrets.STAGING_API_URL }}
+          STAGING_WEBHOOK_SECRET: ${{ secrets.STAGING_WEBHOOK_SECRET }}
+          API_BASE_URL: ${{ secrets.DEVOPS_API_URL }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          STAGING_COMPONENT: validation

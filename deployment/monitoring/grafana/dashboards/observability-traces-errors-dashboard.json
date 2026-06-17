@@ -1,0 +1,14 @@
+{
+  "uid": "kuberone-traces-errors",
+  "title": "KuberOne Traces & Errors",
+  "tags": ["kuberone", "observability", "traces"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    { "type": "timeseries", "title": "API Errors", "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }, "targets": [{ "expr": "rate(kuberone_http_errors_total[5m])", "datasource": "Prometheus" }] },
+    { "type": "timeseries", "title": "5xx Responses", "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 }, "targets": [{ "expr": "sum(rate(kuberone_http_requests_total{status=~\"5..\"}[5m]))", "datasource": "Prometheus" }] },
+    { "type": "logs", "title": "Error Logs", "gridPos": { "x": 0, "y": 8, "w": 24, "h": 10 }, "targets": [{ "expr": "{service=\"kuberone-api\"} | json | level=\"error\"", "datasource": "Loki" }] },
+    { "type": "timeseries", "title": "Notification Failures", "gridPos": { "x": 0, "y": 18, "w": 12, "h": 8 }, "targets": [{ "expr": "increase(kuberone_notification_failures_total[5m])", "datasource": "Prometheus" }] },
+    { "type": "timeseries", "title": "AI Failures", "gridPos": { "x": 12, "y": 18, "w": 12, "h": 8 }, "targets": [{ "expr": "increase(kuberone_ai_failures_total[5m])", "datasource": "Prometheus" }] }
+  ]
+}

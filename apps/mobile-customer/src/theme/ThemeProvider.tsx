@@ -6,7 +6,6 @@ import {
   type ThemePreference,
   type ThemeTokens,
 } from '@kuberone/shared-theme';
-import * as SecureStore from 'expo-secure-store';
 import {
   createContext,
   useCallback,
@@ -17,6 +16,8 @@ import {
   type ReactNode,
 } from 'react';
 import { Appearance } from 'react-native';
+
+import { secureGet, secureSet } from '@/lib/secureStorage';
 
 export type AppColors = {
   primary: string;
@@ -81,7 +82,7 @@ function nextPreference(current: ThemePreference): ThemePreference {
 
 async function readPreference(): Promise<ThemePreference> {
   try {
-    const stored = await SecureStore.getItemAsync(THEME_STORAGE_KEY);
+    const stored = await secureGet(THEME_STORAGE_KEY);
     if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
   } catch {
     /* ignore */
@@ -113,7 +114,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setPreference = useCallback((next: ThemePreference) => {
     setPreferenceState(next);
-    void SecureStore.setItemAsync(THEME_STORAGE_KEY, next);
+    void secureSet(THEME_STORAGE_KEY, next);
   }, []);
 
   const toggle = useCallback(() => {

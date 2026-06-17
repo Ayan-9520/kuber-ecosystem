@@ -1,0 +1,20 @@
+{
+  "app": "CUSTOMER",
+  "bundleId": "com.kuberone.customer",
+  "appName": "KuberOne",
+  "subtitle": "AI Loans & EMI Calculator",
+  "keywords": "loan,EMI,finance,eligibility,personal loan,Kuber Finserve",
+  "description": "KuberOne by Kuber Finserve — your intelligent financial companion.\n\n• Instant loan eligibility\n• EMI calculator & comparisons\n• Guided loan applications\n• Secure document upload & KYC\n• AI Advisor & Voice AI\n• Real-time tracking & support\n\nBank-grade security. RBI-compliant processes.",
+  "promotionalText": "Check eligibility in seconds. Apply for loans with AI guidance.",
+  "supportUrl": "https://kuberone.com/support",
+  "marketingUrl": "https://kuberone.com",
+  "privacyPolicyUrl": "https://kuberone.com/privacy",
+  "termsUrl": "https://kuberone.com/terms",
+  "primaryCategory": "Finance",
+  "secondaryCategory": "Productivity",
+  "ageRating": "17+",
+  "screenshots": [
+    "Login", "Dashboard", "Eligibility", "EMI Calculator", "Loan Application",
+    "Documents", "Support", "AI Advisor", "Voice AI", "Profile"
+  ]
+}

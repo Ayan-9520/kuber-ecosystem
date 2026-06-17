@@ -1,4 +1,5 @@
 import { UnauthorizedError } from '../../../shared/errors/app-error.js';
+import { centralAuditService } from '../../governance/services/central-audit.service.js';
 import { refreshTokenRepository } from '../repositories/refresh-token.repository.js';
 import { sessionRepository } from '../repositories/session.repository.js';
 import type { AuthDeviceInput, RequestContext, SessionIssueResult } from '../types/auth.types.js';
@@ -48,7 +49,24 @@ export const sessionService = {
     refreshToken: string,
     ctx: RequestContext,
   ): Promise<SessionIssueResult> {
-    const candidates = await findRefreshTokenByPlain(refreshToken);
+    const tokenHash = tokenService.hashRefreshToken(refreshToken);
+    const anyRecord = await refreshTokenRepository.findByHash(tokenHash);
+
+    if (anyRecord?.revokedAt) {
+      await sessionService.logoutAll(anyRecord.userId);
+      void centralAuditService.logSecurityEvent({
+        eventType: 'SUSPICIOUS_ACTIVITY',
+        severity: 'CRITICAL',
+        userId: anyRecord.userId,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+        description: 'Refresh token reuse detected — all sessions revoked',
+        metadata: { sessionId: anyRecord.sessionId },
+      });
+      throw new UnauthorizedError('Invalid or expired refresh token');
+    }
+
+    const candidates = anyRecord ? { record: anyRecord, session: anyRecord.session } : null;
     if (!candidates) {
       throw new UnauthorizedError('Invalid or expired refresh token');
     }
@@ -82,9 +100,3 @@ export const sessionService = {
   },
 };
 
-async function findRefreshTokenByPlain(plain: string) {
-  const tokenHash = tokenService.hashRefreshToken(plain);
-  const record = await refreshTokenRepository.findValidByHash(tokenHash);
-  if (!record) return null;
-  return { record, session: record.session };
-}

@@ -1,0 +1,86 @@
+name: Production Deployment Pipeline
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      strategy:
+        description: Deployment strategy
+        required: true
+        default: blue-green
+        type: choice
+        options:
+          - rolling
+          - blue-green
+          - canary
+
+jobs:
+  validate:
+    uses: ./.github/workflows/production-validation.yml
+    secrets: inherit
+
+  approve-production:
+    name: Manual Approval Gate
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://admin.kuberone.com
+    steps:
+      - run: echo "Production deployment approved"
+
+  deploy-production:
+    name: Deploy Production
+    needs: approve-production
+    runs-on: ubuntu-latest
+    environment: production
+    strategy:
+      matrix:
+        component: [backend, admin, worker, monitoring]
+      max-parallel: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Go-Live gates
+        run: |
+          node scripts/production-go-live-gate.mjs
+          node scripts/error-deployment-gate.mjs
+          node scripts/prisma-migration-gate.mjs
+
+      - name: Deploy ${{ matrix.component }} (${{ inputs.strategy || 'blue-green' }})
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /opt/kuberone
+            export DEPLOY_STRATEGY="${{ inputs.strategy || 'blue-green' }}"
+            git pull origin main
+            case "${{ matrix.component }}" in
+              backend) bash deployment/scripts/deploy-backend.sh production ;;
+              admin) bash deployment/scripts/deploy-admin.sh production ;;
+              worker) pm2 reload kuberone-worker --env production ;;
+              monitoring) cd deployment/monitoring && docker compose -f docker-compose.monitoring.yml up -d ;;
+            esac
+
+      - name: Post-deploy validation
+        if: matrix.component == 'backend' && success()
+        run: node scripts/production-deploy-validate.mjs
+        env:
+          PRODUCTION_API_URL: ${{ secrets.PRODUCTION_API_URL || 'https://api.kuberone.com' }}
+          PRODUCTION_WEBHOOK_SECRET: ${{ secrets.PRODUCTION_WEBHOOK_SECRET }}
+          PRODUCTION_WEBHOOK_BACKEND: ${{ secrets.DEVOPS_API_URL }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF_NAME: main
+          DEPLOY_STRATEGY: ${{ inputs.strategy || 'blue-green' }}
+          PRODUCTION_COMPONENT: ${{ matrix.component }}
+
+      - name: Record deployment
+        if: success()
+        run: node scripts/ci-record-pipeline.mjs --type PRODUCTION_DEPLOY --name "Production — ${{ matrix.component }}" --status SUCCESS --branch main
+        env:
+          DEVOPS_API_URL: ${{ secrets.DEVOPS_API_URL }}
+          DEVOPS_WEBHOOK_SECRET: ${{ secrets.DEVOPS_WEBHOOK_SECRET }}

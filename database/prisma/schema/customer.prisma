@@ -52,6 +52,7 @@ model Customer {
   @@index([kycStatus])
   @@index([fullName])
   @@index([deletedAt])
+  @@index([deletedAt, createdAt(sort: Desc)])
   @@map("customers")
 }
 

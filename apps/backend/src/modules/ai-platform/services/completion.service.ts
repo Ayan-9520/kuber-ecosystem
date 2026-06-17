@@ -23,7 +23,11 @@ export const completionService = {
   ): Promise<CompletionResult> {
     const start = Date.now();
     const userText = input.messages.filter((m) => m.role === 'user').map((m) => String(m.content)).join('\n');
-    const sanitized = responseProcessorService.sanitizeInput(userText);
+    const sanitized = responseProcessorService.sanitizeInput(userText, {
+      actorId: ctx?.actorId,
+      module: input.module,
+      ipAddress: ctx?.ipAddress,
+    });
 
     const moderation = await moderationService.moderate(sanitized, {
       userId: ctx?.actorId,
@@ -76,7 +80,18 @@ export const completionService = {
         const completion = await client.chat.completions.create({
           model,
           messages: input.messages.map((m) =>
-            m.role === 'user' ? { ...m, content: responseProcessorService.sanitizeInput(String(m.content)) } : m,
+            m.role === 'user'
+              ? {
+                  ...m,
+                  content: responseProcessorService.sanitizeInput(String(m.content), {
+                    actorId: ctx?.actorId,
+                    module: input.module,
+                    ipAddress: ctx?.ipAddress,
+                  }),
+                }
+              : m.role === 'system'
+                ? { ...m, content: responseProcessorService.sanitizeInput(String(m.content)) }
+                : m,
           ),
           temperature: input.temperature ?? env.OPENAI_TEMPERATURE ?? 0.35,
           max_tokens: input.maxTokens ?? env.OPENAI_MAX_TOKENS ?? 1200,

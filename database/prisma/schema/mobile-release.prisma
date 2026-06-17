@@ -1,0 +1,106 @@
+// ── Mobile Release & Android Build Platform ──
+
+enum MobileAppType {
+  CUSTOMER
+  DSA
+}
+
+enum MobileBuildFormat {
+  APK
+  AAB
+}
+
+enum MobileBuildStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+enum MobileAppEnvironment {
+  DEVELOPMENT
+  QA
+  STAGING
+  PRODUCTION
+}
+
+enum MobileReleaseStatus {
+  PLANNED
+  IN_PROGRESS
+  RELEASED
+  FAILED
+  ROLLED_BACK
+}
+
+model MobileBuild {
+  id            String               @id @default(uuid()) @db.Char(36)
+  app           MobileAppType
+  environment   MobileAppEnvironment
+  buildFormat   MobileBuildFormat    @map("build_format")
+  versionName   String               @map("version_name") @db.VarChar(32)
+  versionCode   Int                  @map("version_code")
+  buildNumber   String?              @map("build_number") @db.VarChar(32)
+  status        MobileBuildStatus    @default(PENDING)
+  branch        String?              @db.VarChar(128)
+  commitSha     String?              @map("commit_sha") @db.VarChar(64)
+  artifactUrl   String?              @map("artifact_url") @db.VarChar(500)
+  artifactSize  Int?                 @map("artifact_size")
+  packageId     String?              @map("package_id") @db.VarChar(128)
+  hermesEnabled Boolean              @default(true) @map("hermes_enabled")
+  proguardEnabled Boolean            @default(false) @map("proguard_enabled")
+  signed        Boolean              @default(false)
+  splitApkReady Boolean              @default(false) @map("split_apk_ready")
+  report        Json?
+  startedAt     DateTime?            @map("started_at")
+  completedAt   DateTime?            @map("completed_at")
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+
+  releaseId String?        @map("release_id") @db.Char(36)
+  release   MobileRelease? @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+
+  @@index([app, environment, status, createdAt])
+  @@index([versionName, versionCode])
+  @@map("mobile_builds")
+}
+
+model MobileRelease {
+  id              String              @id @default(uuid()) @db.Char(36)
+  app             MobileAppType
+  versionName     String              @map("version_name") @db.VarChar(32)
+  versionCode     Int                 @map("version_code")
+  status          MobileReleaseStatus @default(PLANNED)
+  track           String              @default("internal") @db.VarChar(32)
+  releaseNotes    String?             @map("release_notes") @db.Text
+  playStoreReady  Boolean             @default(false) @map("play_store_ready")
+  readinessScore  Float?              @map("readiness_score")
+  securityScore   Float?              @map("security_score")
+  performanceScore Float?             @map("performance_score")
+  uatSignedOff    Boolean             @default(false) @map("uat_signed_off")
+  releasedById    String?             @map("released_by_id") @db.Char(36)
+  releasedAt      DateTime?           @map("released_at")
+  metadata        Json?
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  builds MobileBuild[]
+  audits MobileReleaseAudit[]
+
+  @@index([app, status, createdAt])
+  @@map("mobile_releases")
+}
+
+model MobileReleaseAudit {
+  id        String   @id @default(uuid()) @db.Char(36)
+  releaseId String?  @map("release_id") @db.Char(36)
+  action    String   @db.VarChar(64)
+  actorId   String?  @map("actor_id") @db.Char(36)
+  details   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  release MobileRelease? @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+
+  @@index([releaseId, createdAt])
+  @@map("mobile_release_audits")
+}

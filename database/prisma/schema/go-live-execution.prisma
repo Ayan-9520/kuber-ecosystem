@@ -1,0 +1,153 @@
+// ── KuberOne Go-Live Execution Framework ──
+
+enum LaunchWorkflowStep {
+  PRODUCTION_FREEZE
+  DATABASE_BACKUP
+  RELEASE_DEPLOYMENT
+  HEALTH_VALIDATION
+  SMOKE_TESTING
+  BUSINESS_VALIDATION
+  LAUNCH_APPROVAL
+  TRAFFIC_ENABLEMENT
+  COMPLETED
+}
+
+enum LaunchFinalStatus {
+  FAILED
+  PARTIAL_SUCCESS
+  SUCCESSFUL_GO_LIVE
+}
+
+enum LaunchEventType {
+  WORKFLOW_STEP
+  VALIDATION
+  SMOKE_TEST
+  DEPLOYMENT
+  HEALTH_CHECK
+  TRAFFIC
+  INCIDENT
+  ROLLBACK
+  APPROVAL
+  WAR_ROOM
+  ALERT
+  SYSTEM
+}
+
+enum LaunchIncidentSeverity {
+  SEV_1
+  SEV_2
+  SEV_3
+  SEV_4
+}
+
+enum LaunchIncidentStatus {
+  OPEN
+  INVESTIGATING
+  MITIGATED
+  RESOLVED
+  CLOSED
+}
+
+enum LaunchMetricCategory {
+  TRAFFIC
+  PERFORMANCE
+  ERRORS
+  BUSINESS
+  INFRASTRUCTURE
+  NOTIFICATIONS
+  AI
+}
+
+enum WarRoomStatus {
+  STANDBY
+  ACTIVE
+  STAND_DOWN
+}
+
+model LaunchEvent {
+  id                String          @id @default(uuid()) @db.Char(36)
+  launchExecutionId String          @map("launch_execution_id") @db.Char(36)
+  eventType         LaunchEventType @map("event_type")
+  step              LaunchWorkflowStep? @map("step")
+  title             String          @db.VarChar(300)
+  message           String?         @db.Text
+  severity          LaunchIncidentSeverity? @map("severity")
+  metadata          Json?
+  actorId           String?         @map("actor_id") @db.Char(36)
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  launchExecution LaunchExecution @relation(fields: [launchExecutionId], references: [id], onDelete: Cascade)
+  actor           User?           @relation("LaunchEventActor", fields: [actorId], references: [id])
+
+  @@index([launchExecutionId, createdAt])
+  @@index([eventType, createdAt])
+  @@map("launch_events")
+}
+
+model LaunchIncident {
+  id                String                 @id @default(uuid()) @db.Char(36)
+  launchExecutionId String                 @map("launch_execution_id") @db.Char(36)
+  warRoomSessionId  String?                @map("war_room_session_id") @db.Char(36)
+  code              String                 @unique @db.VarChar(64)
+  title             String                 @db.VarChar(300)
+  description       String                 @db.Text
+  severity          LaunchIncidentSeverity @default(SEV_3)
+  status            LaunchIncidentStatus   @default(OPEN)
+  runbook           String?                @db.Text
+  escalationLevel   Int                    @default(1) @map("escalation_level")
+  commTemplate      String?                @map("comm_template") @db.VarChar(128)
+  assignedToId      String?                @map("assigned_to_id") @db.Char(36)
+  resolvedAt        DateTime?              @map("resolved_at")
+  metadata          Json?
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @updatedAt @map("updated_at")
+
+  launchExecution LaunchExecution  @relation(fields: [launchExecutionId], references: [id], onDelete: Cascade)
+  warRoomSession  WarRoomSession?  @relation(fields: [warRoomSessionId], references: [id], onDelete: SetNull)
+  assignedTo      User?            @relation("LaunchIncidentAssignedTo", fields: [assignedToId], references: [id])
+
+  @@index([launchExecutionId, severity, status])
+  @@map("launch_incidents")
+}
+
+model LaunchMetric {
+  id                String               @id @default(uuid()) @db.Char(36)
+  launchExecutionId String               @map("launch_execution_id") @db.Char(36)
+  category          LaunchMetricCategory
+  name              String               @db.VarChar(128)
+  value             Float
+  unit              String?              @db.VarChar(32)
+  threshold         Float?
+  isHealthy         Boolean              @default(true) @map("is_healthy")
+  metadata          Json?
+  recordedAt        DateTime             @default(now()) @map("recorded_at")
+
+  launchExecution LaunchExecution @relation(fields: [launchExecutionId], references: [id], onDelete: Cascade)
+
+  @@index([launchExecutionId, category, recordedAt])
+  @@index([name, recordedAt])
+  @@map("launch_metrics")
+}
+
+model WarRoomSession {
+  id                  String         @id @default(uuid()) @db.Char(36)
+  launchExecutionId   String         @map("launch_execution_id") @db.Char(36)
+  code                String         @unique @db.VarChar(64)
+  status              WarRoomStatus  @default(STANDBY)
+  commanderId         String?        @map("commander_id") @db.Char(36)
+  teams               Json?
+  communicationMatrix Json?          @map("communication_matrix")
+  bridgeUrl           String?        @map("bridge_url") @db.VarChar(500)
+  startedAt           DateTime?      @map("started_at")
+  endedAt             DateTime?      @map("ended_at")
+  metadata            Json?
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+
+  launchExecution LaunchExecution  @relation(fields: [launchExecutionId], references: [id], onDelete: Cascade)
+  commander       User?            @relation("WarRoomCommander", fields: [commanderId], references: [id])
+  incidents       LaunchIncident[]
+
+  @@index([launchExecutionId, status])
+  @@map("war_room_sessions")
+}

@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { PaginatedListView } from '@/components/common/PaginatedListView';
-import { PageHeader, StatCard, Tabs } from '@/components/ui';
+import { Button, PageHeader, StatCard, Tabs } from '@/components/ui';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { useDebounce, usePagination } from '@/hooks';
@@ -32,6 +32,7 @@ const FETCHERS: Record<
 };
 
 export function CommissionsPage() {
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<TabId>('dashboard');
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search);
@@ -64,6 +65,57 @@ export function CommissionsPage() {
     enabled: tab !== 'dashboard',
   });
 
+  const actionMutation = useMutation({
+    mutationFn: async ({ action, id }: { action: 'approve' | 'reject' | 'pay' | 'release'; id: string }) => {
+      if (tab === 'approvals') {
+        if (action === 'approve') return commissionsService.approveApproval(id, { approvedAmount: 5000 });
+        return commissionsService.rejectApproval(id);
+      }
+      if (action === 'approve') return commissionsService.approvePayment(id);
+      return commissionsService.releasePayment(id, { paymentReference: `ADM-${Date.now()}` });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['commissions'] });
+      queryClient.invalidateQueries({ queryKey: ['commission-analytics'] });
+    },
+  });
+
+  const renderActions = useCallback(
+    (r: Record<string, unknown>) => {
+      const status = fieldStr(r, 'status');
+      if (tab === 'approvals' && (status === 'PENDING' || status === 'SUBMITTED')) {
+        return (
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Button variant="primary" size="sm" onClick={() => actionMutation.mutate({ action: 'approve', id: String(r.id) })}>
+              Approve
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => actionMutation.mutate({ action: 'reject', id: String(r.id) })}>
+              Reject
+            </Button>
+          </div>
+        );
+      }
+      if (tab === 'payments') {
+        if (status === 'PENDING' || status === 'SUBMITTED') {
+          return (
+            <Button variant="primary" size="sm" onClick={() => actionMutation.mutate({ action: 'approve', id: String(r.id) })}>
+              Approve
+            </Button>
+          );
+        }
+        if (status === 'APPROVED') {
+          return (
+            <Button variant="primary" size="sm" onClick={() => actionMutation.mutate({ action: 'release', id: String(r.id) })}>
+              Pay
+            </Button>
+          );
+        }
+      }
+      return null;
+    },
+    [tab, actionMutation],
+  );
+
   const listColumns = useMemo(() => {
     const statusCol = {
       key: 'status',
@@ -95,6 +147,7 @@ export function CommissionsPage() {
           { key: 'ledgerId', header: 'Ledger', render: (r: Record<string, unknown>) => fieldStr(r, 'ledgerId') },
           statusCol,
           { key: 'createdAt', header: 'Date', render: (r: Record<string, unknown>) => formatDate(r.createdAt as string) },
+          { key: 'actions', header: 'Actions', render: renderActions },
         ];
       case 'payments':
         return [
@@ -107,6 +160,7 @@ export function CommissionsPage() {
           },
           statusCol,
           { key: 'createdAt', header: 'Date', render: (r: Record<string, unknown>) => formatDate(r.createdAt as string) },
+          { key: 'actions', header: 'Actions', render: renderActions },
         ];
       case 'recoveries':
         return [
@@ -143,7 +197,7 @@ export function CommissionsPage() {
       default:
         return [];
     }
-  }, [tab]);
+  }, [tab, renderActions]);
 
   const emptyTitles: Record<Exclude<TabId, 'dashboard'>, string> = {
     ledger: 'No ledger entries',

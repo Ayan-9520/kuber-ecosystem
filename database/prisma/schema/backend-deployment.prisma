@@ -1,0 +1,151 @@
+// ── Backend Production Deployment Platform ──
+
+enum BackendDeployStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  ROLLED_BACK
+}
+
+enum BackendDeployStrategy {
+  ROLLING
+  BLUE_GREEN
+  CANARY
+}
+
+enum DeploymentVersionStatus {
+  DRAFT
+  CANDIDATE
+  RELEASED
+  SUPERSEDED
+  ROLLED_BACK
+}
+
+enum ServiceHealthStatus {
+  HEALTHY
+  DEGRADED
+  UNHEALTHY
+  UNKNOWN
+}
+
+enum BackendDeploymentReportType {
+  DEPLOYMENT
+  RELEASE
+  HEALTH
+  SECURITY
+  SCALABILITY
+}
+
+model BackendDeployment {
+  id               String                @id @default(uuid()) @db.Char(36)
+  versionId        String?               @map("version_id") @db.Char(36)
+  domain           String                @default("api.kuberone.com") @db.VarChar(255)
+  strategy         BackendDeployStrategy @default(ROLLING)
+  status           BackendDeployStatus   @default(PENDING)
+  version          String                @db.VarChar(64)
+  commitSha        String?               @map("commit_sha") @db.VarChar(64)
+  branch           String?               @db.VarChar(128)
+  deployedById     String?               @map("deployed_by_id") @db.Char(36)
+  startedAt        DateTime?             @map("started_at")
+  completedAt      DateTime?             @map("completed_at")
+  validationReport Json?                 @map("validation_report")
+  metadata         Json?
+  createdAt        DateTime              @default(now()) @map("created_at")
+
+  versionRef DeploymentVersion? @relation(fields: [versionId], references: [id], onDelete: SetNull)
+  deployedBy User?              @relation("BackendDeploymentDeployedBy", fields: [deployedById], references: [id])
+  artifacts  ReleaseArtifact[]
+  audits     BackendDeploymentAudit[]
+
+  @@index([status, createdAt])
+  @@index([versionId])
+  @@map("backend_deployments")
+}
+
+model DeploymentVersion {
+  id          String                  @id @default(uuid()) @db.Char(36)
+  version     String                  @unique @db.VarChar(64)
+  name        String                  @db.VarChar(200)
+  status      DeploymentVersionStatus @default(DRAFT)
+  commitSha   String?                 @map("commit_sha") @db.VarChar(64)
+  changelog   String?                 @db.Text
+  releasedAt  DateTime?               @map("released_at")
+  releasedById String?                @map("released_by_id") @db.Char(36)
+  metadata    Json?
+  createdAt   DateTime                @default(now()) @map("created_at")
+  updatedAt   DateTime                @updatedAt @map("updated_at")
+
+  releasedBy  User?              @relation("DeploymentVersionReleasedBy", fields: [releasedById], references: [id])
+  deployments BackendDeployment[]
+  artifacts   ReleaseArtifact[]
+
+  @@index([status, createdAt])
+  @@map("deployment_versions")
+}
+
+model ReleaseArtifact {
+  id           String   @id @default(uuid()) @db.Char(36)
+  deploymentId String?  @map("deployment_id") @db.Char(36)
+  versionId    String?  @map("version_id") @db.Char(36)
+  artifactType String   @map("artifact_type") @db.VarChar(64)
+  artifactUrl  String?  @map("artifact_url") @db.VarChar(500)
+  checksum     String?  @db.VarChar(128)
+  sizeBytes    BigInt?  @map("size_bytes")
+  metadata     Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  deployment BackendDeployment? @relation(fields: [deploymentId], references: [id], onDelete: SetNull)
+  version    DeploymentVersion? @relation(fields: [versionId], references: [id], onDelete: SetNull)
+
+  @@index([deploymentId])
+  @@index([versionId, artifactType])
+  @@map("release_artifacts")
+}
+
+model BackendDeploymentAudit {
+  id           String   @id @default(uuid()) @db.Char(36)
+  deploymentId String?  @map("deployment_id") @db.Char(36)
+  action       String   @db.VarChar(64)
+  actorId      String?  @map("actor_id") @db.Char(36)
+  compliance   String?  @db.VarChar(64)
+  details      Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  deployment BackendDeployment? @relation(fields: [deploymentId], references: [id], onDelete: SetNull)
+  actor      User?              @relation("BackendDeploymentAuditActor", fields: [actorId], references: [id])
+
+  @@index([action, createdAt])
+  @@index([deploymentId])
+  @@map("backend_deployment_audits")
+}
+
+model ServiceHealth {
+  id            String              @id @default(uuid()) @db.Char(36)
+  serviceCode   String              @map("service_code") @db.VarChar(64)
+  serviceName   String              @map("service_name") @db.VarChar(128)
+  status        ServiceHealthStatus @default(UNKNOWN)
+  lastCheckedAt DateTime?           @map("last_checked_at")
+  latencyMs     Int?                @map("latency_ms")
+  errorMessage  String?             @map("error_message") @db.VarChar(500)
+  metadata      Json?
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  @@unique([serviceCode])
+  @@index([status, updatedAt])
+  @@map("service_health")
+}
+
+model BackendDeploymentReport {
+  id           String                    @id @default(uuid()) @db.Char(36)
+  reportType   BackendDeploymentReportType @map("report_type")
+  score        Int                       @default(0)
+  readinessPct Int                       @default(0) @map("readiness_pct")
+  summary      String?                   @db.VarChar(500)
+  details      Json?
+  generatedAt  DateTime                  @default(now()) @map("generated_at")
+
+  @@index([reportType, generatedAt])
+  @@map("backend_deployment_reports")
+}

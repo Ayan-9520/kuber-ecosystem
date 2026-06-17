@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { createAiAdvisorModule } from '../modules/ai-advisor/ai-advisor.module.js';
 import { createAiCopilotModule } from '../modules/ai-copilot/ai-copilot.module.js';
 import { createAnalyticsModule } from '../modules/analytics/analytics.module.js';
+import { createAppStoreModule } from '../modules/app-store/app-store.module.js';
 import {
   createApplicationsModule,
   createApplicationStatusModule,
@@ -15,6 +16,9 @@ import {
 } from '../modules/applications/applications.module.js';
 import { createAuditLogsModule } from '../modules/audit/audit.module.js';
 import { createAuthModule } from '../modules/auth/auth.module.js';
+import { createAutomationModule } from '../modules/automation/automation.module.js';
+import { createBackendDeploymentModule } from '../modules/backend-deployment/backend-deployment.module.js';
+import { createBackupModule, createDisasterRecoveryModule } from '../modules/backup/backup.module.js';
 import { createBranchAnalyticsModule } from '../modules/branch-analytics/branch-analytics.module.js';
 import { createBranchesModule } from '../modules/branches/branches.module.js';
 import { createCampaignsModule } from '../modules/campaigns/campaigns.module.js';
@@ -27,12 +31,16 @@ import {
   createCommissionRecoveriesModule,
   createCommissionRulesModule,
 } from '../modules/commissions/commissions.module.js';
+import { createContentModule } from '../modules/content/content.module.js';
 import { createCustomersModule, createCustomerProfilesModule, createCustomerAddressesModule, createCustomerEmploymentModule, createCustomerIncomeModule, createCustomerPreferencesModule, createCustomerConsentsModule } from '../modules/customers/customers.module.js';
+import { createDevOpsModule } from '../modules/devops/devops.module.js';
 import { createDocumentsModule, createDocumentTypesModule, createDocumentRequestsModule, createDocumentVersionsModule, createOcrResultsModule, createVerificationResultsModule, createDocumentDeficienciesModule } from '../modules/documents/documents.module.js';
+import { createDrModule } from '../modules/dr/dr.module.js';
 import { createEligibilityModule } from '../modules/eligibility/eligibility.module.js';
 import { createEmailModule } from '../modules/email/email.module.js';
 import { createEmiModule } from '../modules/emi/emi.module.js';
 import { createEmployeesModule } from '../modules/employees/employees.module.js';
+import { createErrorTrackingModule } from '../modules/errors/error-tracking.module.js';
 import { createExecutiveAnalyticsModule } from '../modules/executive-analytics/executive-analytics.module.js';
 import {
   createAiFinanceModule,
@@ -41,10 +49,21 @@ import {
   createLoanComparisonModule,
   createSavingsCalculateModule,
 } from '../modules/finance-engine/finance-engine.module.js';
+import { createGoLiveModule } from '../modules/go-live/go-live.module.js';
+import {
+  createAuditCenterModule,
+  createComplianceModule,
+  createRiskModule,
+  createSecurityModule,
+} from '../modules/governance/governance.module.js';
+import { createHypercareModule } from '../modules/hypercare/hypercare.module.js';
+import { createInfrastructureModule } from '../modules/infrastructure/infrastructure.module.js';
 import { createKnowledgeBaseModule } from '../modules/knowledge-base/knowledge-base.module.js';
 import { createKycModule } from '../modules/kyc/kyc.module.js';
 import { createLeadScoringModule } from '../modules/lead-scoring/lead-scoring.module.js';
 import { createLeadsModule, createLeadSourcesModule, createLeadScoresModule, createLeadAssignmentsModule, createLeadActivitiesModule, createLeadNotesModule, createLeadFollowUpsModule, createLeadTimelineModule, createLeadAnalyticsModule } from '../modules/leads/leads.module.js';
+import { createMobileReleaseModule } from '../modules/mobile-release/mobile-release.module.js';
+import { createMonitoringModule } from '../modules/monitoring/monitoring.module.js';
 import {
   createCommunicationLogsModule,
   createCommunicationProvidersModule,
@@ -59,8 +78,10 @@ import {
   createPushTopicsModule,
   createWhatsAppModule,
 } from '../modules/notifications/notifications.module.js';
+import { createObservabilityModule } from '../modules/observability/observability.module.js';
 import { createPartnersModule } from '../modules/partners/partners.module.js';
 import { createPermissionsModule } from '../modules/permissions/permissions.module.js';
+import { createPlayStoreModule } from '../modules/play-store/play-store.module.js';
 import {
   createDocumentRulesModule,
   createEligibilityRulesModule,
@@ -71,6 +92,7 @@ import {
   createProductVariantsModule,
   createProductsModule,
 } from '../modules/product/product.module.js';
+import { createProductionModule } from '../modules/production/production.module.js';
 import { createEnterprisePushModule } from '../modules/push/push.module.js';
 import { createRagModule } from '../modules/rag/rag.module.js';
 import { createRecommendationsModule } from '../modules/recommendations/recommendations.module.js';
@@ -79,6 +101,7 @@ import { createRegionalAnalyticsModule } from '../modules/regional-analytics/reg
 import { createRolePermissionsModule, createRolesModule } from '../modules/roles/roles.module.js';
 import { createSettingsModule } from '../modules/settings/settings.module.js';
 import { createSmsModule } from '../modules/sms/sms.module.js';
+import { createStagingModule } from '../modules/staging/staging.module.js';
 import {
   createTicketAnalyticsModule,
   createTicketAssignmentsModule,
@@ -88,6 +111,7 @@ import {
   createTicketResolutionsModule,
   createTicketsModule,
 } from '../modules/support/support.module.js';
+import { createUatModule } from '../modules/uat/uat.module.js';
 import { createUserRolesModule, createUsersModule } from '../modules/users/users.module.js';
 
 export const apiRouter: Router = Router();
@@ -160,6 +184,8 @@ apiRouter.use('/commission-adjustments', createCommissionAdjustmentsModule());
 apiRouter.use('/commission-recoveries', createCommissionRecoveriesModule());
 apiRouter.use('/commission-analytics', createCommissionAnalyticsModule());
 apiRouter.use('/campaigns', createCampaignsModule());
+apiRouter.use('/automation', createAutomationModule());
+apiRouter.use('/content', createContentModule());
 apiRouter.use('/notifications', createNotificationsModule());
 apiRouter.use('/notification-templates', createNotificationTemplatesModule());
 apiRouter.use('/notification-preferences', createNotificationPreferencesModule());
@@ -192,3 +218,24 @@ apiRouter.use('/knowledge', createKnowledgeBaseModule());
 apiRouter.use('/rag', createRagModule());
 apiRouter.use('/settings', createSettingsModule());
 apiRouter.use('/audit-logs', createAuditLogsModule());
+apiRouter.use('/audit', createAuditCenterModule());
+apiRouter.use('/compliance', createComplianceModule());
+apiRouter.use('/risk', createRiskModule());
+apiRouter.use('/security', createSecurityModule());
+apiRouter.use('/uat', createUatModule());
+apiRouter.use('/monitoring', createMonitoringModule());
+apiRouter.use('/observability', createObservabilityModule());
+apiRouter.use('/errors', createErrorTrackingModule());
+apiRouter.use('/backups', createBackupModule());
+apiRouter.use('/disaster-recovery', createDisasterRecoveryModule());
+apiRouter.use('/devops', createDevOpsModule());
+apiRouter.use('/infrastructure', createInfrastructureModule());
+apiRouter.use('/staging', createStagingModule());
+apiRouter.use('/production', createProductionModule());
+apiRouter.use('/go-live', createGoLiveModule());
+apiRouter.use('/hypercare', createHypercareModule());
+apiRouter.use('/mobile', createMobileReleaseModule());
+apiRouter.use('/play-store', createPlayStoreModule());
+apiRouter.use('/app-store', createAppStoreModule());
+apiRouter.use('/deployment', createBackendDeploymentModule());
+apiRouter.use('/dr', createDrModule());

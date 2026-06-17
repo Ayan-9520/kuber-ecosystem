@@ -1,0 +1,11 @@
+appId: com.kuberfinserve.kuberone.customer
+---
+- launchApp
+- assertVisible: "Welcome to KuberOne"
+- tapOn: "Mobile Number"
+- inputText: "9876543210"
+- tapOn: "Send OTP"
+- tapOn: "OTP"
+- inputText: "123456"
+- tapOn: "Verify & Sign In"
+- assertVisible: "Quick actions"

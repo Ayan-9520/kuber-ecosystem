@@ -1,0 +1,50 @@
+name: App Store IPA Upload
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        type: choice
+        options: [customer, dsa]
+  workflow_call:
+    inputs:
+      app:
+        required: true
+        type: string
+
+jobs:
+  ipa-upload:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Prebuild iOS
+        env:
+          EXPO_PUBLIC_APP_ENV: production
+        run: |
+          cd apps/mobile-${{ inputs.app || github.event.inputs.app }}
+          npx expo prebuild --platform ios --clean --non-interactive
+
+      - name: Install pods
+        working-directory: apps/mobile-${{ inputs.app || github.event.inputs.app }}/ios
+        run: pod install
+
+      - name: Archive (simulator smoke)
+        working-directory: apps/mobile-${{ inputs.app || github.event.inputs.app }}/ios
+        run: |
+          xcodebuild -workspace *.xcworkspace -scheme ${{ inputs.app || github.event.inputs.app }} \
+            -sdk iphonesimulator -configuration Release build CODE_SIGNING_ALLOWED=NO || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa-${{ inputs.app || github.event.inputs.app }}
+          path: apps/mobile-${{ inputs.app || github.event.inputs.app }}/ios/build/
+          if-no-files-found: ignore

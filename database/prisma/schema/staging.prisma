@@ -1,0 +1,121 @@
+// ── Staging Environment Platform ──
+
+enum StagingEnvStatus {
+  PROVISIONING
+  ACTIVE
+  VALIDATING
+  DEGRADED
+  MAINTENANCE
+}
+
+enum DeploymentValidationStatus {
+  PENDING
+  RUNNING
+  PASSED
+  FAILED
+  SKIPPED
+}
+
+enum ReleaseValidationStatus {
+  PENDING
+  IN_PROGRESS
+  PASSED
+  FAILED
+  BLOCKED
+}
+
+model Environment {
+  id            String           @id @default(uuid()) @db.Char(36)
+  code          String           @unique @db.VarChar(32)
+  name          String           @db.VarChar(128)
+  status        StagingEnvStatus @default(ACTIVE)
+  apiUrl        String?          @map("api_url") @db.VarChar(500)
+  adminUrl      String?          @map("admin_url") @db.VarChar(500)
+  customerUrl   String?          @map("customer_url") @db.VarChar(500)
+  partnerUrl    String?          @map("partner_url") @db.VarChar(500)
+  databaseUrl   String?          @map("database_url") @db.VarChar(500)
+  redisUrl      String?          @map("redis_url") @db.VarChar(500)
+  s3Bucket      String?          @map("s3_bucket") @db.VarChar(128)
+  branch        String?          @db.VarChar(128)
+  commitSha     String?          @map("commit_sha") @db.VarChar(64)
+  version       String?          @db.VarChar(64)
+  maskedData    Boolean          @default(true) @map("masked_data")
+  metadata      Json?
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  deployments         EnvironmentDeployment[]
+  releaseValidations  ReleaseValidation[]
+  audits              StagingAudit[]
+
+  @@index([status, updatedAt])
+  @@map("staging_environments")
+}
+
+model EnvironmentDeployment {
+  id              String                     @id @default(uuid()) @db.Char(36)
+  environmentId   String                     @map("environment_id") @db.Char(36)
+  component       String                     @db.VarChar(64)
+  version         String                     @db.VarChar(64)
+  branch          String?                    @db.VarChar(128)
+  commitSha       String?                    @map("commit_sha") @db.VarChar(64)
+  status          DeploymentValidationStatus @default(PENDING)
+  buildStatus     DeploymentValidationStatus @default(PENDING) @map("build_status")
+  testStatus      DeploymentValidationStatus @default(PENDING) @map("test_status")
+  migrationStatus DeploymentValidationStatus @default(PENDING) @map("migration_status")
+  healthStatus    DeploymentValidationStatus @default(PENDING) @map("health_status")
+  deployedById    String?                    @map("deployed_by_id") @db.Char(36)
+  startedAt       DateTime?                  @map("started_at")
+  completedAt     DateTime?                  @map("completed_at")
+  report          Json?
+  createdAt       DateTime                   @default(now()) @map("created_at")
+
+  environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  deployedBy  User?       @relation("StagingDeploymentDeployedBy", fields: [deployedById], references: [id])
+
+  @@index([environmentId, createdAt])
+  @@index([status, createdAt])
+  @@map("environment_deployments")
+}
+
+model ReleaseValidation {
+  id              String                  @id @default(uuid()) @db.Char(36)
+  environmentId   String                  @map("environment_id") @db.Char(36)
+  releaseVersion  String                  @map("release_version") @db.VarChar(32)
+  branch          String?                 @db.VarChar(128)
+  status          ReleaseValidationStatus @default(PENDING)
+  preDeployCheck  Boolean                 @default(false) @map("pre_deploy_check")
+  postDeployCheck Boolean                 @default(false) @map("post_deploy_check")
+  rollbackReady   Boolean                 @default(false) @map("rollback_ready")
+  checklist       Json?
+  validatedById   String?                 @map("validated_by_id") @db.Char(36)
+  startedAt       DateTime?               @map("started_at")
+  completedAt     DateTime?               @map("completed_at")
+  report          Json?
+  createdAt       DateTime                @default(now()) @map("created_at")
+
+  environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  validatedBy User?       @relation("ReleaseValidationValidatedBy", fields: [validatedById], references: [id])
+
+  @@index([environmentId, status])
+  @@index([releaseVersion, createdAt])
+  @@map("release_validations")
+}
+
+model StagingAudit {
+  id            String   @id @default(uuid()) @db.Char(36)
+  environmentId String?  @map("environment_id") @db.Char(36)
+  action        String   @db.VarChar(64)
+  entityType    String   @map("entity_type") @db.VarChar(64)
+  entityId      String?  @map("entity_id") @db.Char(36)
+  actorId       String?  @map("actor_id") @db.Char(36)
+  details       Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  environment Environment? @relation(fields: [environmentId], references: [id], onDelete: SetNull)
+  actor       User?        @relation("StagingAuditActor", fields: [actorId], references: [id])
+
+  @@index([action, createdAt])
+  @@index([environmentId, createdAt])
+  @@map("staging_audits")
+}

@@ -1,0 +1,12 @@
+{
+  "uid": "kuberone-logs",
+  "title": "KuberOne Log Explorer (Loki)",
+  "tags": ["kuberone", "observability", "logs"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    { "type": "logs", "title": "Application Logs", "gridPos": { "x": 0, "y": 0, "w": 24, "h": 12 }, "targets": [{ "expr": "{service=\"kuberone-api\"}", "datasource": "Loki" }] },
+    { "type": "timeseries", "title": "Log Volume by Level", "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 }, "targets": [{ "expr": "sum by (level) (count_over_time({service=\"kuberone-api\"} | json | level != \"\" [5m]))", "datasource": "Loki" }] },
+    { "type": "timeseries", "title": "Auth Events", "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 }, "targets": [{ "expr": "count_over_time({service=\"kuberone-api\"} |= \"auth\" [5m])", "datasource": "Loki" }] }
+  ]
+}

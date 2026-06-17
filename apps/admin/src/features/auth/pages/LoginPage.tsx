@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { Button, Input } from '@/components/ui';
 import { useAuth } from '@/hooks/usePermissions';
+import { tokenStorage } from '@/lib/token-storage';
 import { getApiErrorMessage } from '@/lib/utils';
 import { authService } from '@/services/auth.service';
 
@@ -30,8 +31,7 @@ function mapMeToUser(me: Awaited<ReturnType<typeof authService.me>>) {
 }
 
 async function completeLogin(accessToken: string, refreshToken: string, setCredentials: ReturnType<typeof useAuth>['setCredentials']) {
-  localStorage.setItem('accessToken', accessToken);
-  localStorage.setItem('refreshToken', refreshToken);
+  tokenStorage.setTokens(accessToken, refreshToken);
   const me = await authService.me();
   setCredentials({ accessToken, user: mapMeToUser(me) });
 }

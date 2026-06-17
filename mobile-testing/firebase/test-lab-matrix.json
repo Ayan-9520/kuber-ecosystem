@@ -1,0 +1,24 @@
+{
+  "customer": {
+    "android": [
+      { "model": "Pixel2", "version": "28", "locale": "en", "orientation": "portrait" },
+      { "model": "blueline", "version": "30", "locale": "en", "orientation": "portrait" },
+      { "model": "redfin", "version": "33", "locale": "en", "orientation": "portrait" },
+      { "model": "gts3lltevzw", "version": "28", "locale": "en", "orientation": "landscape" }
+    ],
+    "ios": [
+      { "model": "iphone11pro", "version": "16.6", "locale": "en_US", "orientation": "portrait" },
+      { "model": "iphone14pro", "version": "17.0", "locale": "en_US", "orientation": "portrait" },
+      { "model": "ipad10", "version": "17.0", "locale": "en_US", "orientation": "landscape" }
+    ]
+  },
+  "dsa": {
+    "android": [
+      { "model": "Pixel2", "version": "28", "locale": "en", "orientation": "portrait" },
+      { "model": "redfin", "version": "33", "locale": "en", "orientation": "portrait" }
+    ],
+    "ios": [
+      { "model": "iphone14pro", "version": "17.0", "locale": "en_US", "orientation": "portrait" }
+    ]
+  }
+}

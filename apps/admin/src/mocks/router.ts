@@ -6,6 +6,10 @@ import {
   MOCK_COMMISSION_LEDGER,
   MOCK_CUSTOMERS,
   MOCK_DOCUMENTS,
+  MOCK_EMPLOYEES,
+  MOCK_BRANCHES,
+  MOCK_REGIONS,
+  MOCK_VOICE_SESSIONS,
   MOCK_LEAD_ANALYTICS,
   MOCK_LENDERS,
   MOCK_NOTIFICATIONS,
@@ -100,6 +104,10 @@ export async function mockGetPaginated(
   if (path === '/audit-logs') return paginate(MOCK_AUDIT_LOGS, params) as never;
   if (path === '/settings') return paginate(MOCK_SETTINGS, params) as never;
   if (path === '/campaigns') return paginate(MOCK_CAMPAIGNS, params) as never;
+  if (path === '/employees') return paginate(MOCK_EMPLOYEES, params) as never;
+  if (path === '/branches') return paginate(MOCK_BRANCHES, params) as never;
+  if (path === '/regions') return paginate(MOCK_REGIONS, params) as never;
+  if (path === '/audit-logs' && params?.entityType === 'voice_ai') return paginate(MOCK_VOICE_SESSIONS, params) as never;
   if (path === '/notifications') return paginate(MOCK_NOTIFICATIONS, params) as never;
   if (path === '/notification-templates') return paginate(MOCK_NOTIFICATION_TEMPLATES, params) as never;
   if (path === '/commission-ledger') return paginate(MOCK_COMMISSION_LEDGER, params) as never;
@@ -366,7 +374,7 @@ export async function mockGet<T>(url: string, params?: Record<string, unknown>):
   if (path.startsWith('/executive-analytics/')) return {} as T;
   if (path.startsWith('/analytics/')) return {} as T;
 
-  if (path === '/lead-analytics') return MOCK_LEAD_ANALYTICS as T;
+  if (path === '/lead-analytics' || path === '/lead-analytics/summary') return MOCK_LEAD_ANALYTICS as T;
   if (path === '/commission-analytics') return MOCK_COMMISSION_ANALYTICS as T;
   if (path === '/ticket-analytics') return MOCK_TICKET_ANALYTICS as T;
   if (path === '/ai-copilot/analytics') return MOCK_COPILOT_ANALYTICS as T;
@@ -659,6 +667,58 @@ export async function mockGet<T>(url: string, params?: Record<string, unknown>):
     return user as T;
   }
 
+  const campaignId = matchId(path, '/campaigns');
+  if (campaignId) {
+    const campaign = findById(MOCK_CAMPAIGNS, campaignId);
+    if (!campaign) throw new Error('Not found');
+    return campaign as T;
+  }
+
+  const employeeId = matchId(path, '/employees');
+  if (employeeId) {
+    const employee = findById(MOCK_EMPLOYEES, employeeId);
+    if (!employee) throw new Error('Not found');
+    return employee as T;
+  }
+
+  const branchId = matchId(path, '/branches');
+  if (branchId) {
+    const branch = findById(MOCK_BRANCHES, branchId);
+    if (!branch) throw new Error('Not found');
+    return branch as T;
+  }
+
+  const regionId = matchId(path, '/regions');
+  if (regionId) {
+    const region = findById(MOCK_REGIONS, regionId);
+    if (!region) throw new Error('Not found');
+    return region as T;
+  }
+
+  const voiceSessionId = path.match(/^\/ai\/voice\/sessions\/([^/?]+)$/);
+  if (voiceSessionId?.[1]) {
+    const session = MOCK_VOICE_SESSIONS.find((s) => s.entityId === voiceSessionId[1] || s.id === voiceSessionId[1]);
+    if (!session) throw new Error('Not found');
+    return {
+      id: session.entityId,
+      status: session.status,
+      language: session.language,
+      messageCount: session.messageCount,
+      createdAt: session.createdAt,
+    } as T;
+  }
+
+  if (path === '/communication-logs/analytics') {
+    return {
+      totalSent: 8420,
+      delivered: 8100,
+      failed: 120,
+      byChannel: { EMAIL: 4200, SMS: 2800, WHATSAPP: 980, PUSH: 440 },
+      openRate: 0.72,
+      clickRate: 0.34,
+    } as T;
+  }
+
   const auditId = matchId(path, '/audit-logs');
   if (auditId) {
     const log = findById(MOCK_AUDIT_LOGS, auditId);
@@ -676,8 +736,84 @@ export async function mockGet<T>(url: string, params?: Record<string, unknown>):
   return {} as T;
 }
 
-export async function mockMutate<T>(_url: string, _body?: unknown): Promise<T> {
+export async function mockMutate<T>(url: string, body?: unknown): Promise<T> {
   await mockDelay(80);
+  const path = url.split('?')[0] ?? url;
+
+  if (path === '/eligibility/calculate') {
+    const input = (body ?? {}) as Record<string, unknown>;
+    const income = Number(input.monthlyIncome ?? 0);
+    return {
+      eligibleAmount: Math.round(income * 60),
+      approvalProbability: income >= 50000 ? 0.82 : 0.58,
+      outcome: income >= 40000 ? 'ELIGIBLE' : 'REVIEW',
+      riskFlags: income < 40000 ? ['LOW_INCOME'] : [],
+      foir: 0.42,
+      ltv: 0.75,
+    } as T;
+  }
+
+  if (path === '/emi/calculate') {
+    const input = (body ?? {}) as Record<string, unknown>;
+    const principal = Number(input.loanAmount ?? 0);
+    const rate = Number(input.interestRate ?? 0) / 12 / 100;
+    const tenure = Number(input.tenureMonths ?? 1);
+    const emi = rate > 0 ? (principal * rate * (1 + rate) ** tenure) / ((1 + rate) ** tenure - 1) : principal / tenure;
+    const totalRepayment = emi * tenure;
+    return {
+      emi: Math.round(emi),
+      principal,
+      interestPayable: Math.round(totalRepayment - principal),
+      totalRepayment: Math.round(totalRepayment),
+      amortizationSummary: [{ year: 1, principalPaid: Math.round(principal * 0.08), interestPaid: Math.round(totalRepayment * 0.12), outstandingBalance: Math.round(principal * 0.92) }],
+    } as T;
+  }
+
+  if (path === '/ai/voice/sessions') {
+    const id = `vs-${Date.now()}`;
+    return { id, status: 'active', language: (body as Record<string, unknown>)?.language ?? 'en', messageCount: 0, createdAt: new Date().toISOString() } as T;
+  }
+
+  if (path.match(/^\/ai\/voice\/sessions\/[^/]+\/end$/)) {
+    return { status: 'ended' } as T;
+  }
+
+  if (path === '/referrals') {
+    return { id: `ref-${Date.now()}`, status: 'PENDING', ...(body as object) } as T;
+  }
+
+  if (path === '/users') {
+    return { id: `usr-${Date.now()}`, ...(body as object), createdAt: new Date().toISOString() } as T;
+  }
+
+  if (path === '/employees') {
+    return { id: `emp-${Date.now()}`, ...(body as object), createdAt: new Date().toISOString() } as T;
+  }
+
+  if (path === '/branches') {
+    return { id: `br-${Date.now()}`, ...(body as object), createdAt: new Date().toISOString() } as T;
+  }
+
+  if (path === '/regions') {
+    return { id: `reg-${Date.now()}`, ...(body as object), createdAt: new Date().toISOString() } as T;
+  }
+
+  if (path.match(/^\/commission-approvals\/[^/]+\/(approve|reject)$/)) {
+    return { status: path.endsWith('/approve') ? 'APPROVED' : 'REJECTED' } as T;
+  }
+
+  if (path.match(/^\/commission-payments\/[^/]+\/(approve|release)$/)) {
+    return { status: path.endsWith('/release') ? 'PAID' : 'APPROVED' } as T;
+  }
+
+  if (path.match(/^\/campaigns\/[^/]+$/)) {
+    return { id: path.split('/')[2], ...(body as object) } as T;
+  }
+
+  if (path.match(/^\/campaigns\/[^/]+$/) && url.includes('DELETE')) {
+    return { deleted: true } as T;
+  }
+
   return {} as T;
 }
 

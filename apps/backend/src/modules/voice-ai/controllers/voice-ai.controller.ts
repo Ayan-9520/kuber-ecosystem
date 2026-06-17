@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 
-import { successResponse } from '../../../shared/responses/success-response.js';
+import { paginatedResponse, successResponse } from '../../../shared/responses/success-response.js';
 import { voiceSessionService } from '../services/voice-session.service.js';
 import type { RequestContext } from '../types/voice-ai.types.js';
 
@@ -20,6 +20,13 @@ function sessionId(req: Request): string {
 export const voiceAiController = {
   health: async (_req: Request, res: Response) => {
     res.json(successResponse({ module: 'voice-ai', status: 'ok', sttEnabled: false, ttsClient: 'device' }));
+  },
+
+  listSessions: async (req: Request, res: Response) => {
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 20);
+    const result = await voiceSessionService.listSessions(req.user!, page, limit);
+    res.json(paginatedResponse(result.items, result.meta));
   },
 
   createSession: async (req: Request, res: Response) => {

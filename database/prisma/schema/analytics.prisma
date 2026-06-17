@@ -97,7 +97,7 @@ model MetricValue {
 
   metricDefinition MetricDefinition @relation(fields: [metricDefinitionId], references: [id], onDelete: Cascade)
 
-  @@unique([metricDefinitionId, snapshotDate, branchId, regionId, partnerId, employeeId])
+  @@unique([metricDefinitionId, snapshotDate, branchId, regionId, partnerId, employeeId], map: "metric_values_def_date_scope_key")
   @@index([snapshotDate, branchId, regionId])
   @@map("metric_values")
 }
@@ -173,7 +173,7 @@ model AnalyticsSnapshot {
   payload      Json
   createdAt    DateTime      @default(now()) @map("created_at")
 
-  @@unique([snapshotDate, dashboardType, branchId, regionId, partnerId])
+  @@unique([snapshotDate, dashboardType, branchId, regionId, partnerId], map: "analytics_snapshots_date_scope_key")
   @@index([snapshotDate])
   @@map("analytics_snapshots")
 }

@@ -1,0 +1,13 @@
+{
+  "uid": "kuberone-errors-ai",
+  "title": "KuberOne AI Error Dashboard",
+  "tags": ["kuberone", "errors", "ai"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    { "type": "stat", "title": "AI Failures/hr", "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "increase(kuberone_ai_failures_total[1h])", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "OpenAI Rate Limits", "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "increase(kuberone_ai_rate_limit_total[1h])", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "RAG Failures", "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "increase(kuberone_rag_failures_total[1h])", "datasource": "Prometheus" }] },
+    { "type": "timeseries", "title": "AI Error Trend", "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 }, "targets": [{ "expr": "rate(kuberone_ai_failures_total[5m])", "datasource": "Prometheus" }] }
+  ]
+}

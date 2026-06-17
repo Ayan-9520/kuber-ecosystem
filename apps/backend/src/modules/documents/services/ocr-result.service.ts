@@ -29,6 +29,8 @@ export const ocrResultService = {
         ...item,
         panNumber: undefined,
         aadhaarNumber: undefined,
+        panNumberEnc: undefined,
+        aadhaarNumberEnc: undefined,
         panNumberMasked: item.panNumberMasked,
         aadhaarNumberMasked: item.aadhaarNumberMasked,
       })),

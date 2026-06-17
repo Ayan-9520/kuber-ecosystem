@@ -81,6 +81,7 @@ model Lead {
   @@index([prospectPhone])
   @@index([slaDeadline])
   @@index([deletedAt])
+  @@index([deletedAt, createdAt(sort: Desc)])
 }
 
 model LeadScore {

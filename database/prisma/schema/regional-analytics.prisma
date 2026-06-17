@@ -146,7 +146,7 @@ model RegionalRanking {
   region Region? @relation(fields: [regionId], references: [id], onDelete: SetNull)
   branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
 
-  @@index([rankingType, periodType, periodStart, rank])
+  @@index([rankingType, periodType, periodStart, rank], map: "regional_rankings_type_period_rank_idx")
   @@index([regionId, periodType])
   @@map("regional_rankings")
 }

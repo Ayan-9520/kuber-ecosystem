@@ -7,6 +7,7 @@ import {
   TooManyRequestsError,
   UnauthorizedError,
 } from '../../../shared/errors/app-error.js';
+import { centralAuditService } from '../../governance/services/central-audit.service.js';
 import { authAuditRepository } from '../repositories/audit.repository.js';
 import { loginHistoryRepository } from '../repositories/login-history.repository.js';
 import { userRepository } from '../repositories/user.repository.js';
@@ -52,6 +53,17 @@ export const securityService = {
 
     const since = new Date(Date.now() - env.ACCOUNT_LOCK_MINUTES * 60 * 1000);
     const failures = await loginHistoryRepository.countRecentFailures(userId, since);
+
+    void centralAuditService.logSecurityEvent({
+      eventType: failures >= env.MAX_FAILED_LOGIN_ATTEMPTS ? 'ACCOUNT_LOCKOUT' : 'FAILED_LOGIN',
+      severity: failures >= env.MAX_FAILED_LOGIN_ATTEMPTS ? 'HIGH' : 'MEDIUM',
+      userId,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+      description: `Failed login: ${reason} (${failures} recent attempts)`,
+      metadata: { reason, failures },
+      createAlert: failures >= env.MAX_FAILED_LOGIN_ATTEMPTS,
+    });
 
     if (failures >= env.MAX_FAILED_LOGIN_ATTEMPTS) {
       await userRepository.setStatus(userId, UserStatus.LOCKED);

@@ -1,0 +1,14 @@
+{
+  "uid": "kuberone-errors-executive",
+  "title": "KuberOne Executive Error Dashboard",
+  "tags": ["kuberone", "errors", "executive"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    { "type": "stat", "title": "Critical Open Errors", "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "sum(rate(kuberone_http_errors_total[1h]))", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "Error Rate", "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "rate(kuberone_http_errors_total[5m])", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "AI Failures", "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "increase(kuberone_ai_failures_total[1h])", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "Notification Failures", "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "increase(kuberone_notification_failures_total[1h])", "datasource": "Prometheus" }] },
+    { "type": "timeseries", "title": "Error Trend", "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 }, "targets": [{ "expr": "rate(kuberone_http_errors_total[5m])", "datasource": "Prometheus" }] }
+  ]
+}

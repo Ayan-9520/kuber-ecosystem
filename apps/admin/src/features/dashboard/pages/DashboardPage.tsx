@@ -74,24 +74,13 @@ export function DashboardPage() {
     queryFn: () => dashboardService.recommendationAnalytics(),
   });
 
-  const isLoading =
-    leadAnalytics.isLoading ||
-    commissionAnalytics.isLoading ||
-    recentLeads.isLoading ||
-    recentApplications.isLoading ||
-    pendingDocuments.isLoading ||
-    recommendationAnalytics.isLoading;
+  const isLoading = leadAnalytics.isLoading || commissionAnalytics.isLoading;
 
   if (isLoading) return <LoadingSpinner />;
 
-  const hasError =
-    leadAnalytics.isError ||
-    commissionAnalytics.isError ||
-    recentLeads.isError ||
-    recentApplications.isError ||
-    pendingDocuments.isError;
+  const hasCriticalError = leadAnalytics.isError || commissionAnalytics.isError;
 
-  if (hasError) {
+  if (hasCriticalError) {
     return (
       <div className="page-container">
         <PageHeader title="Dashboard" subtitle="Real-time overview of leads, applications, and commissions" />
@@ -108,6 +97,7 @@ export function DashboardPage() {
                 void recentLeads.refetch();
                 void recentApplications.refetch();
                 void pendingDocuments.refetch();
+                void recommendationAnalytics.refetch();
               }}
             >
               Retry

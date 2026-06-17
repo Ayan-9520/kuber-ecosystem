@@ -1,0 +1,11 @@
+{
+  "uid": "kuberone-errors-dsa-app",
+  "title": "KuberOne DSA App Error Dashboard",
+  "tags": ["kuberone", "errors", "dsa-app"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    { "type": "stat", "title": "DSA App Errors", "gridPos": { "x": 0, "y": 0, "w": 8, "h": 4 }, "targets": [{ "expr": "count_over_time({source=\"DSA_APP\"} [24h])", "datasource": "Loki" }] },
+    { "type": "logs", "title": "DSA Lead/Commission Errors", "gridPos": { "x": 0, "y": 4, "w": 24, "h": 12 }, "targets": [{ "expr": "{source=\"DSA_APP\"}", "datasource": "Loki" }] }
+  ]
+}

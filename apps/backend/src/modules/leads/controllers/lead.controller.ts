@@ -30,7 +30,7 @@ export const leadController = {
     res.json(successResponse(await leadService.getById(req.user!, req.params.id as string)));
   },
   create: async (req: Request, res: Response) => {
-    res.status(201).json(successResponse(await leadService.create(req.body, ctx(req))));
+    res.status(201).json(successResponse(await leadService.create(req.user!, req.body, ctx(req))));
   },
   update: async (req: Request, res: Response) => {
     res.json(successResponse(await leadService.update(req.user!, req.params.id as string, req.body, ctx(req))));

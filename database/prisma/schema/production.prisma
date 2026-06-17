@@ -1,0 +1,156 @@
+// ── Production Environment Platform ──
+
+enum ProductionEnvStatus {
+  PROVISIONING
+  LIVE
+  DEGRADED
+  MAINTENANCE
+  INCIDENT
+}
+
+enum ProductionDeployStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  ROLLED_BACK
+}
+
+enum ReleaseRecordStatus {
+  PLANNED
+  IN_PROGRESS
+  RELEASED
+  FAILED
+  ROLLED_BACK
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IncidentStatus {
+  OPEN
+  INVESTIGATING
+  MITIGATED
+  RESOLVED
+  CLOSED
+}
+
+model ProductionEnvironment {
+  id            String              @id @default(uuid()) @db.Char(36)
+  code          String              @unique @db.VarChar(32)
+  name          String              @db.VarChar(128)
+  status        ProductionEnvStatus @default(LIVE)
+  apiUrl        String?             @map("api_url") @db.VarChar(500)
+  adminUrl      String?             @map("admin_url") @db.VarChar(500)
+  customerUrl   String?             @map("customer_url") @db.VarChar(500)
+  partnerUrl    String?             @map("partner_url") @db.VarChar(500)
+  region        String              @default("ap-south-1") @db.VarChar(32)
+  version       String?             @db.VarChar(64)
+  commitSha     String?             @map("commit_sha") @db.VarChar(64)
+  availability  Float?              @default(99.9)
+  goLiveAt      DateTime?           @map("go_live_at")
+  metadata      Json?
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  deployments ProductionDeployment[]
+  releases    ReleaseRecord[]
+  incidents   IncidentRecord[]
+  audits      ProductionAudit[]
+
+  @@index([status, updatedAt])
+  @@map("production_environments")
+}
+
+model ProductionDeployment {
+  id              String                 @id @default(uuid()) @db.Char(36)
+  environmentId   String                 @map("environment_id") @db.Char(36)
+  component       String                 @db.VarChar(64)
+  version         String                 @db.VarChar(64)
+  strategy        String                 @default("rolling") @db.VarChar(32)
+  branch          String?                @db.VarChar(128)
+  commitSha       String?                @map("commit_sha") @db.VarChar(64)
+  status          ProductionDeployStatus @default(PENDING)
+  deployedById    String?                @map("deployed_by_id") @db.Char(36)
+  startedAt       DateTime?              @map("started_at")
+  completedAt     DateTime?              @map("completed_at")
+  validationReport Json?                 @map("validation_report")
+  metadata        Json?
+  createdAt       DateTime               @default(now()) @map("created_at")
+
+  environment ProductionEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  deployedBy  User?                 @relation("ProductionDeploymentDeployedBy", fields: [deployedById], references: [id])
+
+  @@index([environmentId, createdAt])
+  @@index([status, createdAt])
+  @@map("production_deployments")
+}
+
+model ReleaseRecord {
+  id              String              @id @default(uuid()) @db.Char(36)
+  environmentId   String              @map("environment_id") @db.Char(36)
+  version         String              @db.VarChar(32)
+  name            String              @db.VarChar(200)
+  branch          String?             @db.VarChar(128)
+  status          ReleaseRecordStatus @default(PLANNED)
+  changelog       String?             @db.Text
+  uatSignedOff    Boolean             @default(false) @map("uat_signed_off")
+  goLiveApproved  Boolean             @default(false) @map("go_live_approved")
+  releasedById    String?             @map("released_by_id") @db.Char(36)
+  releasedAt      DateTime?           @map("released_at")
+  metadata        Json?
+  createdAt       DateTime            @default(now()) @map("created_at")
+
+  environment ProductionEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  releasedBy  User?                 @relation("ReleaseRecordReleasedBy", fields: [releasedById], references: [id])
+
+  @@index([environmentId, status])
+  @@index([version, createdAt])
+  @@map("release_records")
+}
+
+model IncidentRecord {
+  id            String           @id @default(uuid()) @db.Char(36)
+  environmentId String           @map("environment_id") @db.Char(36)
+  title         String           @db.VarChar(255)
+  severity      IncidentSeverity @default(MEDIUM)
+  status        IncidentStatus   @default(OPEN)
+  description   String?          @db.Text
+  rootCause     String?          @map("root_cause") @db.Text
+  resolution    String?          @db.Text
+  assignedToId  String?          @map("assigned_to_id") @db.Char(36)
+  startedAt     DateTime         @default(now()) @map("started_at")
+  resolvedAt    DateTime?        @map("resolved_at")
+  metadata      Json?
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  environment ProductionEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  assignedTo  User?                 @relation("IncidentRecordAssignedTo", fields: [assignedToId], references: [id])
+
+  @@index([environmentId, status, severity])
+  @@index([severity, startedAt])
+  @@map("incident_records")
+}
+
+model ProductionAudit {
+  id            String   @id @default(uuid()) @db.Char(36)
+  environmentId String?  @map("environment_id") @db.Char(36)
+  action        String   @db.VarChar(64)
+  entityType    String   @map("entity_type") @db.VarChar(64)
+  entityId      String?  @map("entity_id") @db.Char(36)
+  actorId       String?  @map("actor_id") @db.Char(36)
+  compliance    String?  @db.VarChar(64)
+  details       Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  environment ProductionEnvironment? @relation(fields: [environmentId], references: [id], onDelete: SetNull)
+  actor       User?                  @relation("ProductionAuditActor", fields: [actorId], references: [id])
+
+  @@index([action, createdAt])
+  @@index([compliance, createdAt])
+  @@map("production_audits")
+}

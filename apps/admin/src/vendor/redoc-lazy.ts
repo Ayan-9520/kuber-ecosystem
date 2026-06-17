@@ -1,0 +1,1 @@
+export { RedocStandalone } from 'redoc';

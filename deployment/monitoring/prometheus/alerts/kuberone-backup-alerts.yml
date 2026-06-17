@@ -1,0 +1,49 @@
+groups:
+  - name: kuberone-backup
+    rules:
+      - alert: BackupJobFailed
+        expr: increase(kuberone_backup_failures_total[1h]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: backup
+        annotations:
+          summary: Backup job failed
+          description: One or more backup jobs failed in the last hour
+
+      - alert: BackupDelayed
+        expr: kuberone_backup_last_success_age_hours > 25
+        for: 15m
+        labels:
+          severity: high
+          component: backup
+        annotations:
+          summary: Daily backup delayed
+          description: No successful daily backup in over 25 hours
+
+      - alert: RestoreFailed
+        expr: increase(kuberone_restore_failures_total[1h]) > 0
+        for: 2m
+        labels:
+          severity: critical
+          component: backup
+        annotations:
+          summary: Restore operation failed
+
+      - alert: BackupStorageThreshold
+        expr: kuberone_backup_storage_used_percent > 85
+        for: 30m
+        labels:
+          severity: high
+          component: backup
+        annotations:
+          summary: Backup storage threshold exceeded
+
+      - alert: BackupReplicationFailure
+        expr: kuberone_backup_replication_status == 0
+        for: 10m
+        labels:
+          severity: high
+          component: backup
+        annotations:
+          summary: Cross-region backup replication failed

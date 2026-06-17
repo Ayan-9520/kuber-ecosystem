@@ -106,8 +106,11 @@ export function getApiErrorMessage(error: unknown): string {
       };
     }).response;
     if (resp?.data?.error?.message) return resp.data.error.message;
+    if (resp?.status === 503) {
+      return resp.data?.error?.message ?? 'Database unavailable. Start MySQL on port 3306.';
+    }
     if (resp?.status === 500) {
-      return 'Backend error. Ensure API is running: pnpm dev:backend';
+      return resp.data?.error?.message ?? 'Backend error. Ensure API is running: pnpm dev:backend';
     }
     if (resp?.status === 401) return 'Invalid email or password';
     if (resp?.status === 422) return 'Please check your input and try again';

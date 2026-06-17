@@ -1,0 +1,405 @@
+// ── KuberOne Marketing Automation Engine ──
+
+enum AutomationJourneyType {
+  LEAD_NURTURING
+  LEAD_REENGAGEMENT
+  CUSTOMER_ONBOARDING
+  DOCUMENT_COLLECTION
+  APPLICATION_FOLLOWUP
+  SANCTION_FOLLOWUP
+  DISBURSEMENT_FOLLOWUP
+  REFERRAL_AUTOMATION
+  COMMISSION_AUTOMATION
+  CUSTOMER_RETENTION
+  CROSS_SELL
+  UPSELL
+  BIRTHDAY_CAMPAIGN
+  ANNIVERSARY_CAMPAIGN
+  RENEWAL_CAMPAIGN
+  FEEDBACK_CAMPAIGN
+}
+
+enum AutomationWorkflowStatus {
+  DRAFT
+  PENDING_APPROVAL
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum AutomationNodeType {
+  TRIGGER
+  CONDITION
+  ACTION
+  DELAY
+  BRANCH
+  LOOP
+  GOAL
+  EXIT
+}
+
+enum AutomationTriggerType {
+  LEAD_CREATED
+  LEAD_ASSIGNED
+  LEAD_SCORE_CHANGED
+  APPLICATION_CREATED
+  APPLICATION_APPROVED
+  APPLICATION_REJECTED
+  APPLICATION_SANCTIONED
+  APPLICATION_DISBURSED
+  DOCUMENT_UPLOADED
+  DOCUMENT_REJECTED
+  REFERRAL_CREATED
+  REFERRAL_CONVERTED
+  COMMISSION_APPROVED
+  SUPPORT_TICKET_CREATED
+  SUPPORT_TICKET_CLOSED
+  CUSTOMER_REGISTERED
+  CUSTOMER_LOGIN
+  CUSTOMER_INACTIVE
+}
+
+enum AutomationActionType {
+  SEND_EMAIL
+  SEND_SMS
+  SEND_WHATSAPP
+  SEND_PUSH
+  CREATE_CRM_TASK
+  ASSIGN_LEAD
+  REASSIGN_LEAD
+  UPDATE_LEAD_SCORE
+  UPDATE_STATUS
+  CREATE_FOLLOW_UP
+  CREATE_TICKET
+  ESCALATE_TICKET
+  TRIGGER_AI_RECOMMENDATION
+  GENERATE_AI_CONTENT
+}
+
+enum AutomationDelayType {
+  MINUTES
+  HOURS
+  DAYS
+  WEEKS
+  UNTIL_DATE
+  UNTIL_EVENT
+}
+
+enum AutomationGoalType {
+  APPLICATION_SUBMITTED
+  APPLICATION_APPROVED
+  APPLICATION_DISBURSED
+  REFERRAL_CONVERTED
+  COMMISSION_PAID
+  SUPPORT_RESOLVED
+}
+
+enum AutomationExecutionStatus {
+  PENDING
+  RUNNING
+  WAITING
+  COMPLETED
+  FAILED
+  CANCELLED
+  EXITED
+  GOAL_ACHIEVED
+}
+
+enum AutomationQueueStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  DEAD_LETTER
+}
+
+enum AutomationLogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+}
+
+model AutomationWorkflow {
+  id               String                   @id @default(uuid()) @db.Char(36)
+  name             String                   @db.VarChar(200)
+  description      String?                  @db.Text
+  journeyType      AutomationJourneyType    @map("journey_type")
+  status           AutomationWorkflowStatus @default(DRAFT)
+  version          Int                      @default(1)
+  canvasJson       Json?                    @map("canvas_json")
+  branchId         String?                  @map("branch_id") @db.Char(36)
+  regionId         String?                  @map("region_id") @db.Char(36)
+  dataScopeJson    Json?                    @map("data_scope_json")
+  requiresApproval Boolean                  @default(true) @map("requires_approval")
+  approvedById     String?                  @map("approved_by") @db.Char(36)
+  approvedAt       DateTime?                @map("approved_at")
+  activatedAt      DateTime?                @map("activated_at")
+  pausedAt         DateTime?                @map("paused_at")
+  campaignId       String?                  @map("campaign_id") @db.Char(36)
+  metadata         Json?
+  createdById      String                   @map("created_by") @db.Char(36)
+  updatedById      String?                  @map("updated_by") @db.Char(36)
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  updatedAt        DateTime                 @updatedAt @map("updated_at")
+  deletedAt        DateTime?                @map("deleted_at")
+
+  branch     Branch? @relation(fields: [branchId], references: [id])
+  region     Region? @relation(fields: [regionId], references: [id])
+  createdBy  User    @relation("AutomationWorkflowCreatedBy", fields: [createdById], references: [id])
+  updatedBy  User?   @relation("AutomationWorkflowUpdatedBy", fields: [updatedById], references: [id])
+  approvedBy User?   @relation("AutomationWorkflowApprovedBy", fields: [approvedById], references: [id])
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+  nodes      AutomationNode[]
+  triggers   AutomationTrigger[]
+  goals      AutomationGoal[]
+  executions AutomationExecution[]
+  analytics  AutomationAnalytics[]
+  audits     AutomationAudit[]
+
+  @@index([status, journeyType])
+  @@index([branchId, regionId])
+  @@index([createdById])
+  @@map("automation_workflows")
+}
+
+model AutomationNode {
+  id           String             @id @default(uuid()) @db.Char(36)
+  workflowId   String             @map("workflow_id") @db.Char(36)
+  nodeKey      String             @map("node_key") @db.VarChar(64)
+  type         AutomationNodeType
+  label        String             @db.VarChar(200)
+  positionX    Float              @default(0) @map("position_x")
+  positionY    Float              @default(0) @map("position_y")
+  config       Json?
+  nextNodeKeys Json?              @map("next_node_keys")
+  parentKey    String?            @map("parent_key") @db.VarChar(64)
+  sortOrder    Int                @default(0) @map("sort_order")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  workflow   AutomationWorkflow    @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  conditions AutomationCondition[]
+  actions    AutomationAction[]
+
+  @@unique([workflowId, nodeKey])
+  @@index([workflowId, type])
+  @@map("automation_nodes")
+}
+
+model AutomationTrigger {
+  id          String                @id @default(uuid()) @db.Char(36)
+  workflowId  String                @map("workflow_id") @db.Char(36)
+  triggerType AutomationTriggerType @map("trigger_type")
+  config      Json?
+  isActive    Boolean               @default(true) @map("is_active")
+  createdAt   DateTime              @default(now()) @map("created_at")
+  updatedAt   DateTime              @updatedAt @map("updated_at")
+
+  workflow AutomationWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([triggerType, isActive])
+  @@index([workflowId])
+  @@map("automation_triggers")
+}
+
+model AutomationCondition {
+  id         String   @id @default(uuid()) @db.Char(36)
+  nodeId     String   @map("node_id") @db.Char(36)
+  field      String   @db.VarChar(64)
+  operator   String   @db.VarChar(32)
+  value      Json?
+  logicGroup String?  @map("logic_group") @db.VarChar(32)
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  node AutomationNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@index([nodeId])
+  @@map("automation_conditions")
+}
+
+model AutomationAction {
+  id           String               @id @default(uuid()) @db.Char(36)
+  nodeId       String               @map("node_id") @db.Char(36)
+  actionType   AutomationActionType @map("action_type")
+  channel      String?              @db.VarChar(32)
+  templateCode String?              @map("template_code") @db.VarChar(64)
+  config       Json?
+  delayBefore  Int?                 @map("delay_before")
+  sortOrder    Int                  @default(0) @map("sort_order")
+  createdAt    DateTime             @default(now()) @map("created_at")
+
+  node AutomationNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@index([nodeId])
+  @@map("automation_actions")
+}
+
+model AutomationExecution {
+  id            String                    @id @default(uuid()) @db.Char(36)
+  workflowId    String                    @map("workflow_id") @db.Char(36)
+  status        AutomationExecutionStatus @default(PENDING)
+  triggerType   AutomationTriggerType       @map("trigger_type")
+  subjectType   String                    @map("subject_type") @db.VarChar(64)
+  subjectId     String                    @map("subject_id") @db.Char(36)
+  userId        String?                   @map("user_id") @db.Char(36)
+  currentNodeKey String?                  @map("current_node_key") @db.VarChar(64)
+  context       Json?
+  scheduledAt   DateTime?                 @map("scheduled_at")
+  startedAt     DateTime?                 @map("started_at")
+  completedAt   DateTime?                 @map("completed_at")
+  goalAchieved  Boolean                   @default(false) @map("goal_achieved")
+  exitReason    String?                   @map("exit_reason") @db.VarChar(255)
+  errorMessage  String?                   @map("error_message") @db.Text
+  retryCount    Int                       @default(0) @map("retry_count")
+  revenueAmount Decimal?                  @map("revenue_amount") @db.Decimal(18, 2)
+  createdAt     DateTime                  @default(now()) @map("created_at")
+  updatedAt     DateTime                  @updatedAt @map("updated_at")
+
+  workflow AutomationWorkflow   @relation(fields: [workflowId], references: [id])
+  user     User?                @relation("AutomationExecutionUser", fields: [userId], references: [id])
+  logs         AutomationLog[]
+  queueItems   AutomationQueue[]
+  deadLetters  AutomationDeadLetter[]
+
+  @@index([workflowId, status])
+  @@index([subjectType, subjectId])
+  @@index([status, scheduledAt])
+  @@map("automation_executions")
+}
+
+model AutomationLog {
+  id          String             @id @default(uuid()) @db.Char(36)
+  executionId String             @map("execution_id") @db.Char(36)
+  workflowId  String             @map("workflow_id") @db.Char(36)
+  nodeKey     String?            @map("node_key") @db.VarChar(64)
+  level       AutomationLogLevel @default(INFO)
+  message     String             @db.Text
+  metadata    Json?
+  createdAt   DateTime           @default(now()) @map("created_at")
+
+  execution AutomationExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([executionId, createdAt])
+  @@index([workflowId, createdAt])
+  @@map("automation_logs")
+}
+
+model AutomationGoal {
+  id             String             @id @default(uuid()) @db.Char(36)
+  workflowId     String             @map("workflow_id") @db.Char(36)
+  goalType       AutomationGoalType   @map("goal_type")
+  config         Json?
+  targetCount    Int?               @map("target_count")
+  achievedCount  Int                @default(0) @map("achieved_count")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  workflow AutomationWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@map("automation_goals")
+}
+
+model AutomationTemplate {
+  id           String                @id @default(uuid()) @db.Char(36)
+  name         String                @db.VarChar(200)
+  description  String?               @db.Text
+  journeyType  AutomationJourneyType @map("journey_type")
+  category     String?               @db.VarChar(64)
+  canvasJson   Json?                 @map("canvas_json")
+  nodesJson    Json?                 @map("nodes_json")
+  triggersJson Json?                 @map("triggers_json")
+  goalsJson    Json?                 @map("goals_json")
+  isPublic     Boolean               @default(true) @map("is_public")
+  usageCount   Int                   @default(0) @map("usage_count")
+  createdById  String?               @map("created_by") @db.Char(36)
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+
+  createdBy User? @relation("AutomationTemplateCreatedBy", fields: [createdById], references: [id])
+
+  @@index([journeyType, isPublic])
+  @@map("automation_templates")
+}
+
+model AutomationAnalytics {
+  id               String   @id @default(uuid()) @db.Char(36)
+  workflowId       String   @map("workflow_id") @db.Char(36)
+  periodStart      DateTime @map("period_start") @db.Date
+  periodEnd        DateTime @map("period_end") @db.Date
+  totalRuns        Int      @default(0) @map("total_runs")
+  successCount     Int      @default(0) @map("success_count")
+  failureCount     Int      @default(0) @map("failure_count")
+  conversionRate   Decimal  @default(0) @map("conversion_rate") @db.Decimal(8, 4)
+  dropOffRate      Decimal  @default(0) @map("drop_off_rate") @db.Decimal(8, 4)
+  revenueGenerated Decimal  @default(0) @map("revenue_generated") @db.Decimal(18, 2)
+  roi              Decimal  @default(0) @db.Decimal(10, 4)
+  channelBreakdown Json?    @map("channel_breakdown")
+  journeyMetrics   Json?    @map("journey_metrics")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  workflow AutomationWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, periodStart, periodEnd])
+  @@index([workflowId, periodStart])
+  @@map("automation_analytics")
+}
+
+model AutomationAudit {
+  id         String   @id @default(uuid()) @db.Char(36)
+  workflowId String?  @map("workflow_id") @db.Char(36)
+  action     String   @db.VarChar(64)
+  actorId    String   @map("actor_id") @db.Char(36)
+  before     Json?
+  after      Json?
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  userAgent  String?  @map("user_agent") @db.VarChar(512)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  workflow AutomationWorkflow? @relation(fields: [workflowId], references: [id], onDelete: SetNull)
+  actor    User                @relation("AutomationAuditActor", fields: [actorId], references: [id])
+
+  @@index([workflowId, createdAt])
+  @@index([actorId])
+  @@map("automation_audits")
+}
+
+model AutomationQueue {
+  id           String                @id @default(uuid()) @db.Char(36)
+  executionId  String                @map("execution_id") @db.Char(36)
+  nodeKey      String                @map("node_key") @db.VarChar(64)
+  status       AutomationQueueStatus @default(PENDING)
+  scheduledAt  DateTime              @map("scheduled_at")
+  payload      Json?
+  retryCount   Int                   @default(0) @map("retry_count")
+  maxRetries   Int                   @default(3) @map("max_retries")
+  lastError    String?               @map("last_error") @db.Text
+  processedAt  DateTime?             @map("processed_at")
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+
+  execution AutomationExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledAt])
+  @@index([executionId])
+  @@map("automation_queue")
+}
+
+model AutomationDeadLetter {
+  id          String   @id @default(uuid()) @db.Char(36)
+  executionId String   @map("execution_id") @db.Char(36)
+  nodeKey     String   @map("node_key") @db.VarChar(64)
+  payload     Json?
+  error       String   @db.Text
+  retryCount  Int      @map("retry_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  execution AutomationExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([executionId])
+  @@index([createdAt])
+  @@map("automation_dead_letters")
+}

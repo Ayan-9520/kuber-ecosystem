@@ -1,0 +1,43 @@
+name: Release Pipeline
+
+on:
+  push:
+    branches: ['release/**']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version (e.g. 1.1.0)
+        required: true
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/database generate
+      - run: pnpm lint && pnpm typecheck && pnpm build && pnpm test
+      - name: Prepare release
+        run: |
+          VERSION="${{ inputs.version || github.ref_name }}"
+          VERSION="${VERSION#release/}"
+          bash deployment/scripts/release.sh "$VERSION" "${{ github.ref_name }}"
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          tag_name: v${{ inputs.version || '0.0.0' }}
+        continue-on-error: true
+      - run: node scripts/ci-record-pipeline.mjs --type RELEASE --name "Release ${{ inputs.version }}" --status SUCCESS
+        env:
+          DEVOPS_API_URL: ${{ secrets.DEVOPS_API_URL }}
+          DEVOPS_WEBHOOK_SECRET: ${{ secrets.DEVOPS_WEBHOOK_SECRET }}

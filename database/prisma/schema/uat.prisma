@@ -1,0 +1,278 @@
+// ── User Acceptance Testing (UAT) Framework ──
+
+enum UatUserGroup {
+  CUSTOMER
+  DSA_PARTNER
+  SALES_EXECUTIVE
+  RELATIONSHIP_MANAGER
+  CREDIT_EXECUTIVE
+  OPERATIONS_EXECUTIVE
+  BRANCH_MANAGER
+  REGIONAL_MANAGER
+  COMPLIANCE_OFFICER
+  MANAGEMENT
+  ADMIN
+}
+
+enum UatBusinessFlow {
+  AUTH
+  CUSTOMER
+  DSA
+  LMS
+  LOS
+  DOCUMENT
+  REFERRAL
+  COMMISSION
+  SUPPORT
+  CAMPAIGN
+  AI
+  ANALYTICS
+}
+
+enum UatPlanStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum UatCycleStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum UatTestCaseType {
+  POSITIVE
+  NEGATIVE
+  BOUNDARY
+  BUSINESS_RULE
+  EXCEPTION
+}
+
+enum UatExecutionStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  PASSED
+  FAILED
+  BLOCKED
+  SKIPPED
+}
+
+enum UatDefectSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum UatDefectStatus {
+  OPEN
+  ASSIGNED
+  FIXED
+  RETEST
+  CLOSED
+}
+
+enum UatSignoffType {
+  SALES
+  CREDIT
+  OPERATIONS
+  COMPLIANCE
+  MANAGEMENT
+  FINAL_UAT
+}
+
+enum UatSignoffStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model UatPlan {
+  id          String        @id @default(uuid()) @db.Char(36)
+  code        String        @unique @db.VarChar(64)
+  name        String        @db.VarChar(200)
+  description String?       @db.Text
+  version     String        @default("1.0") @db.VarChar(20)
+  status      UatPlanStatus @default(DRAFT)
+  startDate   DateTime?     @map("start_date") @db.Date
+  endDate     DateTime?     @map("end_date") @db.Date
+  ownerId     String?       @map("owner_id") @db.Char(36)
+  createdById String?       @map("created_by") @db.Char(36)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  owner     User?      @relation("UatPlanOwner", fields: [ownerId], references: [id])
+  createdBy User?      @relation("UatPlanCreatedBy", fields: [createdById], references: [id])
+  cycles    UatCycle[]
+
+  @@index([status, createdAt])
+  @@map("uat_plans")
+}
+
+model UatCycle {
+  id          String         @id @default(uuid()) @db.Char(36)
+  planId      String         @map("plan_id") @db.Char(36)
+  code        String         @unique @db.VarChar(64)
+  name        String         @db.VarChar(200)
+  description String?        @db.Text
+  status      UatCycleStatus @default(PLANNED)
+  startDate   DateTime?      @map("start_date") @db.Date
+  endDate     DateTime?      @map("end_date") @db.Date
+  createdById String?        @map("created_by") @db.Char(36)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  plan       UatPlan        @relation(fields: [planId], references: [id], onDelete: Cascade)
+  createdBy  User?          @relation("UatCycleCreatedBy", fields: [createdById], references: [id])
+  scenarios  UatScenario[]
+  executions UatExecution[]
+  signoffs   UatSignoff[]
+  stakeholders UatStakeholder[]
+  approvals  UatApproval[]
+  reviews    UatReview[]
+  risks      UatRisk[]
+  comments   UatComment[]
+
+  @@index([planId, status])
+  @@map("uat_cycles")
+}
+
+model UatScenario {
+  id                 String          @id @default(uuid()) @db.Char(36)
+  cycleId            String          @map("cycle_id") @db.Char(36)
+  code               String          @unique @db.VarChar(64)
+  name               String          @db.VarChar(200)
+  description        String?         @db.Text
+  businessFlow       UatBusinessFlow @map("business_flow")
+  userGroup          UatUserGroup    @map("user_group")
+  acceptanceCriteria Json?           @map("acceptance_criteria")
+  priority           Int             @default(1)
+  sortOrder          Int             @default(0) @map("sort_order")
+  isActive           Boolean         @default(true) @map("is_active")
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+
+  cycle     UatCycle      @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  testCases UatTestCase[]
+
+  @@index([cycleId, businessFlow])
+  @@index([businessFlow, userGroup])
+  @@map("uat_scenarios")
+}
+
+model UatTestCase {
+  id                 String          @id @default(uuid()) @db.Char(36)
+  scenarioId         String          @map("scenario_id") @db.Char(36)
+  code               String          @unique @db.VarChar(64)
+  title              String          @db.VarChar(300)
+  description        String?         @db.Text
+  testType           UatTestCaseType @map("test_type")
+  preconditions      String?         @db.Text
+  steps              Json?
+  expectedResult     String          @map("expected_result") @db.Text
+  businessRule       String?         @map("business_rule") @db.Text
+  priority           Int             @default(1)
+  sortOrder          Int             @default(0) @map("sort_order")
+  isActive           Boolean         @default(true) @map("is_active")
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+
+  scenario   UatScenario    @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  executions UatExecution[]
+  defects    UatDefect[]
+
+  @@index([scenarioId, testType])
+  @@map("uat_test_cases")
+}
+
+model UatExecution {
+  id           String             @id @default(uuid()) @db.Char(36)
+  cycleId      String             @map("cycle_id") @db.Char(36)
+  testCaseId   String             @map("test_case_id") @db.Char(36)
+  status       UatExecutionStatus @default(NOT_STARTED)
+  executedById String?            @map("executed_by") @db.Char(36)
+  executedAt   DateTime?          @map("executed_at")
+  actualResult String?            @map("actual_result") @db.Text
+  notes        String?            @db.Text
+  evidence     Json?
+  duration     Int?
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  cycle      UatCycle    @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  testCase   UatTestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  executedBy User?       @relation("UatExecutionExecutedBy", fields: [executedById], references: [id])
+
+  @@unique([cycleId, testCaseId])
+  @@index([cycleId, status])
+  @@index([testCaseId, status])
+  @@map("uat_executions")
+}
+
+model UatDefect {
+  id           String            @id @default(uuid()) @db.Char(36)
+  code         String            @unique @db.VarChar(64)
+  testCaseId   String?           @map("test_case_id") @db.Char(36)
+  title        String            @db.VarChar(300)
+  description  String            @db.Text
+  severity     UatDefectSeverity @default(MEDIUM)
+  status       UatDefectStatus   @default(OPEN)
+  businessFlow UatBusinessFlow?  @map("business_flow")
+  assignedToId String?           @map("assigned_to") @db.Char(36)
+  reportedById String            @map("reported_by") @db.Char(36)
+  resolvedById String?           @map("resolved_by") @db.Char(36)
+  resolvedAt   DateTime?         @map("resolved_at")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  testCase   UatTestCase? @relation(fields: [testCaseId], references: [id], onDelete: SetNull)
+  assignedTo User?        @relation("UatDefectAssignedTo", fields: [assignedToId], references: [id])
+  reportedBy User         @relation("UatDefectReportedBy", fields: [reportedById], references: [id])
+  resolvedBy User?        @relation("UatDefectResolvedBy", fields: [resolvedById], references: [id])
+
+  @@index([status, severity])
+  @@index([businessFlow, status])
+  @@map("uat_defects")
+}
+
+model UatSignoff {
+  id           String           @id @default(uuid()) @db.Char(36)
+  cycleId      String           @map("cycle_id") @db.Char(36)
+  signoffType  UatSignoffType   @map("signoff_type")
+  status       UatSignoffStatus @default(PENDING)
+  signedById   String?          @map("signed_by") @db.Char(36)
+  signedAt     DateTime?        @map("signed_at")
+  comments     String?          @db.Text
+  checklist    Json?
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  cycle    UatCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  signedBy User?    @relation("UatSignoffSignedBy", fields: [signedById], references: [id])
+
+  @@unique([cycleId, signoffType])
+  @@index([cycleId, status])
+  @@map("uat_signoffs")
+}
+
+model UatTemplate {
+  id                 String          @id @default(uuid()) @db.Char(36)
+  code               String          @unique @db.VarChar(64)
+  name               String          @db.VarChar(200)
+  description        String?         @db.Text
+  businessFlow       UatBusinessFlow @map("business_flow")
+  userGroup          UatUserGroup    @map("user_group")
+  scenarioTemplate   Json            @map("scenario_template")
+  testCaseTemplates  Json            @map("test_case_templates")
+  acceptanceCriteria Json?           @map("acceptance_criteria")
+  signoffChecklist   Json?           @map("signoff_checklist")
+  isActive           Boolean         @default(true) @map("is_active")
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+
+  @@index([businessFlow, isActive])
+  @@map("uat_templates")
+}

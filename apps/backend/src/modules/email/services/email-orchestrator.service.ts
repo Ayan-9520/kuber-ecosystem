@@ -3,6 +3,7 @@ import type { Prisma } from '@kuberone/database';
 import { env } from '../../../config/env.js';
 import { ValidationError } from '../../../shared/errors/app-error.js';
 import { communicationLogRepository, emailLogRepository } from '../../notifications/repositories/notification.repository.js';
+import { channelStatusService } from '../../notifications/services/channel-status.service.js';
 import { rateLimitService } from '../../notifications/services/rate-limit.service.js';
 import { ALLOWED_ATTACHMENT_TYPES, EMAIL_MAX_RETRIES, TRANSACTIONAL_EVENT_TYPES } from '../constants/email.constants.js';
 import { resolveEnterpriseEmailProvider } from '../providers/email.factory.js';
@@ -84,6 +85,11 @@ export const emailOrchestratorService = {
   },
 
   async dispatchNow(params: SendEmailParams) {
+    const channel = channelStatusService.getStatus('email');
+    if (!channel.deliverable) {
+      return { skipped: true, reason: channelStatusService.skipReason('email') };
+    }
+
     const rendered = await emailTemplateService.render({
       templateCode: params.templateCode,
       eventType: params.eventType,
@@ -94,7 +100,7 @@ export const emailOrchestratorService = {
     });
 
     const dbProvider = await emailProviderRepository.findDefault();
-    if (dbProvider?.rateLimit && !rateLimitService.check(`email:${dbProvider.code}`, dbProvider.rateLimit)) {
+    if (dbProvider?.rateLimit && !(await rateLimitService.checkAsync(`email:${dbProvider.code}`, dbProvider.rateLimit))) {
       throw new ValidationError({ rateLimit: ['Email rate limit exceeded'] });
     }
 

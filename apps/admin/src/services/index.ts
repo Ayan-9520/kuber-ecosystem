@@ -2,7 +2,7 @@ import { recommendationsService } from './recommendations.service';
 import { supportService } from './support.service';
 
 import { normalizeCommissionAnalytics, normalizeLeadAnalytics } from '@/lib/analytics-helpers';
-import { apiDownload, apiGet, apiGetPaginated, apiPatch, apiPost } from '@/lib/api';
+import { apiDownload, apiGet, apiGetPaginated, apiPatch, apiPost, apiDelete } from '@/lib/api';
 
 export { copilotService } from './copilot.service';
 export type { CopilotLeadAnalysis, CopilotApplicationAnalysis, CopilotAnalytics } from './copilot.service';
@@ -31,7 +31,7 @@ export const leadsService = {
   create: (data: unknown) => apiPost('/leads', data),
   update: (id: string, data: unknown) => apiPatch(`/leads/${id}`, data),
   analytics: async (params?: Record<string, unknown>) =>
-    normalizeLeadAnalytics(await apiGet<Record<string, unknown>>('/lead-analytics', params)),
+    normalizeLeadAnalytics(await apiGet<Record<string, unknown>>('/lead-analytics/summary', params)),
   notes: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/lead-notes', params),
   activities: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/lead-activities', params),
   followUps: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/lead-followups', params),
@@ -89,11 +89,14 @@ export const productsService = {
 export const partnersService = {
   list: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/partners', params),
   getById: (id: string) => apiGet<Record<string, unknown>>(`/partners/${id}`),
+  create: (data: unknown) => apiPost<Record<string, unknown>>('/partners', data),
+  update: (id: string, data: unknown) => apiPatch<Record<string, unknown>>(`/partners/${id}`, data),
 };
 
 export const referralsService = {
   list: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/referrals', params),
   getById: (id: string) => apiGet<Record<string, unknown>>(`/referrals/${id}`),
+  create: (data: unknown) => apiPost<Record<string, unknown>>('/referrals', data),
   types: (params?: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/referral-types', params ?? {}),
 };
 
@@ -106,6 +109,13 @@ export const commissionsService = {
   rules: (params?: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/commission-rules', params ?? {}),
   analytics: async (params?: Record<string, unknown>) =>
     normalizeCommissionAnalytics(await apiGet<Record<string, unknown>>('/commission-analytics', params)),
+  approveApproval: (id: string, data?: unknown) =>
+    apiPost<Record<string, unknown>>(`/commission-approvals/${id}/approve`, data ?? {}),
+  rejectApproval: (id: string, data?: unknown) =>
+    apiPost<Record<string, unknown>>(`/commission-approvals/${id}/reject`, data ?? {}),
+  approvePayment: (id: string) => apiPost<Record<string, unknown>>(`/commission-payments/${id}/approve`),
+  releasePayment: (id: string, data: unknown) =>
+    apiPost<Record<string, unknown>>(`/commission-payments/${id}/release`, data),
 };
 
 export const notificationsService = {
@@ -115,7 +125,7 @@ export const notificationsService = {
   updateTemplate: (id: string, data: unknown) => apiPatch(`/notification-templates/${id}`, data),
   preferences: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/notification-preferences', params),
   emails: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/emails', params),
-  sms: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/sms', params),
+  sms: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/sms/logs', params),
   whatsapp: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/whatsapp', params),
   push: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/push/logs', params),
   communicationLogs: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/communication-logs', params),
@@ -135,10 +145,49 @@ export { supportService } from './support.service';
 export const usersService = {
   list: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/users', params),
   getById: (id: string) => apiGet<Record<string, unknown>>(`/users/${id}`),
+  create: (data: unknown) => apiPost<Record<string, unknown>>('/users', data),
+  update: (id: string, data: unknown) => apiPatch<Record<string, unknown>>(`/users/${id}`, data),
+  remove: (id: string) => apiDelete<Record<string, unknown>>(`/users/${id}`),
   roles: (params?: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/roles', params ?? {}),
   permissions: (params?: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/permissions', params ?? {}),
   rolePermissions: (params?: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/role-permissions', params ?? {}),
   userRoles: (params?: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/user-roles', params ?? {}),
+};
+
+export const employeesService = {
+  list: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/employees', params),
+  getById: (id: string) => apiGet<Record<string, unknown>>(`/employees/${id}`),
+  create: (data: unknown) => apiPost<Record<string, unknown>>('/employees', data),
+  update: (id: string, data: unknown) => apiPatch<Record<string, unknown>>(`/employees/${id}`, data),
+  remove: (id: string) => apiDelete<Record<string, unknown>>(`/employees/${id}`),
+};
+
+export const branchesService = {
+  list: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/branches', params),
+  getById: (id: string) => apiGet<Record<string, unknown>>(`/branches/${id}`),
+  create: (data: unknown) => apiPost<Record<string, unknown>>('/branches', data),
+  update: (id: string, data: unknown) => apiPatch<Record<string, unknown>>(`/branches/${id}`, data),
+  remove: (id: string) => apiDelete<Record<string, unknown>>(`/branches/${id}`),
+  regions: (params?: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/branches/regions', params ?? {}),
+  createRegion: (data: unknown) => apiPost<Record<string, unknown>>('/branches/regions', data),
+  updateRegion: (id: string, data: unknown) => apiPatch<Record<string, unknown>>(`/branches/regions/${id}`, data),
+};
+
+export const eligibilityService = {
+  calculate: (data: unknown) => apiPost<Record<string, unknown>>('/eligibility/calculate', data),
+  rules: (params?: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/eligibility-rules', params ?? {}),
+};
+
+export const emiService = {
+  calculate: (data: unknown) => apiPost<Record<string, unknown>>('/emi/calculate', data),
+};
+
+export const voiceAiService = {
+  listSessions: (params?: Record<string, unknown>) =>
+    apiGetPaginated<Record<string, unknown>>('/ai/voice/sessions', params ?? {}),
+  getSession: (sessionId: string) => apiGet<Record<string, unknown>>(`/ai/voice/sessions/${sessionId}`),
+  createSession: (data: unknown) => apiPost<Record<string, unknown>>('/ai/voice/sessions', data),
+  endSession: (sessionId: string) => apiPost<Record<string, unknown>>(`/ai/voice/sessions/${sessionId}/end`),
 };
 
 export const auditService = {
@@ -150,15 +199,36 @@ export const auditService = {
 export const settingsService = {
   list: (params?: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/settings', params ?? {}),
   getByKey: (key: string) => apiGet<Record<string, unknown>>(`/settings/${key}`),
+  update: (key: string, data: unknown) => apiPatch<Record<string, unknown>>(`/settings/${key}`, data),
 };
 
 export const campaignsService = {
   list: (params?: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/campaigns', params ?? {}),
+  getById: (id: string) => apiGet<Record<string, unknown>>(`/campaigns/${id}`),
+  create: (data: unknown) => apiPost('/campaigns', data),
+  update: (id: string, data: unknown) => apiPatch(`/campaigns/${id}`, data),
+  remove: (id: string) => apiDelete(`/campaigns/${id}`),
 };
 
 export const kycService = {
-  list: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/kyc', params),
-  getById: (id: string) => apiGet<Record<string, unknown>>(`/kyc/${id}`),
+  list: async (params: Record<string, unknown>) => {
+    const customerId = String(params.customerId ?? '');
+    if (!customerId) return { items: [], meta: { page: 1, limit: 20, total: 0, totalPages: 1 } };
+    const q = { customerId };
+    const [profile, pan, aadhaar] = await Promise.all([
+      apiGet<Record<string, unknown> | null>('/kyc/profile', q).catch(() => null),
+      apiGet<Record<string, unknown>[] | Record<string, unknown>>('/kyc/pan', q).catch(() => []),
+      apiGet<Record<string, unknown>[] | Record<string, unknown>>('/kyc/aadhaar', q).catch(() => []),
+    ]);
+    const items: Record<string, unknown>[] = [];
+    if (profile) items.push({ ...profile, kycType: 'PROFILE', id: profile.id ?? `profile-${customerId}` });
+    const panRows = Array.isArray(pan) ? pan : pan ? [pan] : [];
+    const aadhaarRows = Array.isArray(aadhaar) ? aadhaar : aadhaar ? [aadhaar] : [];
+    for (const row of panRows) items.push({ ...row, kycType: 'PAN' });
+    for (const row of aadhaarRows) items.push({ ...row, kycType: 'AADHAAR' });
+    return { items, meta: { page: 1, limit: items.length || 20, total: items.length, totalPages: 1 } };
+  },
+  profile: (customerId: string) => apiGet<Record<string, unknown>>('/kyc/profile', { customerId }),
 };
 
 export const dashboardService = {

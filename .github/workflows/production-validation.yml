@@ -1,0 +1,68 @@
+name: Production Validation Pipeline
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  validate:
+    name: Full Production Validation
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: kuberone_prod_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: mysql://root:root@localhost:3306/kuberone_prod_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/database generate
+
+      - name: Lint & Typecheck
+        run: pnpm lint && pnpm typecheck
+
+      - name: Build all targets
+        run: |
+          pnpm build --filter=@kuberone/backend...
+          pnpm build --filter=@kuberone/admin...
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Integration tests
+        run: pnpm test:integration
+
+      - name: Mobile tests
+        run: pnpm test:mobile
+
+      - name: Security tests
+        run: pnpm security:test
+
+      - name: Performance tests
+        run: pnpm perf:test
+        continue-on-error: true
+
+      - name: Go-Live gates
+        run: node scripts/production-go-live-gate.mjs
+        env:
+          ERROR_GATE_MAX_CRITICAL: ${{ vars.ERROR_GATE_MAX_CRITICAL || '5' }}
+
+      - name: OpenAPI validation
+        run: node scripts/openapi-validate.mjs

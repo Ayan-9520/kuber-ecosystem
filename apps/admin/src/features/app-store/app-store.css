@@ -1,0 +1,14 @@
+.app-store-scores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.app-store-checklist { list-style: none; padding: 0; margin: 0; }
+.app-store-checklist li { padding: 0.35rem 0; font-size: 0.875rem; }
+.app-store-checklist .passed::before { content: '✓ '; color: #22c55e; }
+.app-store-checklist .pending::before { content: '○ '; color: #94a3b8; }
+
+.app-store-screenshots { display: flex; flex-wrap: wrap; gap: 0.5rem; list-style: none; padding: 0; }
+.app-store-screenshots li { background: var(--color-surface, #0f172a); padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.8rem; }

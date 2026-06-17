@@ -1,16 +1,25 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
 import { PaginatedListView } from '@/components/common/PaginatedListView';
-import { PageHeader, StatCard } from '@/components/ui';
+import { Button, Card, Input, PageHeader, Select, StatCard } from '@/components/ui';
 import { StatusBadge } from '@/components/ui/Badge';
-import { Card } from '@/components/ui/Card';
 import { useDebounce, usePagination } from '@/hooks';
 import { fieldStr, formatCurrency, formatDate } from '@/lib/utils';
 import { referralsService } from '@/services';
 
 export function ReferralsPage() {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState({
+    referralTypeCode: 'CUSTOMER',
+    referrerName: '',
+    referrerPhone: '',
+    refereeName: '',
+    refereePhone: '',
+    requestedAmount: '',
+  });
   const debouncedSearch = useDebounce(search);
   const { page, limit, setPage, reset } = usePagination();
 
@@ -38,6 +47,38 @@ export function ReferralsPage() {
     queryKey: ['referral-types'],
     queryFn: () => referralsService.types({ limit: 100 }),
   });
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      referralsService.create({
+        referralTypeCode: form.referralTypeCode,
+        referrerName: form.referrerName,
+        referrerPhone: form.referrerPhone || undefined,
+        refereeName: form.refereeName,
+        refereePhone: form.refereePhone,
+        requestedAmount: form.requestedAmount ? Number(form.requestedAmount) : undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['referrals'] });
+      setShowCreate(false);
+      setForm({
+        referralTypeCode: 'CUSTOMER',
+        referrerName: '',
+        referrerPhone: '',
+        refereeName: '',
+        refereePhone: '',
+        requestedAmount: '',
+      });
+    },
+  });
+
+  const typeOptions = (types?.items ?? []).length
+    ? (types?.items ?? []).map((t) => ({ value: fieldStr(t, 'code'), label: fieldStr(t, 'name') }))
+    : [
+        { value: 'CUSTOMER', label: 'Customer' },
+        { value: 'DSA', label: 'DSA' },
+        { value: 'BROKER', label: 'Broker' },
+      ];
 
   const stats = useMemo(() => {
     const items = data?.items ?? [];
@@ -78,7 +119,45 @@ export function ReferralsPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Referrals" subtitle="Track referral pipeline, rewards, and conversion analytics" />
+      <PageHeader
+        title="Referrals"
+        subtitle="Track referral pipeline, rewards, and conversion analytics"
+        actions={
+          <Button variant="primary" onClick={() => setShowCreate((v) => !v)}>
+            Create Referral
+          </Button>
+        }
+      />
+
+      {showCreate && (
+        <Card title="New Referral" className="mb-4">
+          <div className="form-grid" style={{ display: 'grid', gap: '1rem', maxWidth: 640 }}>
+            <Select
+              label="Referral Type"
+              options={typeOptions}
+              value={form.referralTypeCode}
+              onChange={(e) => setForm({ ...form, referralTypeCode: e.target.value })}
+            />
+            <Input label="Referrer Name" value={form.referrerName} onChange={(e) => setForm({ ...form, referrerName: e.target.value })} />
+            <Input label="Referrer Phone" value={form.referrerPhone} onChange={(e) => setForm({ ...form, referrerPhone: e.target.value })} />
+            <Input label="Referee Name" value={form.refereeName} onChange={(e) => setForm({ ...form, refereeName: e.target.value })} />
+            <Input label="Referee Phone" value={form.refereePhone} onChange={(e) => setForm({ ...form, refereePhone: e.target.value })} />
+            <Input label="Requested Amount (₹)" value={form.requestedAmount} onChange={(e) => setForm({ ...form, requestedAmount: e.target.value })} type="number" />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <Button
+                variant="primary"
+                disabled={!form.referrerName || !form.refereeName || !form.refereePhone || createMutation.isPending}
+                onClick={() => createMutation.mutate()}
+              >
+                {createMutation.isPending ? 'Creating…' : 'Submit Referral'}
+              </Button>
+              <Button variant="secondary" onClick={() => setShowCreate(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <div className="stat-grid">
         <StatCard label="Total Referrals" value={stats.total} />

@@ -33,3 +33,7 @@ jobs:
       - run: pnpm --filter @kuberone/mobile-dsa typecheck
 
       - run: pnpm --filter @kuberone/mobile-dsa lint
+
+      - run: pnpm --filter @kuberone/mobile-testing build
+
+      - run: pnpm --filter @kuberone/mobile-dsa test

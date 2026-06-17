@@ -1,0 +1,115 @@
+// ── Apple App Store Deployment Platform ──
+
+enum AppStoreApp {
+  CUSTOMER
+  DSA
+}
+
+enum AppStoreTrack {
+  TESTFLIGHT_INTERNAL
+  TESTFLIGHT_EXTERNAL
+  APP_STORE
+}
+
+enum AppStoreReleaseStatus {
+  DRAFT
+  PROCESSING
+  IN_REVIEW
+  READY_FOR_SALE
+  PHASED_RELEASE
+  REJECTED
+  REMOVED
+}
+
+enum AppStoreReportType {
+  STORE_READINESS
+  COMPLIANCE
+  REVIEW_READINESS
+  RELEASE
+  LAUNCH
+  PRE_SUBMISSION
+}
+
+model AppStoreListing {
+  id                String      @id @default(uuid()) @db.Char(36)
+  app               AppStoreApp @unique
+  bundleId          String      @map("bundle_id") @db.VarChar(128)
+  appName           String      @map("app_name") @db.VarChar(128)
+  subtitle          String?     @db.VarChar(30)
+  keywords          String?     @db.VarChar(500)
+  description       String      @db.Text
+  promotionalText   String?     @map("promotional_text") @db.VarChar(170)
+  supportUrl        String      @map("support_url") @db.VarChar(500)
+  marketingUrl      String?     @map("marketing_url") @db.VarChar(500)
+  privacyPolicyUrl  String      @map("privacy_policy_url") @db.VarChar(500)
+  termsUrl          String      @map("terms_url") @db.VarChar(500)
+  primaryCategory   String      @default("FINANCE") @map("primary_category") @db.VarChar(64)
+  secondaryCategory String?     @map("secondary_category") @db.VarChar(64)
+  ageRating         String?     @map("age_rating") @db.VarChar(16)
+  listingComplete   Boolean     @default(false) @map("listing_complete")
+  assetsComplete    Boolean     @default(false) @map("assets_complete")
+  complianceComplete Boolean    @default(false) @map("compliance_complete")
+  reviewNotes       String?     @map("review_notes") @db.Text
+  demoAccount       Json?       @map("demo_account")
+  metadata          Json?
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  releases AppStoreRelease[]
+  reports  AppStoreReport[]
+
+  @@map("app_store_listings")
+}
+
+model AppStoreRelease {
+  id              String                @id @default(uuid()) @db.Char(36)
+  listingId       String                @map("listing_id") @db.Char(36)
+  versionName     String                @map("version_name") @db.VarChar(32)
+  buildNumber     String                @map("build_number") @db.VarChar(32)
+  track           AppStoreTrack         @default(TESTFLIGHT_INTERNAL)
+  status          AppStoreReleaseStatus @default(DRAFT)
+  phasedRelease   Boolean               @default(true) @map("phased_release")
+  rolloutDay      Int?                  @map("rollout_day")
+  releaseNotes    String?               @map("release_notes") @db.Text
+  ipaArtifactUrl  String?               @map("ipa_artifact_url") @db.VarChar(500)
+  testflightUrl   String?               @map("testflight_url") @db.VarChar(500)
+  publishedById   String?               @map("published_by_id") @db.Char(36)
+  publishedAt     DateTime?             @map("published_at")
+  metadata        Json?
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  listing AppStoreListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, track, status, createdAt])
+  @@map("app_store_releases")
+}
+
+model AppStoreReport {
+  id           String             @id @default(uuid()) @db.Char(36)
+  listingId    String?            @map("listing_id") @db.Char(36)
+  app          AppStoreApp
+  reportType   AppStoreReportType @map("report_type")
+  score        Float?
+  readinessPct Float?             @map("readiness_pct")
+  summary      String?            @db.Text
+  details      Json?
+  generatedAt  DateTime           @default(now()) @map("generated_at")
+
+  listing AppStoreListing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  @@index([app, reportType, generatedAt])
+  @@map("app_store_reports")
+}
+
+model AppStoreAudit {
+  id        String      @id @default(uuid()) @db.Char(36)
+  app       AppStoreApp
+  action    String      @db.VarChar(64)
+  actorId   String?     @map("actor_id") @db.Char(36)
+  details   Json?
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  @@index([app, createdAt])
+  @@map("app_store_audits")
+}

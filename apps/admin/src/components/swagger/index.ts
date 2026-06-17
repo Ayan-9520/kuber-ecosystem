@@ -1,0 +1,1 @@
+export { SwaggerViewer } from './SwaggerViewer';

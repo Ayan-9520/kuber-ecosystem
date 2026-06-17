@@ -1,0 +1,73 @@
+{
+  "cli": { "version": ">= 12.0.0", "appVersionSource": "local" },
+  "build": {
+    "base": {
+      "node": "20.18.0",
+      "pnpm": "9.15.0",
+      "env": { "EXPO_PUBLIC_APP_ENV": "development" }
+    },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": { "buildType": "apk", "gradleCommand": ":app:assembleDebug" },
+      "ios": { "simulator": true, "buildConfiguration": "Debug" },
+      "env": { "EXPO_PUBLIC_APP_ENV": "development" }
+    },
+    "qa": {
+      "extends": "base",
+      "distribution": "internal",
+      "android": { "buildType": "apk", "gradleCommand": ":app:assembleRelease" },
+      "ios": { "simulator": false, "buildConfiguration": "Release" },
+      "env": { "EXPO_PUBLIC_APP_ENV": "qa" }
+    },
+    "staging": {
+      "extends": "base",
+      "distribution": "internal",
+      "android": { "buildType": "apk", "gradleCommand": ":app:assembleRelease" },
+      "ios": { "simulator": false, "buildConfiguration": "Release" },
+      "env": { "EXPO_PUBLIC_APP_ENV": "staging" }
+    },
+    "production": {
+      "extends": "base",
+      "distribution": "store",
+      "android": {
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease"
+      },
+      "ios": { "simulator": false, "buildConfiguration": "Release" },
+      "env": { "EXPO_PUBLIC_APP_ENV": "production" }
+    },
+    "production-apk": {
+      "extends": "production",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      }
+    },
+    "testflight": {
+      "extends": "production",
+      "distribution": "store",
+      "ios": { "simulator": false, "buildConfiguration": "Release" },
+      "env": { "EXPO_PUBLIC_APP_ENV": "production" }
+    }
+  },
+  "submit": {
+    "testflight": {
+      "ios": {
+        "appleTeamId": "${APPLE_TEAM_ID}",
+        "ascAppId": "${ASC_APP_ID_CUSTOMER}"
+      }
+    },
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./play-store-service-account.json",
+        "track": "internal"
+      },
+      "ios": {
+        "appleTeamId": "${APPLE_TEAM_ID}",
+        "ascAppId": "${ASC_APP_ID_CUSTOMER}"
+      }
+    }
+  }
+}

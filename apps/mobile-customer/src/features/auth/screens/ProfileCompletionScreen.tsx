@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
+import { useDispatch } from 'react-redux';
 
 import { Button, Input, Screen } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { getApiErrorMessage } from '@/lib/utils';
 import { customerService } from '@/services';
+import { setRequiresProfileCompletion } from '@/store/slices/authSlice';
 import { colors, spacing } from '@/theme';
 
 export function ProfileCompletionScreen() {
+  const dispatch = useDispatch();
   const { customerId, user } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -32,6 +35,7 @@ export function ProfileCompletionScreen() {
         preferredContactChannel: 'SMS',
       });
       setDone(true);
+      dispatch(setRequiresProfileCompletion(false));
     } catch (e) {
       setError(getApiErrorMessage(e));
     } finally {

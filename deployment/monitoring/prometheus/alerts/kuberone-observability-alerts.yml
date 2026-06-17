@@ -1,0 +1,52 @@
+groups:
+  - name: kuberone-observability
+    rules:
+      - alert: ObservabilityErrorSpike
+        expr: increase(kuberone_http_errors_total[5m]) > 50
+        for: 2m
+        labels:
+          severity: high
+          component: observability
+        annotations:
+          summary: Error spike detected in KuberOne API
+          description: More than 50 errors in the last 5 minutes
+
+      - alert: ObservabilityAIFailure
+        expr: increase(kuberone_ai_failures_total[10m]) > 20
+        for: 3m
+        labels:
+          severity: high
+          component: ai
+        annotations:
+          summary: AI failure rate elevated
+          description: AI failures exceeded threshold in last 10 minutes
+
+      - alert: ObservabilityNotificationFailure
+        expr: increase(kuberone_notification_failures_total[10m]) > 30
+        for: 3m
+        labels:
+          severity: high
+          component: notification
+        annotations:
+          summary: Notification delivery failures spiking
+          description: Notification failures exceeded threshold
+
+      - alert: ObservabilityDatabaseError
+        expr: kuberone_db_health_status == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: Database health check failing
+          description: Database observability signals indicate failure
+
+      - alert: ObservabilityWorkflowFailure
+        expr: increase(kuberone_automation_failures_total[15m]) > 5
+        for: 5m
+        labels:
+          severity: medium
+          component: workflow
+        annotations:
+          summary: Workflow execution failures detected
+          description: Automation workflow failures exceeded threshold

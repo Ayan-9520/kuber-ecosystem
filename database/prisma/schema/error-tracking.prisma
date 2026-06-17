@@ -1,0 +1,283 @@
+// ── Enterprise Error Tracking System ──
+
+enum ErrorTrackingSource {
+  BACKEND
+  CRM
+  CUSTOMER_APP
+  DSA_APP
+  AI
+  NOTIFICATION
+  DATABASE
+  QUEUE
+  INFRASTRUCTURE
+  VOICE_AI
+  RAG
+  OPENAI
+}
+
+enum ErrorLifecycleStatus {
+  NEW
+  INVESTIGATING
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  VERIFIED
+  CLOSED
+  IGNORED
+}
+
+enum ErrorPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum ErrorCategory {
+  UNHANDLED_EXCEPTION
+  VALIDATION
+  AUTHORIZATION
+  AUTHENTICATION
+  BUSINESS_RULE
+  QUEUE_FAILURE
+  CRON_FAILURE
+  WORKER_FAILURE
+  PAGE_CRASH
+  COMPONENT_ERROR
+  FORM_ERROR
+  CHART_ERROR
+  TABLE_ERROR
+  NAVIGATION_ERROR
+  THEME_ERROR
+  API_ERROR
+  OFFLINE_ERROR
+  PUSH_ERROR
+  PROMPT_FAILURE
+  RATE_LIMIT
+  TIMEOUT
+  RAG_RETRIEVAL_FAILURE
+  HALLUCINATION_REPORT
+  EMAIL_FAILURE
+  SMS_FAILURE
+  WHATSAPP_FAILURE
+  RETRY_FAILURE
+  DEAD_LETTER
+  SLOW_QUERY
+  DEADLOCK
+  MIGRATION_FAILURE
+  CONNECTION_FAILURE
+  CONSTRAINT_VIOLATION
+  PRISMA_ERROR
+  INFRASTRUCTURE
+}
+
+enum ErrorAlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  SILENCED
+}
+
+enum ErrorAlertChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  SLACK
+  WEBHOOK
+}
+
+model ErrorGroup {
+  id                String               @id @default(uuid()) @db.Char(36)
+  fingerprint       String               @unique @db.VarChar(128)
+  title             String               @db.VarChar(300)
+  message           String               @db.Text
+  source            ErrorTrackingSource
+  category          ErrorCategory        @default(UNHANDLED_EXCEPTION)
+  priority          ErrorPriority        @default(MEDIUM)
+  status            ErrorLifecycleStatus @default(NEW)
+  module            String?              @db.VarChar(64)
+  environment       String               @default("development") @db.VarChar(32)
+  stackSignature    String?              @map("stack_signature") @db.Text
+  occurrenceCount   Int                  @default(1) @map("occurrence_count")
+  affectedUserCount Int                  @default(0) @map("affected_user_count")
+  firstSeenAt       DateTime             @map("first_seen_at")
+  lastSeenAt        DateTime             @map("last_seen_at")
+  assignedToId      String?              @map("assigned_to_id") @db.Char(36)
+  traceIdSample     String?              @map("trace_id_sample") @db.VarChar(64)
+  metadata          Json?
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
+
+  assignedTo   User?              @relation("ErrorGroupAssignedTo", fields: [assignedToId], references: [id])
+  events       ErrorEvent[]
+  occurrences  ErrorOccurrence[]
+  assignments  ErrorAssignment[]
+  resolutions  ErrorResolution[]
+  comments     ErrorComment[]
+  alerts       ErrorAlert[]
+
+  @@index([status, priority])
+  @@index([source, lastSeenAt])
+  @@index([module, lastSeenAt])
+  @@map("error_groups")
+}
+
+model ErrorEvent {
+  id              String              @id @default(uuid()) @db.Char(36)
+  groupId         String?             @map("group_id") @db.Char(36)
+  source          ErrorTrackingSource
+  category        ErrorCategory       @default(UNHANDLED_EXCEPTION)
+  errorCode       String?             @map("error_code") @db.VarChar(64)
+  errorType       String              @map("error_type") @db.VarChar(128)
+  message         String              @db.Text
+  stackTrace      String?             @map("stack_trace") @db.Text
+  requestId       String?             @map("request_id") @db.VarChar(64)
+  correlationId   String?             @map("correlation_id") @db.VarChar(64)
+  traceId         String?             @map("trace_id") @db.VarChar(64)
+  sessionId       String?             @map("session_id") @db.VarChar(64)
+  workflowId      String?             @map("workflow_id") @db.VarChar(64)
+  userId          String?             @map("user_id") @db.Char(36)
+  userRole        String?             @map("user_role") @db.VarChar(64)
+  path            String?             @db.VarChar(500)
+  method          String?             @db.VarChar(16)
+  statusCode      Int?                @map("status_code")
+  ipAddress       String?             @map("ip_address") @db.VarChar(45)
+  userAgent       String?             @map("user_agent") @db.Text
+  device          String?             @db.VarChar(128)
+  browser         String?             @db.VarChar(128)
+  appVersion      String?             @map("app_version") @db.VarChar(32)
+  osVersion       String?             @map("os_version") @db.VarChar(64)
+  region          String?             @db.VarChar(64)
+  branch          String?             @db.VarChar(64)
+  environment     String              @default("development") @db.VarChar(32)
+  requestPayload  Json?               @map("request_payload")
+  responsePayload Json?               @map("response_payload")
+  metadata        Json?
+  createdAt       DateTime            @default(now()) @map("created_at")
+
+  group       ErrorGroup?      @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  user        User?            @relation("ErrorEventUser", fields: [userId], references: [id])
+  occurrence  ErrorOccurrence?
+
+  @@index([groupId, createdAt])
+  @@index([source, createdAt])
+  @@index([traceId])
+  @@index([requestId])
+  @@index([userId, createdAt])
+  @@map("error_events")
+}
+
+model ErrorOccurrence {
+  id          String   @id @default(uuid()) @db.Char(36)
+  groupId     String   @map("group_id") @db.Char(36)
+  eventId     String   @unique @map("event_id") @db.Char(36)
+  fingerprint String?  @db.VarChar(128)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  group ErrorGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  event ErrorEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, createdAt])
+  @@map("error_occurrences")
+}
+
+model ErrorAssignment {
+  id           String               @id @default(uuid()) @db.Char(36)
+  groupId      String               @map("group_id") @db.Char(36)
+  assignedToId String               @map("assigned_to_id") @db.Char(36)
+  assignedById String               @map("assigned_by_id") @db.Char(36)
+  notes        String?              @db.Text
+  status       ErrorLifecycleStatus @default(ASSIGNED)
+  createdAt    DateTime             @default(now()) @map("created_at")
+
+  group      ErrorGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  assignedTo User       @relation("ErrorAssignmentAssignee", fields: [assignedToId], references: [id])
+  assignedBy User       @relation("ErrorAssignmentAssigner", fields: [assignedById], references: [id])
+
+  @@index([groupId, createdAt])
+  @@index([assignedToId, status])
+  @@map("error_assignments")
+}
+
+model ErrorResolution {
+  id             String   @id @default(uuid()) @db.Char(36)
+  groupId        String   @map("group_id") @db.Char(36)
+  resolvedById   String   @map("resolved_by_id") @db.Char(36)
+  resolutionType String   @map("resolution_type") @db.VarChar(64)
+  rootCause      String?  @map("root_cause") @db.Text
+  fixDescription String?  @map("fix_description") @db.Text
+  verifiedById   String?  @map("verified_by_id") @db.Char(36)
+  verifiedAt     DateTime? @map("verified_at")
+  mttrMinutes    Int?     @map("mttr_minutes")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  group      ErrorGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  resolvedBy User       @relation("ErrorResolutionResolver", fields: [resolvedById], references: [id])
+  verifiedBy User?      @relation("ErrorResolutionVerifier", fields: [verifiedById], references: [id])
+
+  @@index([groupId, createdAt])
+  @@map("error_resolutions")
+}
+
+model ErrorComment {
+  id        String   @id @default(uuid()) @db.Char(36)
+  groupId   String   @map("group_id") @db.Char(36)
+  authorId  String   @map("author_id") @db.Char(36)
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  group  ErrorGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  author User       @relation("ErrorCommentAuthor", fields: [authorId], references: [id])
+
+  @@index([groupId, createdAt])
+  @@map("error_comments")
+}
+
+model ErrorAnalytics {
+  id               String   @id @default(uuid()) @db.Char(36)
+  periodStart      DateTime @map("period_start")
+  periodEnd        DateTime @map("period_end")
+  totalErrors      Int      @default(0) @map("total_errors")
+  newErrors        Int      @default(0) @map("new_errors")
+  resolvedErrors   Int      @default(0) @map("resolved_errors")
+  criticalCount    Int      @default(0) @map("critical_count")
+  affectedUsers    Int      @default(0) @map("affected_users")
+  mttdMinutes      Decimal? @map("mttd_minutes") @db.Decimal(10, 2)
+  mttrMinutes      Decimal? @map("mttr_minutes") @db.Decimal(10, 2)
+  errorsBySource   Json     @map("errors_by_source")
+  errorsByModule   Json     @map("errors_by_module")
+  errorsByPriority Json     @map("errors_by_priority")
+  metadata         Json?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([periodStart, periodEnd])
+  @@map("error_analytics")
+}
+
+model ErrorAlert {
+  id               String            @id @default(uuid()) @db.Char(36)
+  ruleCode         String?           @map("rule_code") @db.VarChar(64)
+  code             String            @unique @db.VarChar(64)
+  title            String            @db.VarChar(300)
+  description      String            @db.Text
+  severity         ErrorPriority     @default(HIGH)
+  status           ErrorAlertStatus  @default(OPEN)
+  source           ErrorTrackingSource?
+  groupId          String?           @map("group_id") @db.Char(36)
+  channels         Json
+  metadata         Json?
+  acknowledgedById String?           @map("acknowledged_by") @db.Char(36)
+  acknowledgedAt   DateTime?         @map("acknowledged_at")
+  resolvedById     String?           @map("resolved_by") @db.Char(36)
+  resolvedAt       DateTime?         @map("resolved_at")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  group          ErrorGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  acknowledgedBy User?       @relation("ErrorAlertAcknowledgedBy", fields: [acknowledgedById], references: [id])
+  resolvedBy     User?       @relation("ErrorAlertResolvedBy", fields: [resolvedById], references: [id])
+
+  @@index([status, severity])
+  @@index([source, createdAt])
+  @@map("error_alerts")
+}

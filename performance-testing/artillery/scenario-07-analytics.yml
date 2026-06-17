@@ -1,0 +1,17 @@
+config:
+  target: "{{ $processEnvironment.BASE_URL || 'http://localhost:4000' }}"
+  phases:
+    - duration: 120
+      arrivalRate: 30
+  ensure:
+    p95: 800
+
+scenarios:
+  - name: Analytics dashboards
+    flow:
+      - get:
+          url: /api/v1/analytics/dashboard
+      - get:
+          url: /api/v1/executive-analytics/summary
+      - get:
+          url: /api/v1/branch-analytics/summary

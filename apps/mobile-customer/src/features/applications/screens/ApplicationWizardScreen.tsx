@@ -6,8 +6,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, Input, Screen } from '@/components/ui';
-import { LOAN_PRODUCTS } from '@/constants/products';
 import { useAuth } from '@/hooks';
+import { findProductDisplayItem, flattenProductsWithVariants } from '@/lib/product-mapper';
 import { formatCurrency, getApiErrorMessage, str } from '@/lib/utils';
 import type { ApplicationsStackParamList } from '@/navigation/types';
 import { applicationsService, customerService, productsService } from '@/services';
@@ -173,25 +173,42 @@ export function ApplicationWizardScreen() {
   const [error, setError] = useState('');
   const [submittedId, setSubmittedId] = useState<string | null>(null);
 
-  const productConfig = LOAN_PRODUCTS.find(
-    (p) => p.slug === productSlug && (!variant || p.variant === variant),
-  ) ?? LOAN_PRODUCTS.find((p) => p.slug === productSlug);
+  const apiProductsQuery = useQuery({
+    queryKey: ['products-wizard-api'],
+    queryFn: () => productsService.list({ limit: 50 }),
+  });
 
-  const documentChecklist = productConfig?.documents ?? [
+  const productsQuery = useQuery({
+    queryKey: ['products-wizard'],
+    queryFn: async () => {
+      const [products, variants] = await Promise.all([
+        productsService.list({ limit: 50 }),
+        productsService.variants(),
+      ]);
+      return flattenProductsWithVariants(products.items, variants.items);
+    },
+  });
+
+  const displayProduct = useMemo(
+    () =>
+      findProductDisplayItem(productsQuery.data ?? [], {
+        slug: productSlug,
+        name: productName,
+        variant,
+      }),
+    [productsQuery.data, productSlug, productName, variant],
+  );
+
+  const documentChecklist = displayProduct?.documents ?? [
     'PAN',
     'Aadhaar',
     'Income proof',
     'Bank statements',
   ];
 
-  const productsQuery = useQuery({
-    queryKey: ['products-wizard'],
-    queryFn: () => productsService.list({ limit: 50 }),
-  });
-
   const product = useMemo(
-    () => matchProduct(productsQuery.data?.items ?? [], productSlug, productName),
-    [productsQuery.data?.items, productSlug, productName],
+    () => matchProduct(apiProductsQuery.data?.items ?? [], productSlug, productName),
+    [apiProductsQuery.data?.items, productSlug, productName],
   );
 
   const variantsQuery = useQuery({
@@ -429,7 +446,7 @@ export function ApplicationWizardScreen() {
     );
   }
 
-  const loading = productsQuery.isLoading || customerQuery.isLoading;
+  const loading = apiProductsQuery.isLoading || customerQuery.isLoading;
 
   return (
     <Screen

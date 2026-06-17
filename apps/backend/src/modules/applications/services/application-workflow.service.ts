@@ -1,6 +1,7 @@
 import type { ApplicationStatus } from '@kuberone/database';
 
 import { AppError, NotFoundError } from '../../../shared/errors/app-error.js';
+import { emitAutomationEvent } from '../../../shared/utils/automation-emitter.util.js';
 import { authAuditRepository } from '../../auth/repositories/audit.repository.js';
 import { customerRepository } from '../../customers/repositories/customer.repository.js';
 import { leadRepository } from '../../leads/repositories/lead.repository.js';
@@ -12,6 +13,13 @@ import type { RequestContext } from '../types/applications.types.js';
 import { auditApplicationMutation } from '../utils/applications.utils.js';
 
 import { applicationTimelineService } from './application-timeline.service.js';
+
+const STATUS_AUTOMATION_TRIGGER_MAP: Partial<Record<ApplicationStatus, string>> = {
+  SUBMITTED: 'APPLICATION_APPROVED',
+  SANCTIONED: 'APPLICATION_SANCTIONED',
+  DISBURSED: 'APPLICATION_DISBURSED',
+  REJECTED: 'APPLICATION_REJECTED',
+};
 
 const STATUS_NOTIFICATION_MAP: Partial<Record<ApplicationStatus, string>> = {
   SUBMITTED: 'APPLICATION_SUBMITTED',
@@ -87,6 +95,18 @@ export const applicationWorkflowService = {
     );
 
     await applicationWorkflowService.notifyStatusChange(updated, toStatus, ctx);
+
+    const automationTrigger = STATUS_AUTOMATION_TRIGGER_MAP[toStatus];
+    if (automationTrigger) {
+      const customerRecord = await customerRepository.findById(updated.customerId);
+      emitAutomationEvent({
+        triggerType: automationTrigger,
+        subjectType: 'application',
+        subjectId: applicationId,
+        userId: customerRecord?.userId ?? ctx.actorId,
+        context: { fromStatus: application.status, toStatus, applicationNumber: updated.applicationNumber },
+      });
+    }
 
     return updated;
   },

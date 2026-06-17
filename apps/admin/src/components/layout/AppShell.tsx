@@ -1,9 +1,10 @@
 import { Outlet } from 'react-router-dom';
 
-
+import { DeploymentWarningsBanner } from './DeploymentWarningsBanner';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
+import { ErrorBoundary } from '@/components/guards/ErrorBoundary';
 import { useSessionExpiry } from '@/hooks';
 
 export function AppShell() {
@@ -15,8 +16,11 @@ export function AppShell() {
       <Sidebar />
       <div className="main-area">
         <Topbar />
+        <DeploymentWarningsBanner />
         <main className="main-content">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

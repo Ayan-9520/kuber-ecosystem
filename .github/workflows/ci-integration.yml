@@ -1,0 +1,81 @@
+name: CI — Integration Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/backend/**'
+      - 'packages/**'
+      - 'database/**'
+      - 'docker/docker-compose.integration.yml'
+      - 'pnpm-lock.yaml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'apps/backend/**'
+      - 'packages/**'
+      - 'database/**'
+      - 'docker/docker-compose.integration.yml'
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm db:generate
+
+      - run: pnpm build --filter=@kuberone/backend...
+
+      - run: pnpm --filter @kuberone/backend test:integration
+        env:
+          NODE_ENV: test
+          APP_ENV: testing
+          INTEGRATION_DATABASE_URL: mysql://root:root@localhost:3306/kuberone_integration_test
+          DATABASE_URL: mysql://root:root@localhost:3306/kuberone_integration_test
+          JWT_ACCESS_SECRET: integration-access-secret-minimum-32-characters
+          JWT_REFRESH_SECRET: integration-refresh-secret-minimum-32-characters
+          EMAIL_PROVIDER: mock
+          SMS_PROVIDER: mock
+          PUSH_PROVIDER: mock
+          OPENAI_API_KEY: sk-integration-test-key
+          EMBEDDING_PROVIDER: local_hash
+          VECTOR_DB_PROVIDER: local
+          DATA_ENCRYPTION_KEY: integration-data-encryption-key-32chars
+          INTEGRATION_DB_PREP: push
+
+      - name: Upload integration artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-artifacts
+          path: |
+            apps/backend/tests/integration/.artifacts/flow-coverage.json
+            apps/backend/tests/integration/.artifacts/module-coverage.json
+            apps/backend/tests/integration/.artifacts/failure-report.json
+            apps/backend/coverage-integration/**
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: kuberone_integration_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5

@@ -336,10 +336,34 @@ export function mockTicketMessages(ticketId: string) {
 }
 
 export const MOCK_CAMPAIGNS = [
-  { id: 'camp-001', name: 'Home Loan Fest 2026', type: 'EMAIL', status: 'ACTIVE', audience: 'Qualified Leads', sent: 2450, opened: 1820, converted: 124, startDate: daysAgo(10), endDate: daysAgo(-20) },
-  { id: 'camp-002', name: 'Partner Referral Drive', type: 'SMS', status: 'ACTIVE', audience: 'Partners', sent: 890, opened: 720, converted: 45, startDate: daysAgo(5), endDate: daysAgo(-25) },
-  { id: 'camp-003', name: 'Personal Loan Flash Offer', type: 'WHATSAPP', status: 'SCHEDULED', audience: 'Existing Customers', sent: 0, opened: 0, converted: 0, startDate: daysAgo(-3), endDate: daysAgo(-30) },
-  { id: 'camp-004', name: 'Diwali Special Rates', type: 'EMAIL', status: 'COMPLETED', audience: 'All Leads', sent: 5200, opened: 4100, converted: 312, startDate: daysAgo(90), endDate: daysAgo(60) },
+  { id: 'camp-001', name: 'Home Loan Fest 2026', type: 'EMAIL', channel: 'EMAIL', status: 'ACTIVE', audience: 'LEADS', subject: 'Special home loan rates', body: 'Apply now for festive rates', sent: 2450, opened: 1820, clicked: 920, converted: 124, startDate: daysAgo(10), endDate: daysAgo(-20), createdAt: daysAgo(12) },
+  { id: 'camp-002', name: 'Partner Referral Drive', type: 'SMS', channel: 'SMS', status: 'ACTIVE', audience: 'DSA_PARTNERS', subject: '', body: 'Refer and earn rewards', sent: 890, opened: 720, clicked: 410, converted: 45, startDate: daysAgo(5), endDate: daysAgo(-25), createdAt: daysAgo(8) },
+  { id: 'camp-003', name: 'Personal Loan Flash Offer', type: 'WHATSAPP', channel: 'WHATSAPP', status: 'SCHEDULED', audience: 'ALL_CUSTOMERS', subject: '', body: 'Instant personal loan approval', sent: 0, opened: 0, clicked: 0, converted: 0, startDate: daysAgo(-3), endDate: daysAgo(-30), createdAt: daysAgo(2) },
+  { id: 'camp-004', name: 'Diwali Special Rates', type: 'EMAIL', channel: 'EMAIL', status: 'COMPLETED', audience: 'LEADS', subject: 'Diwali offer', body: 'Celebrate with low rates', sent: 5200, opened: 4100, clicked: 2100, converted: 312, startDate: daysAgo(90), endDate: daysAgo(60), createdAt: daysAgo(95) },
+];
+
+export const MOCK_REGIONS = [
+  { id: 'reg-001', code: 'HQ-REG', name: 'Head Office Region', isActive: true, createdAt: daysAgo(400) },
+  { id: 'reg-002', code: 'WEST', name: 'West Region', isActive: true, createdAt: daysAgo(300) },
+  { id: 'reg-003', code: 'SOUTH', name: 'South Region', isActive: true, createdAt: daysAgo(300) },
+];
+
+export const MOCK_BRANCHES = [
+  { id: 'br-001', regionId: 'reg-001', code: 'MUM-01', name: 'Mumbai Central', city: 'Mumbai', state: 'MH', pincode: '400001', isActive: true, createdAt: daysAgo(200) },
+  { id: 'br-002', regionId: 'reg-002', code: 'PUN-01', name: 'Pune West', city: 'Pune', state: 'MH', pincode: '411001', isActive: true, createdAt: daysAgo(180) },
+  { id: 'br-003', regionId: 'reg-003', code: 'BLR-01', name: 'Bangalore HQ', city: 'Bengaluru', state: 'KA', pincode: '560001', isActive: true, createdAt: daysAgo(150) },
+];
+
+export const MOCK_EMPLOYEES = [
+  { id: 'emp-001', userId: 'usr-002', branchId: 'br-001', employeeCode: 'EMP-001', firstName: 'Priya', lastName: 'Sharma', designation: 'Sales Manager', department: 'Sales', isActive: true, joinedAt: daysAgo(200), createdAt: daysAgo(200) },
+  { id: 'emp-002', userId: 'usr-003', branchId: 'br-001', employeeCode: 'EMP-002', firstName: 'Amit', lastName: 'Patel', designation: 'Sales Executive', department: 'Sales', isActive: true, joinedAt: daysAgo(180), createdAt: daysAgo(180) },
+  { id: 'emp-003', userId: 'usr-004', branchId: 'br-002', employeeCode: 'EMP-003', firstName: 'Neha', lastName: 'Gupta', designation: 'Sales Executive', department: 'Sales', isActive: true, joinedAt: daysAgo(150), createdAt: daysAgo(150) },
+];
+
+export const MOCK_VOICE_SESSIONS = [
+  { id: 'vs-001', entityId: 'vs-001', action: 'VOICE_SESSION_STARTED', entityType: 'voice_ai', status: 'active', language: 'en', messageCount: 4, createdAt: daysAgo(0) },
+  { id: 'vs-002', entityId: 'vs-002', action: 'VOICE_SESSION_STARTED', entityType: 'voice_ai', status: 'ended', language: 'hi', messageCount: 12, createdAt: daysAgo(1) },
+  { id: 'vs-003', entityId: 'vs-003', action: 'VOICE_SESSION_STARTED', entityType: 'voice_ai', status: 'ended', language: 'en', messageCount: 6, createdAt: daysAgo(2) },
 ];
 
 export const MOCK_COPILOT_ANALYTICS = {

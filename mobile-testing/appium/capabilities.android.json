@@ -1,0 +1,10 @@
+{
+  "platformName": "Android",
+  "appium:automationName": "UiAutomator2",
+  "appium:deviceName": "Pixel_7_API_34",
+  "appium:appPackage": "com.kuberfinserve.kuberone",
+  "appium:appActivity": ".MainActivity",
+  "appium:noReset": false,
+  "appium:newCommandTimeout": 120,
+  "appium:autoGrantPermissions": true
+}

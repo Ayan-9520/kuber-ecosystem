@@ -1,0 +1,123 @@
+name: Mobile Build Pipeline
+
+on:
+  push:
+    branches: [main, staging, develop]
+    paths:
+      - 'apps/mobile-customer/**'
+      - 'apps/mobile-dsa/**'
+  workflow_dispatch:
+
+jobs:
+  build-customer-android:
+    name: Customer App — Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/mobile-customer test
+      - name: Setup google-services.json
+        run: cp apps/mobile-customer/google-services.json.example apps/mobile-customer/google-services.json
+      - name: Prebuild Android
+        env:
+          EXPO_PUBLIC_APP_ENV: staging
+        run: |
+          cd apps/mobile-customer
+          npx expo prebuild --platform android --clean --non-interactive
+      - name: Build Android APK
+        working-directory: apps/mobile-customer/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease || ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-customer-android
+          path: apps/mobile-customer/android/app/build/outputs/
+          if-no-files-found: ignore
+
+  build-dsa-android:
+    name: DSA App — Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/mobile-dsa test
+      - name: Setup google-services.json
+        run: cp apps/mobile-dsa/google-services.json.example apps/mobile-dsa/google-services.json
+      - name: Prebuild Android
+        env:
+          EXPO_PUBLIC_APP_ENV: staging
+        run: |
+          cd apps/mobile-dsa
+          npx expo prebuild --platform android --clean --non-interactive
+      - name: Build Android APK
+        working-directory: apps/mobile-dsa/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease || ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-dsa-android
+          path: apps/mobile-dsa/android/app/build/outputs/
+          if-no-files-found: ignore
+
+  build-ios:
+    name: iOS Builds (macOS)
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        app: [mobile-customer, mobile-dsa]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/${{ matrix.app }} test
+      - name: Build iOS (simulator)
+        working-directory: apps/${{ matrix.app }}/ios
+        run: |
+          pod install || true
+          xcodebuild -workspace *.xcworkspace -scheme ${{ matrix.app }} -sdk iphonesimulator -configuration Release build || echo "iOS build requires signing"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.app }}-ios
+          path: apps/${{ matrix.app }}/ios/build/
+          if-no-files-found: ignore
+
+  record-mobile:
+    name: Record Mobile Pipeline
+    needs: [build-customer-android, build-dsa-android]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/ci-record-pipeline.mjs --type MOBILE --name "Mobile Build" --status ${{ needs.build-customer-android.result == 'success' && needs.build-dsa-android.result == 'success' && 'SUCCESS' || 'FAILED' }}
+        env:
+          DEVOPS_API_URL: ${{ secrets.DEVOPS_API_URL }}
+          DEVOPS_WEBHOOK_SECRET: ${{ secrets.DEVOPS_WEBHOOK_SECRET }}

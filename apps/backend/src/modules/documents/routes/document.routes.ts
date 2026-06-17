@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 import { RBAC_PERMISSIONS } from '../../../shared/constants/rbac.constants.js';
+import { asyncHandler } from '../../../shared/middleware/async-handler.middleware.js';
 import { authenticateWithSessionMiddleware } from '../../../shared/middleware/authenticate.middleware.js';
 import { requireAnyPermission } from '../../../shared/middleware/rbac.middleware.js';
 import { validateMiddleware } from '../../../shared/middleware/validate.middleware.js';
@@ -62,7 +63,7 @@ const rejectSchema = z.object({ reason: z.string().min(1).max(200) });
 export const documentRoutes = Router();
 documentRoutes.use(authenticateWithSessionMiddleware);
 documentRoutes.get('/', docsRead, validateMiddleware(listDocumentsQuerySchema, 'query'), documentController.list);
-documentRoutes.post('/upload', docsWrite, validateMiddleware(uploadDocumentSchema), documentController.upload);
+documentRoutes.post('/upload', docsWrite, validateMiddleware(uploadDocumentSchema), asyncHandler(documentController.upload));
 documentRoutes.post('/presign-upload', docsWrite, validateMiddleware(presignUploadSchema), documentController.presignUpload);
 documentRoutes.post('/confirm-upload', docsWrite, validateMiddleware(confirmUploadSchema), documentController.confirmUpload);
 documentRoutes.get('/:id/download-url', docsDownload, validateMiddleware(uuidParamSchema, 'params'), documentController.downloadUrl);

@@ -1,11 +1,19 @@
 /// <reference types="vite/client" />
 
-interface ImportMetaEnv {
-  readonly VITE_API_BASE_URL: string;
-  readonly VITE_APP_ENV: string;
-  readonly VITE_USE_MOCK?: string;
-}
+declare module 'swagger-ui-react' {
+  import type { ComponentType } from 'react';
 
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
+  interface SwaggerUIProps {
+    spec?: object;
+    url?: string;
+    docExpansion?: 'list' | 'full' | 'none';
+    defaultModelsExpandDepth?: number;
+    persistAuthorization?: boolean;
+    tryItOutEnabled?: boolean;
+    filter?: boolean | string;
+    deepLinking?: boolean;
+  }
+
+  const SwaggerUI: ComponentType<SwaggerUIProps>;
+  export default SwaggerUI;
 }

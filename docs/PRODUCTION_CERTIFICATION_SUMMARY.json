@@ -1,0 +1,35 @@
+{
+  "generated": "2026-06-13T07:01:12.815Z",
+  "certification": "CONDITIONAL CERTIFICATION",
+  "overallCertificationScorePct": 75,
+  "productionReadinessPct": 69,
+  "enterpriseReadinessPct": 72,
+  "scores": {
+    "business": 78,
+    "technical": 82,
+    "database": 88,
+    "api": 74,
+    "security": 76,
+    "performance": 72,
+    "scalability": 71,
+    "operations": 68,
+    "compliance": 70,
+    "mobile": 75,
+    "infrastructure": 58,
+    "traceability": 87
+  },
+  "gates": {
+    "uat": true,
+    "hypercare": true,
+    "goLive": false,
+    "goLiveExecution": false
+  },
+  "uatGoLiveApprovalPct": 44,
+  "blockers": [
+    "Go-Live gate BLOCKED",
+    "Go-Live Execution gate BLOCKED",
+    "UAT Go-Live Approval 44% — NOT AUTHORIZED",
+    "Redis not implemented in application code",
+    "Full penetration test not executed"
+  ]
+}

@@ -1,0 +1,261 @@
+// ── Backup & Recovery / Disaster Recovery Platform ──
+
+enum BackupType {
+  FULL
+  INCREMENTAL
+  DIFFERENTIAL
+  PITR
+}
+
+enum BackupScope {
+  DATABASE
+  DOCUMENTS
+  MEDIA
+  AI_KNOWLEDGE
+  CONFIGURATION
+  LOGS
+  APPLICATION
+}
+
+enum BackupSchedule {
+  HOURLY
+  DAILY
+  WEEKLY
+  MONTHLY
+  MANUAL
+}
+
+enum BackupJobStatus {
+  ACTIVE
+  PAUSED
+  DISABLED
+}
+
+enum BackupExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  VERIFIED
+}
+
+enum RestoreScope {
+  SINGLE_RECORD
+  CUSTOMER
+  LEAD
+  APPLICATION
+  DOCUMENT
+  TABLE
+  DATABASE
+  PLATFORM
+}
+
+enum RestoreStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  VALIDATED
+}
+
+enum DrScenario {
+  DATABASE_FAILURE
+  APPLICATION_FAILURE
+  SERVER_FAILURE
+  LOAD_BALANCER_FAILURE
+  REDIS_FAILURE
+  STORAGE_FAILURE
+  AI_SERVICE_FAILURE
+  NOTIFICATION_PROVIDER_FAILURE
+  REGION_FAILURE
+  CLOUD_FAILURE
+  SECURITY_INCIDENT
+  CREDENTIAL_LEAK
+  RANSOMWARE
+  ACCIDENTAL_DELETION
+  FAILED_PRODUCTION_DEPLOYMENT
+}
+
+enum DrDrillStatus {
+  SCHEDULED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model BackupJob {
+  id            String          @id @default(uuid()) @db.Char(36)
+  code          String          @unique @db.VarChar(64)
+  name          String          @db.VarChar(200)
+  description   String?         @db.Text
+  scope         BackupScope
+  backupType    BackupType      @map("backup_type")
+  schedule      BackupSchedule
+  status        BackupJobStatus @default(ACTIVE)
+  cronExpr      String?         @map("cron_expr") @db.VarChar(64)
+  retentionCode String?         @map("retention_code") @db.VarChar(64)
+  isEncrypted   Boolean         @default(true) @map("is_encrypted")
+  isImmutable   Boolean         @default(false) @map("is_immutable")
+  config        Json?
+  lastRunAt     DateTime?       @map("last_run_at")
+  nextRunAt     DateTime?       @map("next_run_at")
+  createdById   String?         @map("created_by_id") @db.Char(36)
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  createdBy  User?             @relation("BackupJobCreatedBy", fields: [createdById], references: [id])
+  executions BackupExecution[]
+
+  @@index([scope, status])
+  @@index([schedule, status])
+  @@map("backup_jobs")
+}
+
+model BackupExecution {
+  id            String                @id @default(uuid()) @db.Char(36)
+  jobId         String                @map("job_id") @db.Char(36)
+  status        BackupExecutionStatus @default(PENDING)
+  backupType    BackupType            @map("backup_type")
+  scope         BackupScope
+  startedAt     DateTime?             @map("started_at")
+  completedAt   DateTime?             @map("completed_at")
+  durationMs    Int?                  @map("duration_ms")
+  totalSizeBytes BigInt?              @map("total_size_bytes")
+  fileCount     Int                   @default(0) @map("file_count")
+  checksum      String?               @db.VarChar(128)
+  storagePath   String?               @map("storage_path") @db.VarChar(500)
+  errorMessage  String?               @map("error_message") @db.Text
+  metadata      Json?
+  triggeredBy   String?               @map("triggered_by") @db.VarChar(32)
+  createdAt     DateTime              @default(now()) @map("created_at")
+
+  job   BackupJob    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  files BackupFile[]
+
+  @@index([jobId, createdAt])
+  @@index([status, createdAt])
+  @@map("backup_executions")
+}
+
+model BackupFile {
+  id           String   @id @default(uuid()) @db.Char(36)
+  executionId  String   @map("execution_id") @db.Char(36)
+  fileName     String   @map("file_name") @db.VarChar(300)
+  s3Key        String   @map("s3_key") @db.VarChar(500)
+  s3Bucket     String   @map("s3_bucket") @db.VarChar(128)
+  mimeType     String?  @map("mime_type") @db.VarChar(128)
+  sizeBytes    BigInt   @map("size_bytes")
+  checksum     String?  @db.VarChar(128)
+  isEncrypted  Boolean  @default(true) @map("is_encrypted")
+  isImmutable  Boolean  @default(false) @map("is_immutable")
+  region       String?  @db.VarChar(32)
+  metadata     Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  execution BackupExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([executionId])
+  @@index([s3Key])
+  @@map("backup_files")
+}
+
+model BackupRetention {
+  id            String         @id @default(uuid()) @db.Char(36)
+  code          String         @unique @db.VarChar(64)
+  name          String         @db.VarChar(200)
+  schedule      BackupSchedule
+  retentionHours Int           @map("retention_hours")
+  isActive      Boolean        @default(true) @map("is_active")
+  description   String?        @db.Text
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  @@index([schedule, isActive])
+  @@map("backup_retention_policies")
+}
+
+model RestoreRequest {
+  id            String        @id @default(uuid()) @db.Char(36)
+  scope         RestoreScope
+  targetType    String?       @map("target_type") @db.VarChar(64)
+  targetId      String?       @map("target_id") @db.Char(36)
+  executionId   String?       @map("execution_id") @db.Char(36)
+  status        RestoreStatus @default(PENDING)
+  requestedById String        @map("requested_by_id") @db.Char(36)
+  reason        String?       @db.Text
+  metadata      Json?
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  requestedBy User?              @relation("RestoreRequestRequestedBy", fields: [requestedById], references: [id])
+  executions  RestoreExecution[]
+
+  @@index([status, createdAt])
+  @@index([scope, targetType, targetId])
+  @@map("restore_requests")
+}
+
+model RestoreExecution {
+  id           String        @id @default(uuid()) @db.Char(36)
+  requestId    String        @map("request_id") @db.Char(36)
+  status       RestoreStatus @default(PENDING)
+  startedAt    DateTime?     @map("started_at")
+  completedAt  DateTime?     @map("completed_at")
+  durationMs   Int?          @map("duration_ms")
+  rtoMinutes   Int?          @map("rto_minutes")
+  recordsRestored Int?       @map("records_restored")
+  errorMessage String?       @map("error_message") @db.Text
+  metadata     Json?
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  request RestoreRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, createdAt])
+  @@index([status])
+  @@map("restore_executions")
+}
+
+model DisasterRecoveryPlan {
+  id          String     @id @default(uuid()) @db.Char(36)
+  code        String     @unique @db.VarChar(64)
+  name        String     @db.VarChar(200)
+  scenario    DrScenario
+  description String     @db.Text
+  playbook    Json
+  rpoMinutes  Int        @default(15) @map("rpo_minutes")
+  rtoMinutes  Int        @default(60) @map("rto_minutes")
+  priority    Int        @default(1)
+  isActive    Boolean    @default(true) @map("is_active")
+  lastTestedAt DateTime? @map("last_tested_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  drills RecoveryAudit[]
+
+  @@index([scenario, isActive])
+  @@map("disaster_recovery_plans")
+}
+
+model RecoveryAudit {
+  id          String        @id @default(uuid()) @db.Char(36)
+  planId      String?       @map("plan_id") @db.Char(36)
+  auditType   String        @map("audit_type") @db.VarChar(64)
+  scenario    DrScenario?
+  status      DrDrillStatus @default(SCHEDULED)
+  startedAt   DateTime?     @map("started_at")
+  completedAt DateTime?     @map("completed_at")
+  rpoAchieved Int?          @map("rpo_achieved")
+  rtoAchieved Int?          @map("rto_achieved")
+  passed      Boolean?
+  findings    String?       @db.Text
+  report      Json?
+  executedById String?      @map("executed_by_id") @db.Char(36)
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  plan       DisasterRecoveryPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  executedBy User?                 @relation("RecoveryAuditExecutedBy", fields: [executedById], references: [id])
+
+  @@index([auditType, status])
+  @@index([planId, createdAt])
+  @@map("recovery_audits")
+}

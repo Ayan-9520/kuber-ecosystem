@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json.schemastore.org/snyk",
+  "version": "1.0.0",
+  "project": "kuberone",
+  "organization": "kuber-finserv",
+  "severityThreshold": "high",
+  "failOn": ["critical", "high"],
+  "monitor": true,
+  "packageManager": "pnpm",
+  "testPaths": ["apps/backend", "apps/admin", "apps/mobile-customer", "apps/mobile-dsa", "packages"],
+  "instructions": "Run: snyk test --all-projects --severity-threshold=high"
+}

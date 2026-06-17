@@ -1,14 +1,21 @@
 import { useNavigation } from '@react-navigation/native';
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
+import { useDispatch } from 'react-redux';
 
 import { Button, Input, Screen } from '@/components/ui';
+import { useAuth } from '@/hooks';
 import { getApiErrorMessage, normalizePhone } from '@/lib/utils';
+import type { AuthStackParamList } from '@/navigation/types';
 import { authService } from '@/services';
+import { setRequiresProfileCompletion } from '@/store/slices/authSlice';
 import { colors, spacing } from '@/theme';
 
 export function RegisterScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+  const dispatch = useDispatch();
+  const { login } = useAuth();
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -34,9 +41,11 @@ export function RegisterScreen() {
     setError('');
     setLoading(true);
     try {
-      await authService.verifyOtp(normalizePhone(phone), otp, 'REGISTER');
-      setSuccess('Registration successful! Please sign in.');
-      setTimeout(() => navigation.goBack(), 1500);
+      const tokens = await authService.verifyOtp(normalizePhone(phone), otp, 'REGISTER');
+      await login(tokens.accessToken, tokens.refreshToken);
+      dispatch(setRequiresProfileCompletion(true));
+      setSuccess('Registration successful! Complete your profile.');
+      navigation.navigate('ProfileCompletion');
     } catch (e) {
       setError(getApiErrorMessage(e));
     } finally {

@@ -37,6 +37,7 @@ const navTheme = {
 export function RootNavigator() {
   const dispatch = useDispatch();
   const isAuthenticated = useSelector((s: RootState) => s.auth.isAuthenticated);
+  const requiresProfileCompletion = useSelector((s: RootState) => s.auth.requiresProfileCompletion);
   const { ready, showOnboarding: initialOnboarding } = useAuthBootstrap();
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const showOnboarding = initialOnboarding && !onboardingComplete;
@@ -68,8 +69,12 @@ export function RootNavigator() {
             {() => <OnboardingScreen onDone={() => setOnboardingComplete(true)} />}
           </Stack.Screen>
         ) : null}
-        {isAuthenticated ? (
+        {isAuthenticated && !requiresProfileCompletion ? (
           <Stack.Screen name="Main" component={MainTabNavigator} />
+        ) : isAuthenticated && requiresProfileCompletion ? (
+          <Stack.Screen name="Auth">
+            {() => <AuthNavigator initialRouteName="ProfileCompletion" />}
+          </Stack.Screen>
         ) : (
           <Stack.Screen name="Auth" component={AuthNavigator} />
         )}

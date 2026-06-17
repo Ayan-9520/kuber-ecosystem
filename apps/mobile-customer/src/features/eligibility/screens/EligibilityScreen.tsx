@@ -1,13 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, Input, Screen, StatusBadge } from '@/components/ui';
-import { LOAN_PRODUCTS } from '@/constants/products';
 import { useAuth } from '@/hooks';
+import {
+  flattenProductsWithVariants,
+  toFinanceProductSlug,
+  type ProductDisplayItem,
+} from '@/lib/product-mapper';
 import { formatCurrency, formatPercent, getApiErrorMessage } from '@/lib/utils';
-import { eligibilityService } from '@/services';
+import { eligibilityService, productsService } from '@/services';
 import { colors, radius, spacing, typography } from '@/theme';
 
 const EMPLOYMENT_TYPES = [
@@ -18,18 +22,6 @@ const EMPLOYMENT_TYPES = [
   { value: 'RETIRED', label: 'Retired' },
   { value: 'OTHER', label: 'Other' },
 ] as const;
-
-function toFinanceProductSlug(slug: string, variant: string): string {
-  if (slug === 'HOME_LOAN') {
-    if (variant === 'BT') return 'HOME_LOAN_BT';
-    if (variant === 'TOP_UP') return 'HOME_LOAN_TOP_UP';
-    return 'HOME_LOAN';
-  }
-  if (slug === 'BUSINESS_LOAN' && variant === 'WORKING_CAPITAL') return 'WORKING_CAPITAL';
-  if (slug === 'AUTO_LOAN') return 'NEW_CAR_LOAN';
-  if (slug === 'COMMERCIAL_VEHICLE_LOAN') return 'COMMERCIAL_VEHICLE';
-  return slug;
-}
 
 interface EligibilityResult {
   eligibleAmount?: number;
@@ -48,13 +40,29 @@ export function EligibilityScreen() {
   const [vehicleValue, setVehicleValue] = useState('');
   const [turnover, setTurnover] = useState('');
   const [loanAmount, setLoanAmount] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState(0);
+  const [selectedProductId, setSelectedProductId] = useState('');
+
+  const productsQuery = useQuery({
+    queryKey: ['eligibility-products'],
+    queryFn: async () => {
+      const [products, variants] = await Promise.all([
+        productsService.list({ limit: 50, isActive: true }),
+        productsService.variants(),
+      ]);
+      return flattenProductsWithVariants(products.items, variants.items);
+    },
+  });
+
+  const loanProducts = productsQuery.data ?? [];
+  const selectedProduct: ProductDisplayItem | undefined =
+    loanProducts.find((p) => `${p.productId}-${p.variant}` === selectedProductId) ?? loanProducts[0];
 
   const mutation = useMutation({
     mutationFn: () => {
       const monthlyIncome = Number(income);
       const requestedLoanAmount = loanAmount ? Number(loanAmount) : undefined;
-      const selected = LOAN_PRODUCTS[selectedProduct] ?? LOAN_PRODUCTS[0];
+      const selected = selectedProduct ?? loanProducts[0];
+      if (!selected) throw new Error('No loan products available');
 
       return eligibilityService.calculate({
         customerId,
@@ -134,17 +142,20 @@ export function EligibilityScreen() {
 
         <Text style={styles.fieldLabel}>Loan Product</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-          {LOAN_PRODUCTS.map((p, index) => (
-            <Pressable
-              key={`${p.slug}-${p.variant}`}
-              style={[styles.chip, selectedProduct === index && styles.chipActive]}
-              onPress={() => setSelectedProduct(index)}
-            >
-              <Text style={[styles.chipText, selectedProduct === index && styles.chipTextActive]}>
-                {p.name}
-              </Text>
-            </Pressable>
-          ))}
+          {loanProducts.map((p) => {
+            const key = `${p.productId}-${p.variant}`;
+            return (
+              <Pressable
+                key={key}
+                style={[styles.chip, selectedProductId === key && styles.chipActive]}
+                onPress={() => setSelectedProductId(key)}
+              >
+                <Text style={[styles.chipText, selectedProductId === key && styles.chipTextActive]}>
+                  {p.name}
+                </Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
 
         <Button

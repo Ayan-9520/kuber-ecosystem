@@ -2,6 +2,7 @@ import { env } from '../../../config/env.js';
 import { mockEmailProvider } from '../../notifications/providers/email/mock.provider.js';
 import { sendgridProvider } from '../../notifications/providers/email/sendgrid.provider.js';
 import { smtpProvider } from '../../notifications/providers/email/smtp.provider.js';
+import { rejectMockProviderInProduction } from '../../notifications/providers/provider-guard.js';
 
 import { awsSesProvider } from './aws-ses.provider.js';
 import type { EmailProviderAdapter } from './types.js';
@@ -21,5 +22,6 @@ export function resolveEnterpriseEmailProvider(dbType?: string): EmailProviderAd
   if (env.SENDGRID_API_KEY) return sendgridProvider as EmailProviderAdapter;
   if (env.SMTP_HOST && smtpPass()) return smtpProvider as EmailProviderAdapter;
 
+  rejectMockProviderInProduction(env, 'Email', 'mock');
   return mockEmailProvider as EmailProviderAdapter;
 }

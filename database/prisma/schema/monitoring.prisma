@@ -1,0 +1,125 @@
+// ── Production Monitoring Platform ──
+
+enum MonitoringAlertSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum MonitoringAlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  SILENCED
+}
+
+enum MonitoringAlertChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  SLACK
+  WEBHOOK
+}
+
+enum MonitoringComponent {
+  SYSTEM
+  APPLICATION
+  DATABASE
+  QUEUE
+  AI
+  NOTIFICATION
+  AUTH
+  BUSINESS
+  ANALYTICS
+  INFRASTRUCTURE
+}
+
+enum MonitoringSlaType {
+  AVAILABILITY
+  UPTIME
+  RESPONSE_TIME
+  SUPPORT
+  NOTIFICATION
+}
+
+model MonitoringAlertRule {
+  id          String                  @id @default(uuid()) @db.Char(36)
+  code        String                  @unique @db.VarChar(64)
+  name        String                  @db.VarChar(200)
+  description String?                 @db.Text
+  component   MonitoringComponent
+  metric      String                  @db.VarChar(100)
+  condition   String                  @db.VarChar(32)
+  threshold   Decimal                 @db.Decimal(12, 4)
+  severity    MonitoringAlertSeverity @default(MEDIUM)
+  channels    Json
+  isActive    Boolean                 @default(true) @map("is_active")
+  cooldownSec Int                     @default(300) @map("cooldown_sec")
+  createdAt   DateTime                @default(now()) @map("created_at")
+  updatedAt   DateTime                @updatedAt @map("updated_at")
+
+  alerts MonitoringAlert[]
+
+  @@index([component, isActive])
+  @@map("monitoring_alert_rules")
+}
+
+model MonitoringAlert {
+  id          String                  @id @default(uuid()) @db.Char(36)
+  ruleId      String?                 @map("rule_id") @db.Char(36)
+  code        String                  @unique @db.VarChar(64)
+  title       String                  @db.VarChar(300)
+  description String                  @db.Text
+  component   MonitoringComponent
+  severity    MonitoringAlertSeverity
+  status      MonitoringAlertStatus   @default(OPEN)
+  metric      String                  @db.VarChar(100)
+  metricValue Decimal                 @map("metric_value") @db.Decimal(12, 4)
+  threshold   Decimal                 @db.Decimal(12, 4)
+  channels    Json?
+  metadata    Json?
+  acknowledgedById String?            @map("acknowledged_by") @db.Char(36)
+  acknowledgedAt DateTime?           @map("acknowledged_at")
+  resolvedById   String?             @map("resolved_by") @db.Char(36)
+  resolvedAt     DateTime?           @map("resolved_at")
+  createdAt   DateTime                @default(now()) @map("created_at")
+  updatedAt   DateTime                @updatedAt @map("updated_at")
+
+  rule           MonitoringAlertRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  acknowledgedBy User?                @relation("MonitoringAlertAcknowledgedBy", fields: [acknowledgedById], references: [id])
+  resolvedBy     User?                @relation("MonitoringAlertResolvedBy", fields: [resolvedById], references: [id])
+
+  @@index([status, severity])
+  @@index([component, createdAt])
+  @@map("monitoring_alerts")
+}
+
+model MonitoringSlaSnapshot {
+  id            String            @id @default(uuid()) @db.Char(36)
+  slaType       MonitoringSlaType @map("sla_type")
+  targetPercent Decimal           @map("target_percent") @db.Decimal(5, 2)
+  actualPercent Decimal           @map("actual_percent") @db.Decimal(5, 2)
+  periodStart   DateTime          @map("period_start")
+  periodEnd     DateTime          @map("period_end")
+  metadata      Json?
+  createdAt     DateTime          @default(now()) @map("created_at")
+
+  @@index([slaType, periodStart])
+  @@map("monitoring_sla_snapshots")
+}
+
+model MonitoringMetricSnapshot {
+  id        String              @id @default(uuid()) @db.Char(36)
+  component MonitoringComponent
+  metric    String              @db.VarChar(100)
+  value     Decimal             @db.Decimal(16, 4)
+  unit      String              @db.VarChar(32)
+  labels    Json?
+  sampledAt DateTime            @map("sampled_at")
+  createdAt DateTime            @default(now()) @map("created_at")
+
+  @@index([component, metric, sampledAt])
+  @@map("monitoring_metric_snapshots")
+}

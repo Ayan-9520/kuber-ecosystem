@@ -1,0 +1,185 @@
+// ── Logging & Observability Platform ──
+
+enum ObservabilityLogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  FATAL
+}
+
+enum ObservabilityLogCategory {
+  APPLICATION
+  AUTH
+  RBAC
+  CUSTOMER
+  LMS
+  LOS
+  DOCUMENT
+  REFERRAL
+  COMMISSION
+  SUPPORT
+  NOTIFICATION
+  AI
+  DATABASE
+  SYSTEM
+  SECURITY
+  BUSINESS
+}
+
+enum ObservabilityTraceStatus {
+  OK
+  ERROR
+  UNSET
+}
+
+enum ObservabilityErrorSource {
+  BACKEND
+  FRONTEND
+  MOBILE
+  AI
+  NOTIFICATION
+  DATABASE
+}
+
+enum ObservabilityEventType {
+  BUSINESS
+  AUTH
+  SECURITY
+  WORKFLOW
+  AI
+  NOTIFICATION
+}
+
+enum ObservabilityRetentionType {
+  APPLICATION
+  AUDIT
+  SECURITY
+  AI
+  SYSTEM
+}
+
+model ObservabilityLog {
+  id            String                   @id @default(uuid()) @db.Char(36)
+  level         ObservabilityLogLevel    @default(INFO)
+  category      ObservabilityLogCategory @default(APPLICATION)
+  module        String                   @db.VarChar(64)
+  action        String                   @db.VarChar(128)
+  message       String                   @db.Text
+  requestId     String?                  @map("request_id") @db.VarChar(64)
+  correlationId String?                  @map("correlation_id") @db.VarChar(64)
+  traceId       String?                  @map("trace_id") @db.VarChar(64)
+  sessionId     String?                  @map("session_id") @db.VarChar(64)
+  workflowId    String?                  @map("workflow_id") @db.VarChar(64)
+  userId        String?                  @map("user_id") @db.Char(36)
+  userRole      String?                  @map("user_role") @db.VarChar(64)
+  ipAddress     String?                  @map("ip_address") @db.VarChar(45)
+  userAgent     String?                  @map("user_agent") @db.Text
+  device        String?                  @db.VarChar(128)
+  environment   String                   @default("development") @db.VarChar(32)
+  durationMs    Int?                     @map("duration_ms")
+  statusCode    Int?                     @map("status_code")
+  metadata      Json?
+  createdAt     DateTime                 @default(now()) @map("created_at")
+
+  user User? @relation("ObservabilityLogUser", fields: [userId], references: [id])
+
+  @@index([requestId])
+  @@index([correlationId])
+  @@index([traceId])
+  @@index([userId, createdAt])
+  @@index([category, level, createdAt])
+  @@index([module, createdAt])
+  @@map("observability_logs")
+}
+
+model ObservabilityTrace {
+  id            String                   @id @default(uuid()) @db.Char(36)
+  traceId       String                   @unique @map("trace_id") @db.VarChar(64)
+  correlationId String?                  @map("correlation_id") @db.VarChar(64)
+  requestId     String?                  @map("request_id") @db.VarChar(64)
+  serviceName   String                   @default("kuberone-api") @map("service_name") @db.VarChar(64)
+  operation     String                   @db.VarChar(200)
+  status        ObservabilityTraceStatus @default(UNSET)
+  durationMs    Int?                     @map("duration_ms")
+  userId        String?                  @map("user_id") @db.Char(36)
+  spans         Json?
+  metadata      Json?
+  startedAt     DateTime                 @map("started_at")
+  endedAt       DateTime?                @map("ended_at")
+  createdAt     DateTime                 @default(now()) @map("created_at")
+
+  user User? @relation("ObservabilityTraceUser", fields: [userId], references: [id])
+
+  @@index([correlationId])
+  @@index([requestId])
+  @@index([startedAt])
+  @@map("observability_traces")
+}
+
+model ObservabilityError {
+  id            String                   @id @default(uuid()) @db.Char(36)
+  source        ObservabilityErrorSource @default(BACKEND)
+  errorCode     String?                  @map("error_code") @db.VarChar(64)
+  errorType     String                   @map("error_type") @db.VarChar(128)
+  message       String                   @db.Text
+  stackTrace    String?                  @map("stack_trace") @db.Text
+  requestId     String?                  @map("request_id") @db.VarChar(64)
+  correlationId String?                  @map("correlation_id") @db.VarChar(64)
+  traceId       String?                  @map("trace_id") @db.VarChar(64)
+  userId        String?                  @map("user_id") @db.Char(36)
+  module        String?                  @db.VarChar(64)
+  path          String?                  @db.VarChar(500)
+  method        String?                  @db.VarChar(16)
+  statusCode    Int?                     @map("status_code")
+  metadata      Json?
+  resolved      Boolean                  @default(false)
+  createdAt     DateTime                 @default(now()) @map("created_at")
+
+  user User? @relation("ObservabilityErrorUser", fields: [userId], references: [id])
+
+  @@index([source, createdAt])
+  @@index([errorCode, createdAt])
+  @@index([requestId])
+  @@index([traceId])
+  @@map("observability_errors")
+}
+
+model ObservabilityEvent {
+  id            String                 @id @default(uuid()) @db.Char(36)
+  eventType     ObservabilityEventType @map("event_type")
+  eventName     String                 @map("event_name") @db.VarChar(128)
+  category      ObservabilityLogCategory @default(BUSINESS)
+  entityType    String?                @map("entity_type") @db.VarChar(64)
+  entityId      String?                @map("entity_id") @db.Char(36)
+  userId        String?                @map("user_id") @db.Char(36)
+  requestId     String?                @map("request_id") @db.VarChar(64)
+  correlationId String?                @map("correlation_id") @db.VarChar(64)
+  traceId       String?                @map("trace_id") @db.VarChar(64)
+  workflowId    String?                @map("workflow_id") @db.VarChar(64)
+  payload       Json?
+  createdAt     DateTime               @default(now()) @map("created_at")
+
+  user User? @relation("ObservabilityEventUser", fields: [userId], references: [id])
+
+  @@index([eventType, eventName, createdAt])
+  @@index([entityType, entityId])
+  @@index([userId, createdAt])
+  @@index([workflowId])
+  @@map("observability_events")
+}
+
+model ObservabilityRetentionPolicy {
+  id            String                   @id @default(uuid()) @db.Char(36)
+  code          String                   @unique @db.VarChar(64)
+  name          String                   @db.VarChar(200)
+  retentionType ObservabilityRetentionType @map("retention_type")
+  retentionDays Int                      @map("retention_days")
+  isActive      Boolean                  @default(true) @map("is_active")
+  description   String?                  @db.Text
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
+
+  @@index([retentionType, isActive])
+  @@map("observability_retention_policies")
+}

@@ -1,0 +1,36 @@
+# KuberOne Semgrep rules — run: semgrep --config security-testing/config/semgrep.yml .
+rules:
+  - id: kuberone-hardcoded-secret
+    patterns:
+      - pattern-either:
+          - pattern: $X = "sk-..."
+          - pattern: password = "..."
+          - pattern: apiKey = "..."
+    message: Potential hardcoded secret — use environment variables
+    severity: ERROR
+    languages: [javascript, typescript]
+
+  - id: kuberone-eval
+    pattern: eval(...)
+    message: Avoid eval — injection risk
+    severity: ERROR
+    languages: [javascript, typescript]
+
+  - id: kuberone-dangerous-innerhtml
+    pattern: dangerouslySetInnerHTML
+    message: Review XSS risk for dangerouslySetInnerHTML usage
+    severity: WARNING
+    languages: [javascript, typescript]
+
+  - id: kuberone-sql-concat
+    patterns:
+      - pattern: $QUERY = "..." + $USER_INPUT
+    message: Potential SQL injection via string concatenation
+    severity: ERROR
+    languages: [javascript, typescript]
+
+  - id: kuberone-jwt-none-alg
+    pattern: algorithm: "none"
+    message: JWT algorithm none is insecure
+    severity: ERROR
+    languages: [javascript, typescript]

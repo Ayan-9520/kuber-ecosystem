@@ -2,6 +2,7 @@ import type { AuthenticatedUser } from '@kuberone/shared-types';
 import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
+import { tokenStorage } from '@/lib/token-storage';
 import type { RootState } from '@/store';
 import { clearCredentials, setCredentials } from '@/store/slices/authSlice';
 
@@ -40,8 +41,7 @@ export function useAuth() {
   const auth = useSelector((s: RootState) => s.auth);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    tokenStorage.clearTokens();
     dispatch(clearCredentials());
   }, [dispatch]);
 

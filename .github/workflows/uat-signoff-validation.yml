@@ -1,0 +1,29 @@
+name: UAT Signoff Validation
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'apps/backend/src/modules/uat/**'
+      - 'apps/admin/src/features/uat/**'
+      - 'database/prisma/schema/uat*.prisma'
+      - 'deployment/uat/**'
+      - 'scripts/uat-signoff-*.mjs'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/shared-validation build
+      - run: pnpm typecheck
+      - run: node scripts/uat-signoff-gate.mjs
+      - run: node scripts/uat-signoff-report.mjs

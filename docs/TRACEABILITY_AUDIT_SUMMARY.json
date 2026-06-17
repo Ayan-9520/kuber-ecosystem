@@ -1,0 +1,46 @@
+{
+  "generated": "2026-06-13T06:37:56.957Z",
+  "verdict": "TRACEABILITY VERIFIED",
+  "overallTraceabilityPct": 87,
+  "scores": {
+    "requirementCoverage": 76,
+    "databaseCoverage": 100,
+    "apiCoverage": 74,
+    "rbacCoverage": 88,
+    "dtoCoverage": 41,
+    "crmCoverage": 85,
+    "customerCoverage": 100,
+    "dsaCoverage": 100,
+    "aiCoverage": 84,
+    "auditCoverage": 72,
+    "monitoringCoverage": 80,
+    "linkIntegrity": 98
+  },
+  "metrics": {
+    "models": 356,
+    "routeHandlers": 815,
+    "mountedPrefixes": 123,
+    "openapiOps": 600,
+    "validators": 50,
+    "rbacRouteFiles": 57,
+    "routeFiles": 65,
+    "adminPages": 93,
+    "navItems": 51,
+    "navBrokenLinks": 0,
+    "customerScreens": 28,
+    "dsaScreens": 39
+  },
+  "gaps": {
+    "missingCrmPages": [
+      "KYC",
+      "EMI",
+      "Eligibility"
+    ],
+    "healthOnlyModules": [
+      "employees",
+      "branches",
+      "campaigns (empty list)"
+    ],
+    "navWithoutRoute": []
+  }
+}

@@ -1,0 +1,29 @@
+name: Hypercare Validation
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'apps/backend/src/modules/hypercare/**'
+      - 'apps/admin/src/features/hypercare/**'
+      - 'database/prisma/schema/hypercare.prisma'
+      - 'deployment/hypercare/**'
+      - 'scripts/hypercare-*.mjs'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/shared-validation build
+      - run: pnpm typecheck
+      - run: node scripts/hypercare-gate.mjs
+      - run: node scripts/hypercare-report.mjs

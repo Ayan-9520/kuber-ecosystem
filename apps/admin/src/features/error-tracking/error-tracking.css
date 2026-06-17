@@ -1,0 +1,21 @@
+.error-tracking-hub .lifecycle-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.error-tracking-hub .priority-critical { color: #dc2626; }
+.error-tracking-hub .priority-high { color: #ea580c; }
+.error-tracking-hub .priority-medium { color: #ca8a04; }
+.error-tracking-hub .priority-low { color: #64748b; }
+
+.error-tracking-hub .detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.error-tracking-hub .mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8rem;
+}

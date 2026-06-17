@@ -29,12 +29,12 @@ import { RecommendationsScreen } from '@/features/recommendations/screens/Recomm
 import { ReferralsScreen } from '@/features/referrals/screens/ReferralsScreen';
 import { SettingsScreen } from '@/features/settings/screens/SettingsScreen';
 import { CreateTicketScreen } from '@/features/support/screens/CreateTicketScreen';
-import { SupportScreen } from '@/features/support/screens/SupportScreen';
 import { FeedbackScreen } from '@/features/support/screens/FeedbackScreen';
+import { SupportScreen } from '@/features/support/screens/SupportScreen';
 import { TicketDetailScreen } from '@/features/support/screens/TicketDetailScreen';
 import { VoiceAiScreen } from '@/features/voice-ai/screens/VoiceAiScreen';
 import { useAuth } from '@/hooks';
-import { colors } from '@/theme';
+import { useAppTheme } from '@/theme/ThemeProvider';
 
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -45,14 +45,19 @@ const ProductsStack = createNativeStackNavigator<ProductsStackParamList>();
 const SupportStack = createNativeStackNavigator<SupportStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 
-const screenOptions = {
-  headerStyle: { backgroundColor: colors.card },
-  headerTintColor: colors.primary,
-  headerTitleStyle: { fontWeight: '600' as const, color: colors.text },
-  contentStyle: { backgroundColor: colors.background },
-};
+function useStackScreenOptions() {
+  const { colors } = useAppTheme();
+  return {
+    headerStyle: { backgroundColor: colors.card },
+    headerTintColor: colors.primary,
+    headerTitleStyle: { fontWeight: '600' as const, color: colors.text, fontSize: 17 },
+    headerShadowVisible: false,
+    contentStyle: { backgroundColor: colors.background },
+  };
+}
 
 function HomeStackNavigator() {
+  const screenOptions = useStackScreenOptions();
   const { customerId } = useAuth();
 
   return (
@@ -75,6 +80,7 @@ function HomeStackNavigator() {
 }
 
 function ApplicationsStackNavigator() {
+  const screenOptions = useStackScreenOptions();
   return (
     <AppsStack.Navigator screenOptions={screenOptions}>
       <AppsStack.Screen name="ApplicationsList" component={ApplicationsScreen} options={{ title: 'Applications' }} />
@@ -85,6 +91,7 @@ function ApplicationsStackNavigator() {
 }
 
 function ProductsStackNavigator() {
+  const screenOptions = useStackScreenOptions();
   return (
     <ProductsStack.Navigator screenOptions={screenOptions}>
       <ProductsStack.Screen name="ProductsList" component={LoanProductsScreen} options={{ title: 'Loan Products' }} />
@@ -94,6 +101,7 @@ function ProductsStackNavigator() {
 }
 
 function SupportStackNavigator() {
+  const screenOptions = useStackScreenOptions();
   return (
     <SupportStack.Navigator screenOptions={screenOptions}>
       <SupportStack.Screen name="SupportHome" component={SupportScreen} options={{ title: 'Support' }} />
@@ -105,6 +113,7 @@ function SupportStackNavigator() {
 }
 
 function ProfileStackNavigator() {
+  const screenOptions = useStackScreenOptions();
   return (
     <ProfileStack.Navigator screenOptions={screenOptions}>
       <ProfileStack.Screen name="ProfileHome" component={ProfileScreen} options={{ title: 'Profile' }} />
@@ -117,29 +126,44 @@ function ProfileStackNavigator() {
 }
 
 export function MainTabNavigator() {
+  const { colors } = useAppTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
           backgroundColor: colors.card,
-          borderTopColor: colors.border,
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 8,
+          borderTopColor: colors.borderLight,
+          borderTopWidth: 1,
+          height: 72,
+          paddingBottom: 10,
+          paddingTop: 10,
+          elevation: 12,
+          shadowColor: '#071A1F',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
         },
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-        tabBarIcon: ({ color, size }) => {
-          const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
-            Home: 'home',
-            Applications: 'document-text',
-            Products: 'grid',
-            Support: 'headset',
-            Profile: 'person',
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '700', marginTop: 2 },
+        tabBarIcon: ({ color, focused }) => {
+          const icons: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
+            Home: { active: 'home', inactive: 'home-outline' },
+            Applications: { active: 'document-text', inactive: 'document-text-outline' },
+            Products: { active: 'grid', inactive: 'grid-outline' },
+            Support: { active: 'headset', inactive: 'headset-outline' },
+            Profile: { active: 'person', inactive: 'person-outline' },
           };
-          return <Ionicons name={icons[route.name] ?? 'ellipse'} size={size} color={color} />;
+          const icon = icons[route.name] ?? { active: 'ellipse', inactive: 'ellipse-outline' };
+          return (
+            <Ionicons
+              name={focused ? icon.active : icon.inactive}
+              size={22}
+              color={color}
+            />
+          );
         },
       })}
     >

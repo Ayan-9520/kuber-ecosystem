@@ -10,9 +10,14 @@ import { RegisterScreen } from '@/features/auth/screens/RegisterScreen';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
-export function AuthNavigator() {
+type AuthNavigatorProps = {
+  initialRouteName?: keyof AuthStackParamList;
+};
+
+export function AuthNavigator({ initialRouteName = 'OtpLogin' }: AuthNavigatorProps) {
   return (
     <Stack.Navigator
+      initialRouteName={initialRouteName}
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',

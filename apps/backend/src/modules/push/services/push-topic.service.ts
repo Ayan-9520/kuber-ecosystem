@@ -3,6 +3,7 @@ import type { ListPushTopicsQuery, SubscribePushTopicInput } from '@kuberone/sha
 
 import { NotFoundError } from '../../../shared/errors/app-error.js';
 import { communicationLogRepository } from '../../notifications/repositories/notification.repository.js';
+import { channelStatusService } from '../../notifications/services/channel-status.service.js';
 import { rateLimitService } from '../../notifications/services/rate-limit.service.js';
 import { resolveEnterprisePushProvider } from '../providers/push.factory.js';
 import {
@@ -97,6 +98,11 @@ export const pushTopicService = {
     payload?: Record<string, unknown>;
     eventType?: string;
   }) {
+    const channel = channelStatusService.getStatus('push');
+    if (!channel.deliverable) {
+      return { skipped: true, reason: channelStatusService.skipReason('push') };
+    }
+
     const topic = await pushTopicRepository.findByCode(params.topicCode);
     if (!topic) throw new NotFoundError('PushTopic', params.topicCode);
 
@@ -110,7 +116,7 @@ export const pushTopicService = {
 
     const dbProvider = await pushProviderRepository.findDefault();
     const rateLimit = dbProvider?.rateLimit ?? 200;
-    if (rateLimit && !rateLimitService.check(`push-topic:${params.topicCode}`, rateLimit)) {
+    if (rateLimit && !(await rateLimitService.checkAsync(`push-topic:${params.topicCode}`, rateLimit))) {
       throw new Error('Push topic rate limit exceeded');
     }
 

@@ -1,0 +1,46 @@
+name: Backend Production Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to rollback to
+        required: true
+      reason:
+        description: Rollback reason
+        required: true
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Execute rollback
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /opt/kuberone
+            bash deployment/scripts/rollback.sh backend ${{ inputs.version }}
+
+      - name: Validate health after rollback
+        run: node scripts/production-deploy-validate.mjs
+        env:
+          PRODUCTION_API_URL: ${{ secrets.PRODUCTION_API_URL || 'https://api.kuberone.com' }}
+          BACKEND_DEPLOYMENT_WEBHOOK_SECRET: ${{ secrets.BACKEND_DEPLOYMENT_WEBHOOK_SECRET }}
+          PRODUCTION_WEBHOOK_BACKEND: ${{ secrets.DEVOPS_API_URL }}
+          GITHUB_SHA: ${{ github.sha }}
+          DEPLOY_STRATEGY: rollback
+          PRODUCTION_COMPONENT: backend
+
+      - name: Record rollback
+        run: |
+          curl -sf -X POST "${{ secrets.DEVOPS_API_URL }}/api/v1/deployment/webhook" \
+            -H "Content-Type: application/json" \
+            -H "x-backend-deployment-webhook-secret: ${{ secrets.BACKEND_DEPLOYMENT_WEBHOOK_SECRET }}" \
+            -d "{\"version\":\"${{ inputs.version }}\",\"strategy\":\"rolling\",\"status\":\"ROLLED_BACK\",\"validationReport\":{\"reason\":\"${{ inputs.reason }}\"}}" \
+            || true

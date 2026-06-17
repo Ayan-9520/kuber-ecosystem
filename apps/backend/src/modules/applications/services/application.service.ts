@@ -9,6 +9,7 @@ import type {
 } from '@kuberone/shared-validation';
 
 import { AppError, NotFoundError } from '../../../shared/errors/app-error.js';
+import { emitAutomationEvent } from '../../../shared/utils/automation-emitter.util.js';
 import {
   applyApplicationScope,
   assertApplicationAccess,
@@ -127,6 +128,13 @@ export const applicationService = {
 
     await auditApplicationMutation(authAuditRepository.log, ctx, 'APPLICATION_CREATED', 'application', application.id, input);
     await applicationWorkflowService.onApplicationCreated(application.id, input.leadId, ctx);
+    emitAutomationEvent({
+      triggerType: 'APPLICATION_CREATED',
+      subjectType: 'application',
+      subjectId: application.id,
+      userId: customer.userId ?? ctx.actorId,
+      context: { applicationNumber, customerId: input.customerId, leadId: input.leadId },
+    });
     return applicationRepository.findById(application.id);
   },
 

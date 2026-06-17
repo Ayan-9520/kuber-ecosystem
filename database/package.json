@@ -21,6 +21,7 @@
     "seed": "tsx prisma/seeds/index.ts",
     "studio": "prisma studio --schema=./prisma/schema",
     "lint": "eslint src prisma/seeds --max-warnings 0",
+    "lint:fix": "eslint src prisma/seeds --fix",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.seeds.json --noEmit",
     "clean": "rimraf dist"
   },
@@ -33,7 +34,7 @@
     "mysql2": "^3.22.4",
     "prisma": "^6.1.0",
     "rimraf": "^6.0.1",
-    "tsx": "^4.19.2",
+    "tsx": "^4.22.4",
     "typescript": "^5.7.2"
   },
   "prisma": {

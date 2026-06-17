@@ -19,10 +19,16 @@
     "lint": "eslint src --max-warnings 0",
     "lint:fix": "eslint src --fix",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "clean": "rimraf dist"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rimraf dist coverage"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^3.2.6",
+    "jsdom": "^25.0.1",
     "rimraf": "^6.0.1",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.6"
   }
 }

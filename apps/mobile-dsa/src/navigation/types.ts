@@ -1,7 +1,7 @@
 import { type NavigatorScreenParams } from '@react-navigation/native';
 
 export type AuthStackParamList = {
-  OtpLogin: undefined;
+  OtpLogin: { phone?: string; fromRegister?: boolean } | undefined;
   PartnerRegister: undefined;
   PartnerKyc: undefined;
 };

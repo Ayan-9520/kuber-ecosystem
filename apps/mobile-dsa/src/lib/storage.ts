@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
+import { secureDelete, secureGet, secureSet } from './secureStorage';
 
 const KEYS = {
   accessToken: 'kuberone_access_token',
@@ -8,37 +8,37 @@ const KEYS = {
 } as const;
 
 export async function getAccessToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(KEYS.accessToken);
+  return secureGet(KEYS.accessToken);
 }
 
 export async function getRefreshToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(KEYS.refreshToken);
+  return secureGet(KEYS.refreshToken);
 }
 
 export async function setTokens(accessToken: string, refreshToken: string): Promise<void> {
-  await SecureStore.setItemAsync(KEYS.accessToken, accessToken);
-  await SecureStore.setItemAsync(KEYS.refreshToken, refreshToken);
+  await secureSet(KEYS.accessToken, accessToken);
+  await secureSet(KEYS.refreshToken, refreshToken);
 }
 
 export async function clearTokens(): Promise<void> {
-  await SecureStore.deleteItemAsync(KEYS.accessToken);
-  await SecureStore.deleteItemAsync(KEYS.refreshToken);
+  await secureDelete(KEYS.accessToken);
+  await secureDelete(KEYS.refreshToken);
 }
 
 export async function getOrCreateDeviceId(): Promise<string> {
-  let id = await SecureStore.getItemAsync(KEYS.deviceId);
+  let id = await secureGet(KEYS.deviceId);
   if (!id) {
     id = `mobile-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    await SecureStore.setItemAsync(KEYS.deviceId, id);
+    await secureSet(KEYS.deviceId, id);
   }
   return id;
 }
 
 export async function isOnboardingDone(): Promise<boolean> {
-  const v = await SecureStore.getItemAsync(KEYS.onboardingDone);
+  const v = await secureGet(KEYS.onboardingDone);
   return v === 'true';
 }
 
 export async function setOnboardingDone(): Promise<void> {
-  await SecureStore.setItemAsync(KEYS.onboardingDone, 'true');
+  await secureSet(KEYS.onboardingDone, 'true');
 }

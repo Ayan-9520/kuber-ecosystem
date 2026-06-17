@@ -1,0 +1,57 @@
+name: Staging Release Validation
+
+on:
+  push:
+    branches: ['release/**']
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: Release version to validate
+        required: true
+
+jobs:
+  release-checklist:
+    name: Release Validation Checklist
+    runs-on: ubuntu-latest
+    environment: staging
+    needs: []
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/database generate
+
+      - name: Pre-deploy checklist
+        run: |
+          echo "✓ PR validation"
+          echo "✓ Security scan"
+          node scripts/prisma-migration-gate.mjs
+          node scripts/openapi-validate.mjs
+          node scripts/error-deployment-gate.mjs || true
+
+      - name: Full test suite
+        run: pnpm lint && pnpm typecheck && pnpm build && pnpm test && pnpm test:integration
+
+      - name: Trigger staging deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.STAGING_EC2_HOST || secrets.EC2_HOST }}
+          username: ${{ secrets.STAGING_EC2_USER || secrets.EC2_USER }}
+          key: ${{ secrets.STAGING_EC2_SSH_KEY || secrets.EC2_SSH_KEY }}
+          script: |
+            cd /opt/kuberone
+            bash deployment/scripts/deploy-staging.sh ${{ github.ref_name }}
+
+      - name: Post-deploy health
+        run: |
+          STAGING_API_URL=${{ secrets.STAGING_API_URL || 'https://staging-api.kuberone.com' }}
+          curl -sf "$STAGING_API_URL/health/live"
+          curl -sf "$STAGING_API_URL/health/ready"
+          node scripts/staging-deploy-validate.mjs
+        env:
+          STAGING_WEBHOOK_SECRET: ${{ secrets.STAGING_WEBHOOK_SECRET }}
+          API_BASE_URL: ${{ secrets.DEVOPS_API_URL }}

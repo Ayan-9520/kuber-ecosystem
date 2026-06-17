@@ -1,12 +1,3 @@
--- CreateEnum
-CREATE TYPE `BranchPeriodType` AS ENUM ('DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY');
-
--- CreateEnum
-CREATE TYPE `BranchRankingType` AS ENUM ('BRANCH', 'REGIONAL', 'PRODUCT', 'REVENUE');
-
--- CreateEnum
-CREATE TYPE `BranchMetricCategory` AS ENUM ('LEAD', 'APPLICATION', 'REVENUE', 'PRODUCT', 'EXECUTIVE', 'PARTNER', 'COMMISSION', 'SUPPORT', 'AI', 'GROWTH');
-
 -- CreateTable
 CREATE TABLE `branch_metrics` (
     `id` CHAR(36) NOT NULL,
@@ -111,7 +102,7 @@ CREATE TABLE `branch_rankings` (
     `metrics` JSON NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,
-    INDEX `branch_rankings_ranking_type_period_type_period_start_rank_idx`(`ranking_type`, `period_type`, `period_start`, `rank`),
+    INDEX `branch_rankings_type_period_rank_idx`(`ranking_type`, `period_type`, `period_start`, `rank`),
     INDEX `branch_rankings_branch_id_period_type_idx`(`branch_id`, `period_type`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

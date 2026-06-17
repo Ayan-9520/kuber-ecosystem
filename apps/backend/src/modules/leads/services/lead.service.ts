@@ -7,7 +7,9 @@ import type {
   UpdateLeadInput,
 } from '@kuberone/shared-validation';
 
+import { env } from '../../../config/env.js';
 import { NotFoundError } from '../../../shared/errors/app-error.js';
+import { emitAutomationEvent } from '../../../shared/utils/automation-emitter.util.js';
 import { applyLeadScope, assertLeadAccess } from '../../../shared/utils/data-scope.js';
 import { authAuditRepository } from '../../auth/repositories/audit.repository.js';
 import { productRepository } from '../../product/repositories/product.repository.js';
@@ -93,7 +95,7 @@ export const leadService = {
     return { ...enrichLead(lead), latestScore };
   },
 
-  async create(input: CreateLeadInput, ctx: RequestContext) {
+  async create(actor: AuthenticatedUser, input: CreateLeadInput, ctx: RequestContext) {
     const [source, product] = await Promise.all([
       leadSourceRepository.findById(input.sourceId),
       productRepository.findById(input.productId),
@@ -137,7 +139,7 @@ export const leadService = {
       productType: product.family?.code,
     };
 
-    await leadScoreService.scoreLead({ leadId: lead.id, scoringProfile }, ctx, scoringProfile);
+    await leadScoreService.scoreLead({ leadId: lead.id, scoringProfile }, ctx, scoringProfile, actor);
 
     if (input.assignImmediately !== false) {
       try {
@@ -153,6 +155,13 @@ export const leadService = {
 
     const refreshed = await leadRepository.findById(lead.id);
     await auditLeadMutation(authAuditRepository.log, ctx, 'LEAD_CREATED', 'lead', lead.id, input);
+    emitAutomationEvent({
+      triggerType: 'LEAD_CREATED',
+      subjectType: 'lead',
+      subjectId: lead.id,
+      userId: ctx.actorId,
+      context: { leadNumber, branchId: input.branchId, regionId: input.regionId, productId: input.productId },
+    });
     return enrichLead(refreshed!);
   },
 
@@ -212,8 +221,9 @@ export const leadService = {
   },
 
   async export(actor: AuthenticatedUser, query: ExportLeadsQuery) {
-    const where = applyLeadScope(actor, buildListWhere({ ...query, page: 1, limit: 10000, includeDeleted: false }));
-    const rows = await leadRepository.list(where, 0, 10000, { createdAt: 'desc' });
+    const maxRows = env.LEAD_EXPORT_MAX_ROWS;
+    const where = applyLeadScope(actor, buildListWhere({ ...query, page: 1, limit: maxRows, includeDeleted: false }));
+    const rows = await leadRepository.list(where, 0, maxRows, { createdAt: 'desc' });
 
     if (query.format === 'json') {
       return { format: 'json', data: rows.map(enrichLead) };

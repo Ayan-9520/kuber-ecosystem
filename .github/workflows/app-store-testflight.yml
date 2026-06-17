@@ -1,0 +1,39 @@
+name: App Store TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        type: choice
+        options: [customer, dsa]
+      track:
+        type: choice
+        options: [testflight_internal, testflight_external]
+  push:
+    tags:
+      - 'testflight-v*'
+
+jobs:
+  testflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/app-store-release-gate.mjs
+      - name: EAS Build
+        working-directory: apps/mobile-${{ github.event.inputs.app || 'customer' }}
+        run: eas build --platform ios --profile testflight --non-interactive || true
+      - name: Submit TestFlight
+        working-directory: apps/mobile-${{ github.event.inputs.app || 'customer' }}
+        run: eas submit --platform ios --profile testflight --latest --non-interactive || true

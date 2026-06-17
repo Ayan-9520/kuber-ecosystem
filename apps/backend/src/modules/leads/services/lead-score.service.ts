@@ -39,12 +39,24 @@ export const leadScoreService = {
     return { ...score, gradeAlias: GRADE_ALIASES[score.grade] ?? score.grade };
   },
 
-  async scoreLead(input: ScoreLeadInput, ctx: RequestContext, _profileOverride?: ScoringProfile) {
+  async scoreLead(
+    input: ScoreLeadInput,
+    ctx: RequestContext,
+    _profileOverride?: ScoringProfile,
+    actor?: AuthenticatedUser,
+  ) {
     const lead = await leadRepository.findById(input.leadId);
     if (!lead) throw new NotFoundError('Lead', input.leadId);
 
-    const actor = { id: ctx.actorId } as AuthenticatedUser;
-    const record = await leadScoringService.calculate(actor, input.leadId, ctx, {
+    const scoringActor =
+      actor ??
+      ({
+        id: ctx.actorId,
+        roles: ['SUPER_ADMIN'],
+        userType: 'ADMIN',
+        dataScope: 'ORGANIZATION',
+      } as AuthenticatedUser);
+    const record = await leadScoringService.calculate(scoringActor, input.leadId, ctx, {
       aiScore: input.aiScore ?? 50,
       force: true,
     });

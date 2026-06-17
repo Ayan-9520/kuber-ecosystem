@@ -58,7 +58,7 @@ export const commissionRuleService = {
       slabDefinition: input.slabDefinition as Prisma.InputJsonValue,
       product: input.productId ? { connect: { id: input.productId } } : undefined,
       lender: input.lenderId ? { connect: { id: input.lenderId } } : undefined,
-      campaignId: input.campaignId,
+      campaign: input.campaignId ? { connect: { id: input.campaignId } } : undefined,
       minBaseAmount: input.minBaseAmount,
       maxBaseAmount: input.maxBaseAmount,
       minCommission: input.minCommission,

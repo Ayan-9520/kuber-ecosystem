@@ -19,7 +19,8 @@ export interface MeUser {
 
 async function devicePayload() {
   const deviceId = await getOrCreateDeviceId();
-  const platform = Platform.OS === 'ios' ? ('IOS' as const) : ('ANDROID' as const);
+  const platform =
+    Platform.OS === 'ios' ? ('IOS' as const) : Platform.OS === 'android' ? ('ANDROID' as const) : ('WEB' as const);
   return { deviceId, platform, appVersion: '1.0.0' };
 }
 

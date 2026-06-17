@@ -3,17 +3,21 @@ import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { useDispatch } from 'react-redux';
 
 import { Button, Input } from '@/components/ui';
 import { useAuth } from '@/hooks';
+import { isCustomerProfileIncomplete } from '@/lib/customer-profile';
 import { getApiErrorMessage, normalizePhone } from '@/lib/utils';
 import { validateIndianMobile, validateOtp } from '@/lib/validation';
 import type { AuthStackParamList } from '@/navigation/types';
-import { authService } from '@/services';
+import { authService, customerService } from '@/services';
+import { setRequiresProfileCompletion } from '@/store/slices/authSlice';
 import { colors, spacing, typography } from '@/theme';
 
 export function OtpLoginScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+  const dispatch = useDispatch();
   const { login } = useAuth();
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
@@ -50,6 +54,14 @@ export function OtpLoginScreen() {
     try {
       const tokens = await authService.verifyOtp(normalizePhone(phone), otp, 'LOGIN');
       await login(tokens.accessToken, tokens.refreshToken);
+
+      const me = await authService.me();
+      if (me.customerId) {
+        const customer = await customerService.getById(me.customerId);
+        if (isCustomerProfileIncomplete(customer)) {
+          dispatch(setRequiresProfileCompletion(true));
+        }
+      }
     } catch (e) {
       setError(getApiErrorMessage(e));
     } finally {
@@ -67,6 +79,26 @@ export function OtpLoginScreen() {
         </View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        {__DEV__ ? (
+          <>
+            <Text style={styles.devHint}>
+              Dev OTP hamesha 123456. Test numbers: 9876543210 ya 9520776129
+            </Text>
+            <Button
+              title="Quick Test Login"
+              variant="secondary"
+              fullWidth
+              style={styles.devBtn}
+              onPress={() => {
+                setPhone('9520776129');
+                setOtp('123456');
+                setOtpSent(true);
+                setError('');
+              }}
+            />
+          </>
+        ) : null}
 
         <Input
           label="Mobile Number"
@@ -118,6 +150,8 @@ const styles = StyleSheet.create({
   title: { ...typography.h2, color: colors.text },
   subtitle: { ...typography.bodySm, color: colors.textMuted, marginTop: 4 },
   error: { color: colors.danger, marginBottom: spacing.md, textAlign: 'center' },
+  devHint: { ...typography.caption, color: colors.textMuted, marginBottom: spacing.sm, textAlign: 'center' },
+  devBtn: { marginBottom: spacing.md },
   links: { marginTop: spacing.lg, alignItems: 'center', gap: spacing.sm },
   link: { ...typography.bodySm, color: colors.primary },
 });

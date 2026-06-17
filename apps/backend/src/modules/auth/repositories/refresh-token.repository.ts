@@ -21,6 +21,12 @@ export const refreshTokenRepository = {
       },
     }),
 
+  findByHash: (tokenHash: string) =>
+    prisma.refreshToken.findFirst({
+      where: { tokenHash },
+      include: { session: true, user: true },
+    }),
+
   revoke: (id: string) =>
     prisma.refreshToken.update({
       where: { id },

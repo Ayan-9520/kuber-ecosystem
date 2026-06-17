@@ -1,0 +1,10 @@
+{
+  "platformName": "iOS",
+  "appium:automationName": "XCUITest",
+  "appium:deviceName": "iPhone 14",
+  "appium:platformVersion": "17.0",
+  "appium:bundleId": "com.kuberfinserve.kuberone",
+  "appium:noReset": false,
+  "appium:newCommandTimeout": 120,
+  "appium:autoAcceptAlerts": true
+}

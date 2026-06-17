@@ -1,0 +1,11 @@
+{
+  "uid": "kuberone-errors-crm",
+  "title": "KuberOne CRM Error Dashboard",
+  "tags": ["kuberone", "errors", "crm"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    { "type": "stat", "title": "CRM Errors (24h)", "gridPos": { "x": 0, "y": 0, "w": 8, "h": 4 }, "targets": [{ "expr": "count_over_time({service=\"kuberone-api\"} |= \"CRM\" [24h])", "datasource": "Loki" }] },
+    { "type": "logs", "title": "CRM Page/Component Errors", "gridPos": { "x": 0, "y": 4, "w": 24, "h": 12 }, "targets": [{ "expr": "{service=\"kuberone-api\"} |= \"error\" |= \"crm\"", "datasource": "Loki" }] }
+  ]
+}

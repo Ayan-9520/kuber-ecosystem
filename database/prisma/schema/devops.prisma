@@ -1,0 +1,174 @@
+// ── CI/CD & DevOps Platform ──
+
+enum PipelineStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+enum PipelineType {
+  PR_VALIDATION
+  BUILD
+  TEST
+  SECURITY
+  STAGING_DEPLOY
+  PRODUCTION_DEPLOY
+  ROLLBACK
+  RELEASE
+  MOBILE
+  DATABASE
+}
+
+enum DeploymentEnvironment {
+  DEVELOPMENT
+  QA
+  STAGING
+  PRODUCTION
+}
+
+enum DeploymentStrategy {
+  ROLLING
+  BLUE_GREEN
+  CANARY
+  MANUAL
+}
+
+enum DeploymentStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  ROLLED_BACK
+}
+
+enum RollbackStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+model PipelineRun {
+  id            String         @id @default(uuid()) @db.Char(36)
+  pipelineType  PipelineType   @map("pipeline_type")
+  name          String         @db.VarChar(200)
+  branch        String?        @db.VarChar(128)
+  commitSha     String?        @map("commit_sha") @db.VarChar(64)
+  prNumber      Int?           @map("pr_number")
+  status        PipelineStatus @default(PENDING)
+  startedAt     DateTime?      @map("started_at")
+  completedAt   DateTime?      @map("completed_at")
+  durationMs    Int?           @map("duration_ms")
+  workflowUrl   String?        @map("workflow_url") @db.VarChar(500)
+  triggeredBy   String?        @map("triggered_by") @db.VarChar(128)
+  metadata      Json?
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  deployments Deployment[]
+
+  @@index([pipelineType, status, createdAt])
+  @@index([branch, createdAt])
+  @@map("pipeline_runs")
+}
+
+model Deployment {
+  id            String                @id @default(uuid()) @db.Char(36)
+  pipelineRunId String?               @map("pipeline_run_id") @db.Char(36)
+  environment   DeploymentEnvironment
+  strategy      DeploymentStrategy    @default(ROLLING)
+  component     String                @db.VarChar(64)
+  version       String                @db.VarChar(64)
+  status        DeploymentStatus      @default(PENDING)
+  commitSha     String?               @map("commit_sha") @db.VarChar(64)
+  deployedById  String?               @map("deployed_by_id") @db.Char(36)
+  startedAt     DateTime?             @map("started_at")
+  completedAt   DateTime?             @map("completed_at")
+  metadata      Json?
+  createdAt     DateTime              @default(now()) @map("created_at")
+  updatedAt     DateTime              @updatedAt @map("updated_at")
+
+  pipelineRun PipelineRun?         @relation(fields: [pipelineRunId], references: [id], onDelete: SetNull)
+  deployedBy  User?                @relation("DeploymentDeployedBy", fields: [deployedById], references: [id])
+  executions  DeploymentExecution[]
+  rollbacks   RollbackExecution[]
+
+  @@index([environment, status, createdAt])
+  @@index([component, createdAt])
+  @@map("deployments")
+}
+
+model DeploymentExecution {
+  id           String           @id @default(uuid()) @db.Char(36)
+  deploymentId String           @map("deployment_id") @db.Char(36)
+  step         String           @db.VarChar(128)
+  status       DeploymentStatus @default(PENDING)
+  startedAt    DateTime?        @map("started_at")
+  completedAt  DateTime?        @map("completed_at")
+  durationMs   Int?             @map("duration_ms")
+  logs         String?          @db.Text
+  metadata     Json?
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  deployment Deployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+
+  @@index([deploymentId, createdAt])
+  @@map("deployment_executions")
+}
+
+model ReleaseVersion {
+  id          String   @id @default(uuid()) @db.Char(36)
+  version     String   @unique @db.VarChar(32)
+  name        String   @db.VarChar(200)
+  branch      String?  @db.VarChar(128)
+  commitSha   String?  @map("commit_sha") @db.VarChar(64)
+  changelog   String?  @db.Text
+  isPublished Boolean  @default(false) @map("is_published")
+  publishedAt DateTime? @map("published_at")
+  createdById String?  @map("created_by_id") @db.Char(36)
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  createdBy User? @relation("ReleaseVersionCreatedBy", fields: [createdById], references: [id])
+
+  @@index([isPublished, createdAt])
+  @@map("release_versions")
+}
+
+model RollbackExecution {
+  id             String         @id @default(uuid()) @db.Char(36)
+  deploymentId   String?        @map("deployment_id") @db.Char(36)
+  fromVersion    String         @map("from_version") @db.VarChar(64)
+  toVersion      String         @map("to_version") @db.VarChar(64)
+  status         RollbackStatus @default(PENDING)
+  reason         String?        @db.Text
+  executedById   String?        @map("executed_by_id") @db.Char(36)
+  startedAt      DateTime?      @map("started_at")
+  completedAt    DateTime?      @map("completed_at")
+  metadata       Json?
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  deployment Deployment? @relation(fields: [deploymentId], references: [id], onDelete: SetNull)
+  executedBy   User?       @relation("RollbackExecutedBy", fields: [executedById], references: [id])
+
+  @@index([status, createdAt])
+  @@map("rollback_executions")
+}
+
+model DeploymentAudit {
+  id          String   @id @default(uuid()) @db.Char(36)
+  action      String   @db.VarChar(64)
+  entityType  String   @map("entity_type") @db.VarChar(64)
+  entityId    String?  @map("entity_id") @db.Char(36)
+  actorId     String?  @map("actor_id") @db.Char(36)
+  environment String?  @db.VarChar(32)
+  details     Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  actor User? @relation("DeploymentAuditActor", fields: [actorId], references: [id])
+
+  @@index([action, createdAt])
+  @@index([entityType, entityId])
+  @@map("deployment_audits")
+}

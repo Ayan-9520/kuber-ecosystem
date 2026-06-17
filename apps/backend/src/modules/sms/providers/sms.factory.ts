@@ -1,4 +1,5 @@
 import { env } from '../../../config/env.js';
+import { rejectMockProviderInProduction } from '../../notifications/providers/provider-guard.js';
 import { mockSmsProvider } from '../../notifications/providers/sms/mock.provider.js';
 import { msg91Provider } from '../../notifications/providers/sms/msg91.provider.js';
 import { twilioProvider } from '../../notifications/providers/sms/twilio.provider.js';
@@ -21,5 +22,6 @@ export function resolveEnterpriseSmsProvider(dbType?: string): SmsProviderAdapte
   if (env.MSG91_AUTH_KEY) return msg91Provider as SmsProviderAdapter;
   if (env.TWILIO_ACCOUNT_SID) return twilioProvider as SmsProviderAdapter;
 
+  rejectMockProviderInProduction(env, 'SMS', 'mock');
   return mockSmsProvider as SmsProviderAdapter;
 }

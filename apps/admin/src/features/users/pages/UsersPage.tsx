@@ -1,8 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
+import { DetailDrawer } from '@/components/common/DetailDrawer';
 import { PaginatedListView } from '@/components/common/PaginatedListView';
-import { PageHeader, Tabs } from '@/components/ui';
+import { Button, Input, PageHeader, Select, Tabs } from '@/components/ui';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { useDebounce, usePagination } from '@/hooks';
@@ -10,6 +11,7 @@ import { fieldStr, formatDateTime } from '@/lib/utils';
 import { usersService } from '@/services';
 
 type TabId = 'users' | 'roles' | 'permissions' | 'matrix';
+type DrawerMode = 'create' | 'edit' | null;
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'users', label: 'Users' },
@@ -18,11 +20,31 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'matrix', label: 'Role Matrix' },
 ];
 
+const USER_TYPE_OPTIONS = [
+  { value: 'ADMIN', label: 'Admin' },
+  { value: 'EMPLOYEE', label: 'Employee' },
+  { value: 'PARTNER', label: 'Partner' },
+  { value: 'CUSTOMER', label: 'Customer' },
+];
+
+const STATUS_OPTIONS = [
+  { value: 'ACTIVE', label: 'Active' },
+  { value: 'INACTIVE', label: 'Inactive' },
+  { value: 'LOCKED', label: 'Locked' },
+  { value: 'SUSPENDED', label: 'Suspended' },
+];
+
+const EMPTY_FORM = { email: '', phone: '', password: '', userType: 'EMPLOYEE', status: 'ACTIVE' };
+
 export function UsersPage() {
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<TabId>('users');
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search);
   const { page, limit, setPage, reset } = usePagination();
+  const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
 
   useEffect(() => {
     reset();
@@ -59,6 +81,57 @@ export function UsersPage() {
     queryFn: () => fetcher(params),
   });
 
+  const { data: userDetail } = useQuery({
+    queryKey: ['users', selectedId],
+    queryFn: () => usersService.getById(selectedId!),
+    enabled: !!selectedId && drawerMode === 'edit',
+  });
+
+  useEffect(() => {
+    if (userDetail && drawerMode === 'edit') {
+      setForm({
+        email: fieldStr(userDetail, 'email'),
+        phone: fieldStr(userDetail, 'phone'),
+        password: '',
+        userType: fieldStr(userDetail, 'userType') || 'EMPLOYEE',
+        status: fieldStr(userDetail, 'status') || 'ACTIVE',
+      });
+    }
+  }, [userDetail, drawerMode]);
+
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      drawerMode === 'edit' && selectedId
+        ? usersService.update(selectedId, {
+            email: form.email || undefined,
+            phone: form.phone || undefined,
+            password: form.password || undefined,
+            status: form.status,
+          })
+        : usersService.create({
+            email: form.email || undefined,
+            phone: form.phone || undefined,
+            password: form.password || undefined,
+            userType: form.userType,
+            status: form.status,
+          }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users-rbac'] });
+      setDrawerMode(null);
+      setSelectedId(null);
+      setForm(EMPTY_FORM);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => usersService.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users-rbac'] });
+      setDrawerMode(null);
+      setSelectedId(null);
+    },
+  });
+
   const columns = useMemo(() => {
     switch (tab) {
       case 'users':
@@ -74,6 +147,35 @@ export function UsersPage() {
             key: 'lastLoginAt',
             header: 'Last Login',
             render: (r: Record<string, unknown>) => formatDateTime(r.lastLoginAt as string),
+          },
+          {
+            key: 'actions',
+            header: 'Actions',
+            render: (r: Record<string, unknown>) => (
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedId(String(r.id));
+                    setDrawerMode('edit');
+                  }}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm('Delete this user?')) deleteMutation.mutate(String(r.id));
+                  }}
+                >
+                  Delete
+                </Button>
+              </div>
+            ),
           },
         ];
       case 'roles':
@@ -109,7 +211,7 @@ export function UsersPage() {
       default:
         return [];
     }
-  }, [tab]);
+  }, [tab, deleteMutation]);
 
   const emptyTitles: Record<TabId, string> = {
     users: 'No users found',
@@ -120,7 +222,24 @@ export function UsersPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Users & RBAC" subtitle="User accounts, roles, permissions, and access matrix" />
+      <PageHeader
+        title="Users & RBAC"
+        subtitle="User accounts, roles, permissions, and access matrix"
+        actions={
+          tab === 'users' ? (
+            <Button
+              variant="primary"
+              onClick={() => {
+                setDrawerMode('create');
+                setSelectedId(null);
+                setForm(EMPTY_FORM);
+              }}
+            >
+              Create User
+            </Button>
+          ) : undefined
+        }
+      />
 
       <Tabs tabs={TABS} active={tab} onChange={(id) => setTab(id as TabId)} />
 
@@ -144,6 +263,55 @@ export function UsersPage() {
         emptyTitle={emptyTitles[tab]}
         emptyDescription="User and access control records will appear here."
       />
+
+      <DetailDrawer
+        open={drawerMode !== null}
+        title={drawerMode === 'edit' ? 'Edit User' : 'Create User'}
+        onClose={() => {
+          setDrawerMode(null);
+          setSelectedId(null);
+          setForm(EMPTY_FORM);
+        }}
+        footer={
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Button
+              variant="primary"
+              disabled={(!form.email && !form.phone) || saveMutation.isPending}
+              onClick={() => saveMutation.mutate()}
+            >
+              {saveMutation.isPending ? 'Saving…' : 'Save'}
+            </Button>
+            <Button variant="secondary" onClick={() => setDrawerMode(null)}>
+              Cancel
+            </Button>
+          </div>
+        }
+      >
+        <div className="form-grid" style={{ display: 'grid', gap: '1rem' }}>
+          <Input label="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          <Input label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          <Input
+            label={drawerMode === 'edit' ? 'New Password (optional)' : 'Password'}
+            type="password"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+          />
+          {drawerMode === 'create' && (
+            <Select
+              label="User Type"
+              options={USER_TYPE_OPTIONS}
+              value={form.userType}
+              onChange={(e) => setForm({ ...form, userType: e.target.value })}
+            />
+          )}
+          <Select
+            label="Status"
+            options={STATUS_OPTIONS}
+            value={form.status}
+            onChange={(e) => setForm({ ...form, status: e.target.value })}
+          />
+        </div>
+      </DetailDrawer>
     </div>
   );
 }

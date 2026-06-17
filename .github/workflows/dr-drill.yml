@@ -1,0 +1,31 @@
+name: DR Drill
+
+on:
+  schedule:
+    - cron: '0 6 1 * *'
+  workflow_dispatch:
+    inputs:
+      drill_type:
+        type: choice
+        options: [MONTHLY, QUARTERLY, ANNUAL]
+        default: QUARTERLY
+      scenario:
+        type: choice
+        options: [DATABASE_FAILURE, APPLICATION_FAILURE, STORAGE_FAILURE]
+        default: DATABASE_FAILURE
+
+jobs:
+  dr-drill:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/dr-gate.mjs
+      - name: Execute DR drill
+        run: |
+          curl -sf -X POST "${{ secrets.DEVOPS_API_URL }}/api/v1/dr/drills" \
+            -H "Authorization: Bearer ${{ secrets.DR_DRILL_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"drillType\":\"${{ inputs.drill_type || 'QUARTERLY' }}\",\"scenario\":\"${{ inputs.scenario || 'DATABASE_FAILURE' }}\"}" \
+            || echo "DR drill API call skipped (configure DR_DRILL_TOKEN)"
+      - run: node scripts/dr-readiness-report.mjs

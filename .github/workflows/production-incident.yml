@@ -1,0 +1,34 @@
+name: Production Incident Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: Incident title
+        required: true
+      severity:
+        description: Severity
+        required: true
+        default: HIGH
+        type: choice
+        options:
+          - LOW
+          - MEDIUM
+          - HIGH
+          - CRITICAL
+
+jobs:
+  create-incident:
+    name: Create Production Incident
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Log incident
+        run: |
+          echo "INCIDENT: ${{ inputs.title }}"
+          echo "SEVERITY: ${{ inputs.severity }}"
+          echo "Notify on-call via PagerDuty/Grafana alerting"
+
+      - name: Optional rollback for CRITICAL
+        if: inputs.severity == 'CRITICAL'
+        run: echo "Consider: gh workflow run rollback.yml"

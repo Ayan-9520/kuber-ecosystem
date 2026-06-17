@@ -1,0 +1,59 @@
+groups:
+  - name: kuberone-error-tracking
+    rules:
+      - alert: ErrorTrackingCritical
+        expr: increase(kuberone_http_errors_total[5m]) > 20
+        for: 2m
+        labels:
+          severity: critical
+          component: error-tracking
+        annotations:
+          summary: Critical error spike detected
+          description: More than 20 HTTP errors in 5 minutes
+
+      - alert: ErrorTrackingCrashLoop
+        expr: increase(kuberone_http_errors_total[2m]) > 10
+        for: 1m
+        labels:
+          severity: critical
+          component: error-tracking
+        annotations:
+          summary: Possible crash loop
+          description: Rapid error accumulation suggests crash loop
+
+      - alert: ErrorTrackingAIFailure
+        expr: increase(kuberone_ai_failures_total[10m]) > 5
+        for: 3m
+        labels:
+          severity: high
+          component: ai
+        annotations:
+          summary: AI error tracking alert
+          description: AI failures exceeded threshold
+
+      - alert: ErrorTrackingDatabaseFailure
+        expr: kuberone_db_health_status == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: Database error tracking alert
+
+      - alert: ErrorTrackingAuthFailure
+        expr: increase(kuberone_auth_failures_total[10m]) > 50
+        for: 5m
+        labels:
+          severity: high
+          component: auth
+        annotations:
+          summary: Authentication failure spike
+
+      - alert: ErrorTrackingNotificationFailure
+        expr: increase(kuberone_notification_failures_total[10m]) > 10
+        for: 3m
+        labels:
+          severity: high
+          component: notification
+        annotations:
+          summary: Notification error tracking alert

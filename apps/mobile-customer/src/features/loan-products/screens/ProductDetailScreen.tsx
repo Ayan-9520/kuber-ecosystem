@@ -1,52 +1,110 @@
 import { Ionicons } from '@expo/vector-icons';
 import { CommonActions, type RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQuery } from '@tanstack/react-query';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, EmptyState, Screen } from '@/components/ui';
-import { LOAN_PRODUCTS } from '@/constants/products';
+import {
+  flattenProductsWithVariants,
+  mapProductToDisplay,
+  type ProductDisplayItem,
+  resolveProductFromApi,
+} from '@/lib/product-mapper';
 import { formatCurrency } from '@/lib/utils';
 import type { ProductsStackParamList } from '@/navigation/types';
+import { productsService } from '@/services';
 import { colors, radius, spacing, typography } from '@/theme';
 
 type ProductDetailRoute = RouteProp<ProductsStackParamList, 'ProductDetail'>;
+
+function hasCompleteParams(params: ProductDetailRoute['params']): boolean {
+  return !!(params.slug && params.name && params.variant);
+}
 
 export function ProductDetailScreen() {
   const { params } = useRoute<ProductDetailRoute>();
   const navigation = useNavigation<NativeStackNavigationProp<ProductsStackParamList>>();
 
-  const product = LOAN_PRODUCTS.find(
-    (p) => p.slug === params.slug && p.name === params.name && p.variant === params.variant,
-  );
+  const productQuery = useQuery({
+    queryKey: ['product-detail', params.id, params.slug, params.name, params.variant],
+    queryFn: async (): Promise<ProductDisplayItem | null> => {
+      if (hasCompleteParams(params) && params.slug && params.name && params.variant) {
+        if (params.id) {
+          const resolved = await resolveProductFromApi({
+            id: params.id,
+            variant: params.variant,
+          });
+          if (resolved) return resolved;
+        }
+        return mapProductToDisplay(
+          {
+            id: params.id ?? params.slug,
+            code: params.slug,
+            name: params.name,
+          },
+          { variantCode: params.variant, name: params.name },
+        );
+      }
+
+      return resolveProductFromApi({
+        id: params.id,
+        slug: params.slug,
+        variant: params.variant,
+      });
+    },
+  });
+
+  const catalogQuery = useQuery({
+    queryKey: ['product-catalog-detail'],
+    queryFn: async () => {
+      const [products, variants] = await Promise.all([
+        productsService.list({ limit: 50, isActive: true }),
+        productsService.variants(),
+      ]);
+      return flattenProductsWithVariants(products.items, variants.items);
+    },
+    enabled: productQuery.isError,
+  });
+
+  const product =
+    productQuery.data ??
+    (params.slug
+      ? catalogQuery.data?.find(
+          (p) =>
+            p.slug === params.slug?.toUpperCase() &&
+            (!params.variant || p.variant === params.variant) &&
+            (!params.name || p.name === params.name),
+        )
+      : undefined);
 
   const handleApply = () => {
+    if (!product) return;
+    const wizardParams = {
+      productSlug: product.slug,
+      productName: product.name,
+      variant: product.variant,
+    };
     const parent = navigation.getParent();
     if (parent) {
-      parent.navigate('Applications', {
-        screen: 'ApplicationWizard',
-        params: {
-          productSlug: params.slug,
-          productName: params.name,
-          variant: params.variant,
-        },
-      });
+      parent.navigate('Applications', { screen: 'ApplicationWizard', params: wizardParams });
       return;
     }
-
     navigation.dispatch(
       CommonActions.navigate({
         name: 'Applications',
-        params: {
-          screen: 'ApplicationWizard',
-          params: {
-            productSlug: params.slug,
-            productName: params.name,
-            variant: params.variant,
-          },
-        },
+        params: { screen: 'ApplicationWizard', params: wizardParams },
       } as Parameters<typeof CommonActions.navigate>[0]),
     );
   };
+
+  if (productQuery.isLoading) {
+    return (
+      <Screen loading title="Product Details">
+        {null}
+      </Screen>
+    );
+  }
 
   if (!product) {
     return (
@@ -66,11 +124,7 @@ export function ProductDetailScreen() {
     <Screen title={product.name} subtitle={product.description}>
       <View style={styles.hero}>
         <View style={styles.heroIcon}>
-          <Ionicons
-            name={product.icon as keyof typeof Ionicons.glyphMap}
-            size={32}
-            color={colors.primary}
-          />
+          <Ionicons name={product.icon} size={32} color={colors.primary} />
         </View>
         <View style={styles.heroStats}>
           <View style={styles.stat}>
@@ -129,7 +183,12 @@ export function ProductDetailScreen() {
         </View>
       </Card>
 
-      <Button title="Apply Now" fullWidth onPress={handleApply} icon={<Ionicons name="arrow-forward" size={18} color={colors.background} />} />
+      <Button
+        title="Apply Now"
+        fullWidth
+        onPress={handleApply}
+        icon={<Ionicons name="arrow-forward" size={18} color={colors.background} />}
+      />
     </Screen>
   );
 }

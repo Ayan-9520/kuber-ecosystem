@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/usePermissions';
+import { tokenStorage } from '@/lib/token-storage';
 import { getInitials } from '@/lib/utils';
 import { notificationsService } from '@/services';
 import { authService } from '@/services/auth.service';
@@ -94,7 +95,7 @@ export function Topbar() {
                 type="button"
                 className="profile-dropdown-item"
                 onClick={async () => {
-                  const rt = localStorage.getItem('refreshToken');
+                  const rt = tokenStorage.getRefreshToken();
                   if (rt) {
                     try {
                       await authService.logout(rt);

@@ -1,5 +1,6 @@
 export { Button } from './Button';
 export { Card } from './Card';
+export { DashboardHeader } from './DashboardHeader';
 export { Input } from './Input';
 export { StatusBadge } from './StatusBadge';
 export { Screen, EmptyState } from './Screen';

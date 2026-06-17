@@ -1,0 +1,38 @@
+name: Database Pipeline
+
+on:
+  push:
+    branches: [main, staging, develop]
+    paths:
+      - 'database/**'
+      - 'scripts/prisma-migration-gate.mjs'
+  pull_request:
+    branches: [main, staging, develop]
+    paths:
+      - 'database/**'
+
+jobs:
+  prisma-validation:
+    name: Prisma Schema & Migration Safety
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/database generate
+      - run: node scripts/prisma-migration-gate.mjs
+      - name: Migration dry-run guidance
+        run: |
+          echo "Pre-deploy: trigger database backup via /api/v1/backups"
+          echo "Rollback: see deployment/docs/DATABASE_ROLLBACK.md"
+      - run: node scripts/ci-record-pipeline.mjs --type DATABASE --name "Prisma Validation" --status SUCCESS --branch ${{ github.ref_name }}
+        if: success()
+        env:
+          DEVOPS_API_URL: ${{ secrets.DEVOPS_API_URL }}
+          DEVOPS_WEBHOOK_SECRET: ${{ secrets.DEVOPS_WEBHOOK_SECRET }}

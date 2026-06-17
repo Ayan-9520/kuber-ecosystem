@@ -1,0 +1,134 @@
+// ── Production Infrastructure Platform ──
+
+enum InfraEnvironmentType {
+  DEVELOPMENT
+  QA
+  STAGING
+  PRODUCTION
+}
+
+enum InfraServiceType {
+  API
+  WORKER
+  SCHEDULER
+  NOTIFICATION_WORKER
+  AI_WORKER
+  NGINX
+  ALB
+  REDIS
+  DATABASE
+  S3
+  MONITORING
+  GRAFANA
+  PROMETHEUS
+  LOKI
+  OTEL
+}
+
+enum InfraHealthStatus {
+  HEALTHY
+  DEGRADED
+  UNHEALTHY
+  UNKNOWN
+}
+
+enum SslProvider {
+  LETS_ENCRYPT
+  AWS_ACM
+  CLOUDFLARE
+  MANUAL
+}
+
+model InfrastructureEnvironment {
+  id          String               @id @default(uuid()) @db.Char(36)
+  code        String               @unique @db.VarChar(32)
+  name        String               @db.VarChar(128)
+  type        InfraEnvironmentType
+  region      String               @db.VarChar(32)
+  cloud       String               @default("aws") @db.VarChar(16)
+  isActive    Boolean              @default(true) @map("is_active")
+  vpcCidr     String?              @map("vpc_cidr") @db.VarChar(32)
+  metadata    Json?
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  services    InfrastructureService[]
+  domains     InfrastructureDomain[]
+  snapshots   InfrastructureHealthSnapshot[]
+
+  @@index([type, isActive])
+  @@map("infrastructure_environments")
+}
+
+model InfrastructureService {
+  id            String            @id @default(uuid()) @db.Char(36)
+  environmentId String            @map("environment_id") @db.Char(36)
+  serviceType   InfraServiceType  @map("service_type")
+  name          String            @db.VarChar(128)
+  endpoint      String?           @db.VarChar(500)
+  status        InfraHealthStatus @default(UNKNOWN)
+  version       String?           @db.VarChar(64)
+  replicas      Int               @default(1)
+  lastCheckedAt DateTime?         @map("last_checked_at")
+  metadata      Json?
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  environment InfrastructureEnvironment    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  snapshots   InfrastructureHealthSnapshot[]
+
+  @@index([environmentId, serviceType])
+  @@index([status, lastCheckedAt])
+  @@map("infrastructure_services")
+}
+
+model InfrastructureDomain {
+  id            String               @id @default(uuid()) @db.Char(36)
+  environmentId String               @map("environment_id") @db.Char(36)
+  hostname      String               @db.VarChar(255)
+  serviceType   InfraServiceType     @map("service_type")
+  sslProvider   SslProvider          @default(AWS_ACM) @map("ssl_provider")
+  sslExpiresAt  DateTime?            @map("ssl_expires_at")
+  hstsEnabled   Boolean              @default(true) @map("hsts_enabled")
+  isActive      Boolean              @default(true) @map("is_active")
+  metadata      Json?
+  createdAt     DateTime             @default(now()) @map("created_at")
+
+  environment InfrastructureEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+
+  @@unique([environmentId, hostname])
+  @@index([hostname])
+  @@map("infrastructure_domains")
+}
+
+model InfrastructureHealthSnapshot {
+  id            String            @id @default(uuid()) @db.Char(36)
+  environmentId String            @map("environment_id") @db.Char(36)
+  serviceId     String?           @map("service_id") @db.Char(36)
+  status        InfraHealthStatus
+  latencyMs     Int?              @map("latency_ms")
+  cpuPercent    Float?            @map("cpu_percent")
+  memoryPercent Float?            @map("memory_percent")
+  details       Json?
+  checkedAt     DateTime          @default(now()) @map("checked_at")
+
+  environment InfrastructureEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  service       InfrastructureService?  @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@index([environmentId, checkedAt])
+  @@index([serviceId, checkedAt])
+  @@map("infrastructure_health_snapshots")
+}
+
+model InfrastructureConfig {
+  id          String   @id @default(uuid()) @db.Char(36)
+  key         String   @unique @db.VarChar(128)
+  category    String   @db.VarChar(64)
+  value       String   @db.Text
+  isSecret    Boolean  @default(false) @map("is_secret")
+  description String?  @db.VarChar(500)
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@map("infrastructure_configs")
+}

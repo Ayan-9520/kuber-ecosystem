@@ -6,10 +6,15 @@ const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;
 
 function getEncryptionKey(): Buffer {
-  const secret = env.DATA_ENCRYPTION_KEY ?? env.JWT_ACCESS_SECRET;
-  if (env.NODE_ENV === 'production' && !env.DATA_ENCRYPTION_KEY) {
-    throw new Error('DATA_ENCRYPTION_KEY is required in production');
+  if (!env.DATA_ENCRYPTION_KEY) {
+    if (env.APP_ENV === 'production' || env.NODE_ENV === 'production') {
+      throw new Error('DATA_ENCRYPTION_KEY is required in production');
+    }
+    if (env.NODE_ENV !== 'development' && env.NODE_ENV !== 'test') {
+      throw new Error('DATA_ENCRYPTION_KEY is required outside local development');
+    }
   }
+  const secret = env.DATA_ENCRYPTION_KEY ?? env.JWT_ACCESS_SECRET;
   return createHash('sha256').update(secret).digest();
 }
 

@@ -1,0 +1,191 @@
+name: PR Validation Pipeline
+
+on:
+  pull_request:
+    branches: [main, staging, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: pr-validation-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-typecheck:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/database generate
+      - run: pnpm lint
+      - run: pnpm typecheck
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/database generate
+      - run: pnpm test
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: kuberone_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: mysql://root:root@localhost:3306/kuberone_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/database generate
+      - run: pnpm test:integration
+
+  mobile-tests:
+    name: Mobile Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:mobile
+
+  openapi-validation:
+    name: OpenAPI Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/openapi-validate.mjs
+
+  build-gate:
+    name: Build Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/database generate
+      - run: pnpm build
+
+  coverage-gate:
+    name: Coverage Gate
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/database generate
+      - run: pnpm test:coverage
+        continue-on-error: true
+      - run: node scripts/coverage-gate.mjs
+        env:
+          COVERAGE_THRESHOLD: ${{ vars.COVERAGE_THRESHOLD || '40' }}
+        continue-on-error: true
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/security-scan.mjs
+      - run: node scripts/security-quality-gate.mjs
+
+  quality-gate:
+    name: PR Quality Gate
+    needs: [lint-typecheck, unit-tests, integration-tests, mobile-tests, openapi-validation, build-gate, security-scan]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate gates
+        run: |
+          echo "lint-typecheck: ${{ needs.lint-typecheck.result }}"
+          echo "unit-tests: ${{ needs.unit-tests.result }}"
+          echo "integration-tests: ${{ needs.integration-tests.result }}"
+          echo "mobile-tests: ${{ needs.mobile-tests.result }}"
+          echo "openapi: ${{ needs.openapi-validation.result }}"
+          echo "build: ${{ needs.build-gate.result }}"
+          if [ "${{ needs.lint-typecheck.result }}" != "success" ] || \
+             [ "${{ needs.unit-tests.result }}" != "success" ] || \
+             [ "${{ needs.integration-tests.result }}" != "success" ] || \
+             [ "${{ needs.mobile-tests.result }}" != "success" ] || \
+             [ "${{ needs.openapi-validation.result }}" != "success" ] || \
+             [ "${{ needs.build-gate.result }}" != "success" ] || \
+             [ "${{ needs.security-scan.result }}" != "success" ]; then
+            echo "PR validation FAILED — merge blocked"
+            exit 1
+          fi
+          echo "PR validation PASSED"
+      - name: Record pipeline
+        if: always()
+        run: node scripts/ci-record-pipeline.mjs --type PR_VALIDATION --name "PR #${{ github.event.pull_request.number }}" --status ${{ job.status == 'success' && 'SUCCESS' || 'FAILED' }} --branch ${{ github.head_ref }} --pr ${{ github.event.pull_request.number }}
+        env:
+          DEVOPS_API_URL: ${{ secrets.DEVOPS_API_URL }}
+          DEVOPS_WEBHOOK_SECRET: ${{ secrets.DEVOPS_WEBHOOK_SECRET }}

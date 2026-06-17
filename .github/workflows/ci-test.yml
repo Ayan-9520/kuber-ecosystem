@@ -1,0 +1,103 @@
+name: CI — Monorepo Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm db:generate
+
+      - run: pnpm build --filter=@kuberone/test-utils...
+
+      - run: pnpm test
+        env:
+          NODE_ENV: test
+          APP_ENV: testing
+          DATABASE_URL: mysql://root:root@localhost:3306/kuberone_test
+          JWT_ACCESS_SECRET: test-access-secret-minimum-32-characters
+          JWT_REFRESH_SECRET: test-refresh-secret-minimum-32-characters
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: kuberone_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm db:generate
+
+      - run: pnpm build --filter=@kuberone/test-utils...
+
+      - run: pnpm test:coverage
+        env:
+          NODE_ENV: test
+          APP_ENV: testing
+          DATABASE_URL: mysql://root:root@localhost:3306/kuberone_test
+          JWT_ACCESS_SECRET: test-access-secret-minimum-32-characters
+          JWT_REFRESH_SECRET: test-refresh-secret-minimum-32-characters
+
+      - name: Upload backend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            apps/backend/coverage
+            apps/admin/coverage
+            packages/shared-validation/coverage
+            packages/shared-utils/coverage
+            packages/shared-theme/coverage
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: kuberone_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5

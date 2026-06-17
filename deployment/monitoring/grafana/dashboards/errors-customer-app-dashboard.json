@@ -1,0 +1,11 @@
+{
+  "uid": "kuberone-errors-customer-app",
+  "title": "KuberOne Customer App Error Dashboard",
+  "tags": ["kuberone", "errors", "customer-app"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    { "type": "stat", "title": "Customer App Crashes", "gridPos": { "x": 0, "y": 0, "w": 8, "h": 4 }, "targets": [{ "expr": "count_over_time({source=\"CUSTOMER_APP\"} [24h])", "datasource": "Loki" }] },
+    { "type": "logs", "title": "Customer App Errors", "gridPos": { "x": 0, "y": 4, "w": 24, "h": 12 }, "targets": [{ "expr": "{source=\"CUSTOMER_APP\"}", "datasource": "Loki" }] }
+  ]
+}

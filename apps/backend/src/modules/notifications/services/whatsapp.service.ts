@@ -9,6 +9,7 @@ import { communicationLogRepository, whatsAppLogRepository } from '../repositori
 import { buildPaginationMeta } from '../utils/notifications.utils.js';
 
 import { providerConfigService } from './provider-config.service.js';
+import { channelStatusService } from './channel-status.service.js';
 import { rateLimitService } from './rate-limit.service.js';
 import { templateEngineService } from './template-engine.service.js';
 
@@ -46,6 +47,11 @@ export const whatsAppService = {
     eventType?: string;
     retryCount?: number;
   }) {
+    const channel = channelStatusService.getStatus('whatsapp');
+    if (!channel.deliverable) {
+      return { skipped: true, reason: channelStatusService.skipReason('whatsapp') };
+    }
+
     const rendered = await templateEngineService.render({
       templateCode: params.templateCode,
       channel: 'WHATSAPP',
@@ -77,7 +83,7 @@ export const whatsAppService = {
     });
 
     const rateLimit = await providerConfigService.getRateLimit('WHATSAPP');
-    if (rateLimit && !rateLimitService.check('whatsapp', rateLimit)) {
+    if (rateLimit && !(await rateLimitService.checkAsync('whatsapp', rateLimit))) {
       return whatsAppLogRepository.update(log.id, {
         status: 'FAILED',
         failedAt: new Date(),

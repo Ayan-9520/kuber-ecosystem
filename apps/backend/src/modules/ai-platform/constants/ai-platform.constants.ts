@@ -23,8 +23,20 @@ export const PII_PATTERNS = [
 ];
 
 export const INJECTION_PATTERNS = [
-  /ignore\s+(all\s+)?previous\s+instructions/i,
-  /disregard\s+(all\s+)?prior\s+instructions/i,
+  /ignore\s+(all\s+)?(previous|prior|above)\s+instructions/i,
+  /disregard\s+(all\s+)?(previous|prior|above)\s+instructions/i,
+  /forget\s+(everything|all|your)\s+(instructions|rules)/i,
   /you\s+are\s+now\s+/i,
+  /act\s+as\s+(if\s+you\s+are|a)\s+/i,
   /system\s*:\s*/i,
+  /\[system\]/i,
+  /<\s*system\s*>/i,
+  /jailbreak/i,
+  /do\s+not\s+follow\s+(the\s+)?(rules|policy|guidelines)/i,
+  /reveal\s+(your\s+)?(system\s+)?prompt/i,
+  /show\s+(me\s+)?(the\s+)?(system\s+)?prompt/i,
+  /override\s+(safety|security|compliance)/i,
+  /bypass\s+(rbac|auth|security|kyc|compliance)/i,
+  /print\s+(all\s+)?(customer|user|pii)\s+data/i,
+  /dump\s+(database|db|table)/i,
 ];

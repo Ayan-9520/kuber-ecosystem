@@ -25,4 +25,5 @@ jobs:
           script: |
             cd /opt/kuberone
             git pull origin main
+            node scripts/error-deployment-gate.mjs || exit 1
             bash deployment/scripts/deploy-backend.sh production

@@ -1,0 +1,195 @@
+// ── KuberOne Go-Live Validation Framework ──
+
+enum GoLiveChecklistStatus {
+  PENDING
+  IN_PROGRESS
+  PASSED
+  FAILED
+  WAIVED
+}
+
+enum GoLiveApprovalType {
+  QA
+  SECURITY
+  DEVOPS
+  PRODUCT
+  MANAGEMENT
+  FINAL_RELEASE
+}
+
+enum GoLiveApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LaunchExecutionStatus {
+  PLANNED
+  PRE_LAUNCH
+  IN_PROGRESS
+  COMPLETED
+  ROLLED_BACK
+  ABORTED
+}
+
+enum ReleaseGateStatus {
+  PENDING
+  PASSED
+  FAILED
+  BLOCKED
+}
+
+enum GoLiveReportType {
+  READINESS
+  APPROVAL
+  RELEASE
+  RISK
+  LAUNCH
+  INCIDENT
+  TRAFFIC
+  HEALTH
+  EXECUTIVE
+}
+
+enum GoLiveAuditAction {
+  CHECKLIST_UPDATE
+  APPROVAL_SUBMIT
+  APPROVAL_DECIDE
+  LAUNCH_START
+  LAUNCH_COMPLETE
+  LAUNCH_ROLLBACK
+  GATE_EVALUATE
+  REPORT_GENERATE
+  WORKFLOW_STEP
+  SMOKE_TEST
+  INCIDENT_CREATE
+  INCIDENT_UPDATE
+  WAR_ROOM_ACTIVATE
+  METRIC_SNAPSHOT
+}
+
+model GoLiveChecklist {
+  id           String                @id @default(uuid()) @db.Char(36)
+  section      String                @db.VarChar(64)
+  itemCode     String                @unique @map("item_code") @db.VarChar(64)
+  title        String                @db.VarChar(200)
+  description  String?               @db.Text
+  status       GoLiveChecklistStatus @default(PENDING)
+  weight       Int                   @default(1)
+  evidence     Json?
+  verifiedAt   DateTime?             @map("verified_at")
+  verifiedById String?               @map("verified_by_id") @db.Char(36)
+  sortOrder    Int                   @default(0) @map("sort_order")
+  isBlocking   Boolean               @default(true) @map("is_blocking")
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+
+  verifiedBy User? @relation("GoLiveChecklistVerifiedBy", fields: [verifiedById], references: [id])
+
+  @@index([section, status])
+  @@index([sortOrder])
+  @@map("go_live_checklists")
+}
+
+model LaunchExecution {
+  id           String                @id @default(uuid()) @db.Char(36)
+  code         String                @unique @db.VarChar(64)
+  name         String                @db.VarChar(200)
+  status       LaunchExecutionStatus @default(PLANNED)
+  currentStep  LaunchWorkflowStep    @default(PRODUCTION_FREEZE) @map("current_step")
+  successPct   Int                   @default(0) @map("success_pct")
+  finalStatus  LaunchFinalStatus?    @map("final_status")
+  targetDate   DateTime?             @map("target_date")
+  launchedAt   DateTime?             @map("launched_at")
+  rolledBackAt DateTime?             @map("rolled_back_at")
+  readinessPct Int                   @default(0) @map("readiness_pct")
+  blockers     Json?
+  servicesHealth Json?               @map("services_health")
+  metadata     Json?
+  executedById String?               @map("executed_by_id") @db.Char(36)
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+
+  executedBy   User?            @relation("LaunchExecutionExecutedBy", fields: [executedById], references: [id])
+  approvals    GoLiveApproval[]
+  audits       LaunchAudit[]
+  gates        ReleaseGate[]
+  events       LaunchEvent[]
+  incidents    LaunchIncident[]
+  metrics      LaunchMetric[]
+  warRoomSessions WarRoomSession[]
+  hypercareSessions HypercareSession[]
+
+  @@index([status, targetDate])
+  @@map("launch_executions")
+}
+
+model GoLiveApproval {
+  id                String               @id @default(uuid()) @db.Char(36)
+  launchExecutionId String               @map("launch_execution_id") @db.Char(36)
+  approvalType      GoLiveApprovalType   @map("approval_type")
+  status            GoLiveApprovalStatus @default(PENDING)
+  checklist         Json?
+  comments          String?              @db.Text
+  approvedById      String?              @map("approved_by_id") @db.Char(36)
+  approvedAt        DateTime?            @map("approved_at")
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
+
+  launchExecution LaunchExecution @relation(fields: [launchExecutionId], references: [id], onDelete: Cascade)
+  approvedBy      User?           @relation("GoLiveApprovalApprovedBy", fields: [approvedById], references: [id])
+
+  @@unique([launchExecutionId, approvalType])
+  @@index([status, approvalType])
+  @@map("go_live_approvals")
+}
+
+model ReleaseGate {
+  id                String            @id @default(uuid()) @db.Char(36)
+  launchExecutionId String            @map("launch_execution_id") @db.Char(36)
+  gateCode          String            @map("gate_code") @db.VarChar(64)
+  label             String            @db.VarChar(200)
+  status            ReleaseGateStatus @default(PENDING)
+  detail            String?           @db.VarChar(500)
+  isBlocking        Boolean           @default(true) @map("is_blocking")
+  evaluatedAt       DateTime?         @map("evaluated_at")
+  metadata          Json?
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  launchExecution LaunchExecution @relation(fields: [launchExecutionId], references: [id], onDelete: Cascade)
+
+  @@unique([launchExecutionId, gateCode])
+  @@index([status, gateCode])
+  @@map("release_gates")
+}
+
+model LaunchAudit {
+  id                String            @id @default(uuid()) @db.Char(36)
+  launchExecutionId String?           @map("launch_execution_id") @db.Char(36)
+  action            GoLiveAuditAction
+  actorId           String?           @map("actor_id") @db.Char(36)
+  compliance        String?           @db.VarChar(64)
+  details           Json?
+  createdAt         DateTime          @default(now()) @map("created_at")
+
+  launchExecution LaunchExecution? @relation(fields: [launchExecutionId], references: [id], onDelete: SetNull)
+  actor           User?            @relation("LaunchAuditActor", fields: [actorId], references: [id])
+
+  @@index([action, createdAt])
+  @@index([launchExecutionId])
+  @@map("launch_audits")
+}
+
+model GoLiveReport {
+  id           String           @id @default(uuid()) @db.Char(36)
+  reportType   GoLiveReportType @map("report_type")
+  score        Int              @default(0)
+  readinessPct Int              @default(0) @map("readiness_pct")
+  summary      String?          @db.VarChar(500)
+  details      Json?
+  generatedAt  DateTime         @default(now()) @map("generated_at")
+
+  @@index([reportType, generatedAt])
+  @@map("go_live_reports")
+}

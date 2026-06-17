@@ -1,18 +1,99 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing, typography } from '@/theme';
+import { radius, spacing, typography } from '@/theme';
+import { cardShadow } from '@/theme/elevation';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
 
 interface StatCardProps {
   label: string;
   value: string | number;
   icon?: keyof typeof Ionicons.glyphMap;
   trend?: string;
+  accent?: boolean;
 }
 
-export function StatCard({ label, value, icon, trend }: StatCardProps) {
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
+    card: {
+      flex: 1,
+      minWidth: '45%',
+      backgroundColor: colors.card,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+      padding: spacing.md,
+      ...cardShadow(),
+    },
+    cardAccent: {
+      borderColor: colors.primary,
+      backgroundColor: colors.surface,
+    },
+    iconWrap: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.md,
+      backgroundColor: `${colors.primary}22`,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.sm,
+    },
+    label: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      textTransform: 'none',
+      letterSpacing: 0.3,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    value: {
+      ...typography.h2,
+      color: colors.text,
+      fontSize: 22,
+      marginTop: 4,
+      fontWeight: '700',
+      letterSpacing: -0.5,
+    },
+    trend: { ...typography.bodySm, color: colors.primary, marginTop: 6, fontWeight: '600' },
+    action: { alignItems: 'center', width: 80 },
+    actionPressed: { opacity: 0.88, transform: [{ scale: 0.97 }] },
+    actionIcon: {
+      width: 60,
+      height: 60,
+      borderRadius: radius.lg,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.sm,
+      ...cardShadow(),
+    },
+    actionIconInner: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.md,
+      backgroundColor: `${colors.primary}18`,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    actionLabel: {
+      ...typography.label,
+      color: colors.text,
+      textAlign: 'center',
+      fontSize: 12,
+      lineHeight: 16,
+    },
+  });
+}
+
+export function StatCard({ label, value, icon, trend, accent }: StatCardProps) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, accent && styles.cardAccent]}>
       {icon && (
         <View style={styles.iconWrap}>
           <Ionicons name={icon} size={20} color={colors.primary} />
@@ -34,49 +115,22 @@ export function QuickAction({
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
 }) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
-    <Pressable style={styles.action} onPress={onPress}>
+    <Pressable
+      style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
+      onPress={onPress}
+    >
       <View style={styles.actionIcon}>
-        <Ionicons name={icon} size={22} color={colors.primary} />
+        <View style={styles.actionIconInner}>
+          <Ionicons name={icon} size={22} color={colors.primary} />
+        </View>
       </View>
-      <Text style={styles.actionLabel}>{label}</Text>
+      <Text style={styles.actionLabel} numberOfLines={2}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-  },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.sm,
-    backgroundColor: 'rgba(34,211,166,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  label: { ...typography.bodySm, color: colors.textMuted },
-  value: { ...typography.h2, color: colors.text, fontSize: 20, marginTop: 2 },
-  trend: { ...typography.bodySm, color: colors.primary, marginTop: 4 },
-  action: { alignItems: 'center', width: 72 },
-  actionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.lg,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  actionLabel: { ...typography.bodySm, color: colors.textSecondary, textAlign: 'center', fontSize: 11 },
-});

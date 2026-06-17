@@ -1,0 +1,16 @@
+{
+  "uid": "kuberone-system",
+  "title": "KuberOne System Dashboard",
+  "tags": ["kuberone", "system"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    { "type": "gauge", "title": "CPU Usage %", "gridPos": { "x": 0, "y": 0, "w": 8, "h": 6 }, "targets": [{ "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)" }] },
+    { "type": "gauge", "title": "Memory Usage %", "gridPos": { "x": 8, "y": 0, "w": 8, "h": 6 }, "targets": [{ "expr": "(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100" }] },
+    { "type": "gauge", "title": "Disk Usage %", "gridPos": { "x": 16, "y": 0, "w": 8, "h": 6 }, "targets": [{ "expr": "(1 - node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100" }] },
+    { "type": "timeseries", "title": "Network I/O", "gridPos": { "x": 0, "y": 6, "w": 24, "h": 8 }, "targets": [
+      { "expr": "rate(node_network_receive_bytes_total[5m])", "legendFormat": "in" },
+      { "expr": "rate(node_network_transmit_bytes_total[5m])", "legendFormat": "out" }
+    ]}
+  ]
+}

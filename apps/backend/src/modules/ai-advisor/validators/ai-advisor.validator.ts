@@ -73,6 +73,10 @@ export const aiEligibilitySchema = z
     message: 'Provide productSlug, productId, or monthlyIncome for assessment',
   });
 
+export const listConversationsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
 export type AiChatInputValidated = z.infer<typeof aiChatSchema>;
 export type AiContextInputValidated = z.infer<typeof aiContextSchema>;
 export type AiRecommendationInputValidated = z.infer<typeof aiRecommendationSchema>;

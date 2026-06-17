@@ -33,3 +33,7 @@ jobs:
       - run: pnpm --filter @kuberone/mobile-customer typecheck
 
       - run: pnpm --filter @kuberone/mobile-customer lint
+
+      - run: pnpm --filter @kuberone/mobile-testing build
+
+      - run: pnpm --filter @kuberone/mobile-customer test

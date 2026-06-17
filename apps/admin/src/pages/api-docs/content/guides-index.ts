@@ -1,0 +1,147 @@
+export interface GuideEntry {
+  id: string;
+  title: string;
+  description: string;
+  path: string;
+  keywords: string[];
+  section: 'getting-started' | 'guides' | 'reference' | 'tools';
+}
+
+export const GUIDE_INDEX: GuideEntry[] = [
+  {
+    id: 'home',
+    title: 'API Overview',
+    description: 'KuberOne API platform overview and architecture.',
+    path: '/developer-portal',
+    keywords: ['overview', 'introduction', 'kuberone', 'api'],
+    section: 'getting-started',
+  },
+  {
+    id: 'auth',
+    title: 'Authentication Guide',
+    description: 'JWT, refresh tokens, OTP, sessions, and logout.',
+    path: '/developer-portal/api/guides/authentication',
+    keywords: ['jwt', 'bearer', 'otp', 'login', 'refresh', 'session'],
+    section: 'guides',
+  },
+  {
+    id: 'errors',
+    title: 'Error Catalog',
+    description: 'HTTP error codes, structures, and recovery guidance.',
+    path: '/developer-portal/api/guides/errors',
+    keywords: ['400', '401', '403', '404', '409', '422', '429', '500', 'error'],
+    section: 'guides',
+  },
+  {
+    id: 'rbac',
+    title: 'RBAC Guide',
+    description: 'Roles, permissions, data scope, and API access matrix.',
+    path: '/developer-portal/api/guides/rbac',
+    keywords: ['rbac', 'roles', 'permissions', 'scope', 'branch', 'region'],
+    section: 'guides',
+  },
+  {
+    id: 'pagination',
+    title: 'Pagination Guide',
+    description: 'List endpoint pagination, sorting, and filtering.',
+    path: '/developer-portal/api/guides/pagination',
+    keywords: ['pagination', 'page', 'limit', 'sort', 'search'],
+    section: 'guides',
+  },
+  {
+    id: 'rate-limit',
+    title: 'Rate Limit Guide',
+    description: 'Rate limiting headers, quotas, and backoff.',
+    path: '/developer-portal/api/guides/rate-limits',
+    keywords: ['rate limit', '429', 'throttle', 'quota'],
+    section: 'guides',
+  },
+  {
+    id: 'webhooks',
+    title: 'Webhook Guide',
+    description: 'Webhook events, signatures, and retry policy.',
+    path: '/developer-portal/api/guides/webhooks',
+    keywords: ['webhook', 'callback', 'event', 'signature'],
+    section: 'guides',
+  },
+  {
+    id: 'workflows',
+    title: 'Workflows',
+    description: 'Lead, application, document, referral, commission, and support flows.',
+    path: '/developer-portal/api/guides/workflows',
+    keywords: ['workflow', 'lead', 'application', 'document', 'commission'],
+    section: 'guides',
+  },
+  {
+    id: 'ai-platform',
+    title: 'AI Platform',
+    description: 'AI Advisor, Voice AI, Copilot, RAG, and recommendations.',
+    path: '/developer-portal/api/guides/ai-platform',
+    keywords: ['ai', 'copilot', 'rag', 'openai', 'scoring', 'recommendation'],
+    section: 'guides',
+  },
+  {
+    id: 'sdk',
+    title: 'SDK & Code Examples',
+    description: 'JavaScript, TypeScript, React, React Native, Node.js examples.',
+    path: '/developer-portal/api/guides/sdk',
+    keywords: ['sdk', 'javascript', 'typescript', 'axios', 'fetch', 'react native'],
+    section: 'guides',
+  },
+  {
+    id: 'postman',
+    title: 'Postman Collection',
+    description: 'Import, environments, and usage guide.',
+    path: '/developer-portal/api/guides/postman',
+    keywords: ['postman', 'collection', 'environment', 'import'],
+    section: 'tools',
+  },
+  {
+    id: 'testing',
+    title: 'API Testing',
+    description: 'Authentication, RBAC, error, and rate limit testing.',
+    path: '/developer-portal/api/guides/testing',
+    keywords: ['testing', 'qa', 'test', 'rbac', 'auth'],
+    section: 'tools',
+  },
+  {
+    id: 'swagger',
+    title: 'Swagger UI',
+    description: 'Interactive OpenAPI explorer.',
+    path: '/developer-portal/api/swagger',
+    keywords: ['swagger', 'openapi', 'try it'],
+    section: 'tools',
+  },
+  {
+    id: 'redoc',
+    title: 'Redoc UI',
+    description: 'Readable API reference documentation.',
+    path: '/developer-portal/api/redoc',
+    keywords: ['redoc', 'documentation', 'reference'],
+    section: 'tools',
+  },
+  {
+    id: 'openapi',
+    title: 'OpenAPI Spec',
+    description: 'Download and view the raw OpenAPI 3.1 specification.',
+    path: '/developer-portal/api/openapi',
+    keywords: ['openapi', 'yaml', 'spec', 'download'],
+    section: 'tools',
+  },
+  {
+    id: 'reference',
+    title: 'API Reference',
+    description: 'Browse all endpoints by module.',
+    path: '/developer-portal/api/reference',
+    keywords: ['endpoints', 'reference', 'api'],
+    section: 'reference',
+  },
+  {
+    id: 'analytics',
+    title: 'Documentation Analytics',
+    description: 'Most viewed APIs and search trends.',
+    path: '/developer-portal/api/analytics',
+    keywords: ['analytics', 'usage', 'views'],
+    section: 'tools',
+  },
+];

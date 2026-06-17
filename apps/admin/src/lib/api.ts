@@ -1,6 +1,7 @@
 import type { ApiResponse, AuthTokens } from '@kuberone/shared-types';
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
+import { tokenStorage } from '@/lib/token-storage';
 import { mockDownload, mockGet, mockGetPaginated, mockMutate, shouldUseMock } from '@/mocks/router';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
@@ -19,7 +20,7 @@ export function setSessionExpiredHandler(handler: () => void): void {
 }
 
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
+  const token = tokenStorage.getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -27,7 +28,7 @@ apiClient.interceptors.request.use((config) => {
 });
 
 async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = localStorage.getItem('refreshToken');
+  const refreshToken = tokenStorage.getRefreshToken();
   if (!refreshToken) return null;
 
   try {
@@ -37,12 +38,10 @@ async function refreshAccessToken(): Promise<string | null> {
       { headers: { 'Content-Type': 'application/json' } },
     );
     const tokens = data.data;
-    localStorage.setItem('accessToken', tokens.accessToken);
-    localStorage.setItem('refreshToken', tokens.refreshToken);
+    tokenStorage.setTokens(tokens.accessToken, tokens.refreshToken);
     return tokens.accessToken;
   } catch {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    tokenStorage.clearTokens();
     return null;
   }
 }
@@ -104,6 +103,12 @@ export async function apiPost<T>(url: string, body?: unknown): Promise<T> {
 export async function apiPatch<T>(url: string, body?: unknown): Promise<T> {
   if (shouldUseMock(url)) return mockMutate<T>(url, body);
   const { data } = await apiClient.patch<ApiResponse<T>>(url, body);
+  return data.data;
+}
+
+export async function apiPut<T>(url: string, body?: unknown): Promise<T> {
+  if (shouldUseMock(url)) return mockMutate<T>(url, body);
+  const { data } = await apiClient.put<ApiResponse<T>>(url, body);
   return data.data;
 }
 

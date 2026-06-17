@@ -1,25 +1,41 @@
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { useDispatch } from 'react-redux';
 
 import { Button, Input } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { getApiErrorMessage, normalizePhone } from '@/lib/utils';
 import { validateIndianMobile, validateOtp } from '@/lib/validation';
 import type { AuthStackParamList } from '@/navigation/types';
-import { authService } from '@/services';
+import { authService, partnersService } from '@/services';
+import { setRequiresPartnerKyc } from '@/store/slices/authSlice';
 import { colors, spacing, typography } from '@/theme';
+
+/** Seeded demo DSA partner — see database/prisma/seeds/demo-dsa-partner.seed.ts */
+const DEMO_PARTNER_PHONE = '8888777766';
+
+type OtpLoginRoute = RouteProp<AuthStackParamList, 'OtpLogin'>;
 
 export function OtpLoginScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+  const route = useRoute<OtpLoginRoute>();
+  const dispatch = useDispatch();
   const { login } = useAuth();
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(route.params?.phone ?? '');
   const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
+  const [otpSent, setOtpSent] = useState(!!route.params?.phone);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (route.params?.phone) {
+      setPhone(route.params.phone);
+      setOtpSent(true);
+    }
+  }, [route.params?.phone]);
 
   const sendOtp = async () => {
     const phoneErr = validateIndianMobile(phone);
@@ -50,6 +66,17 @@ export function OtpLoginScreen() {
     try {
       const tokens = await authService.partnerLogin(normalizePhone(phone), otp);
       await login(tokens.accessToken, tokens.refreshToken);
+
+      const me = await authService.me();
+      if (me.partnerId) {
+        const partner = await partnersService.getById(me.partnerId);
+        if (String(partner.kycStatus) !== 'VERIFIED') {
+          dispatch(setRequiresPartnerKyc(true));
+          return;
+        }
+      }
+
+      dispatch(setRequiresPartnerKyc(false));
     } catch (e) {
       setError(getApiErrorMessage(e));
     } finally {
@@ -72,7 +99,7 @@ export function OtpLoginScreen() {
 
         <Input
           label="Mobile Number"
-          placeholder="9876543210"
+          placeholder={DEMO_PARTNER_PHONE}
           keyboardType="phone-pad"
           maxLength={10}
           value={phone}
@@ -114,7 +141,9 @@ export function OtpLoginScreen() {
           <Text style={styles.link} onPress={() => navigation.navigate('PartnerRegister')}>
             New DSA partner? Register
           </Text>
-          <Text style={styles.hint}>Dev OTP: 123456</Text>
+          <Text style={styles.hint}>
+            Dev: {DEMO_PARTNER_PHONE} · OTP 123456
+          </Text>
         </View>
       </KeyboardAvoidingView>
     </LinearGradient>

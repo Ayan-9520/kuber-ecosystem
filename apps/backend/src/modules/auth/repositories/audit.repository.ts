@@ -1,6 +1,6 @@
 import type { Prisma } from '@kuberone/database';
 
-import { prisma } from '../../../config/database.js';
+import { centralAuditService } from '../../governance/services/central-audit.service.js';
 
 export const authAuditRepository = {
   log: (data: {
@@ -13,18 +13,8 @@ export const authAuditRepository = {
     ipAddress?: string;
     userAgent?: string;
     requestId?: string;
-  }) =>
-    prisma.auditLog.create({
-      data: {
-        userId: data.userId,
-        action: data.action,
-        entityType: data.entityType,
-        entityId: data.entityId,
-        oldValues: data.oldValues,
-        newValues: data.newValues,
-        ipAddress: data.ipAddress,
-        userAgent: data.userAgent,
-        requestId: data.requestId,
-      },
-    }),
+    source?: string;
+    userRole?: string;
+    sessionId?: string;
+  }) => centralAuditService.log(data),
 };

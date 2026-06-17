@@ -52,6 +52,28 @@ export const s3StorageService = {
     }
   },
 
+  async getObjectMetadata(s3Key: string): Promise<{
+    contentType?: string;
+    contentLength?: number;
+    exists: boolean;
+  }> {
+    try {
+      const head = await s3Client.send(
+        new HeadObjectCommand({
+          Bucket: getS3Bucket(),
+          Key: s3Key,
+        }),
+      );
+      return {
+        contentType: head.ContentType,
+        contentLength: head.ContentLength,
+        exists: true,
+      };
+    } catch {
+      return { exists: false };
+    }
+  },
+
   async getPresignedUploadUrl(
     s3Key: string,
     mimeType: string,

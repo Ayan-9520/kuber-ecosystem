@@ -46,12 +46,7 @@ export const loginService = {
       throw new ForbiddenError('Employee login only');
     }
 
-    try {
-      await securityService.assertUserCanAuthenticate(user.id);
-    } catch (error) {
-      await securityService.recordFailedLogin(user.id, 'ACCOUNT_LOCKED', ctx);
-      throw error;
-    }
+    await securityService.assertUserCanAuthenticate(user.id);
 
     const passwordValid = await bcrypt.compare(input.password, user.passwordHash);
     if (!passwordValid) {

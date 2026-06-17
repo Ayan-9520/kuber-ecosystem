@@ -4,3 +4,4 @@ export { Input } from './Input';
 export { StatusBadge } from './StatusBadge';
 export { Screen, EmptyState } from './Screen';
 export { StatCard, QuickAction } from './StatCard';
+export { DashboardHeader } from './DashboardHeader';

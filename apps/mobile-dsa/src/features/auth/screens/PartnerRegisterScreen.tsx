@@ -1,15 +1,20 @@
 import { useNavigation } from '@react-navigation/native';
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
+import { useDispatch } from 'react-redux';
 
 import { Button, Input, Screen } from '@/components/ui';
 import { getApiErrorMessage, normalizePhone } from '@/lib/utils';
 import { validateIndianMobile } from '@/lib/validation';
-import { authService } from '@/services';
+import type { AuthStackParamList } from '@/navigation/types';
+import { authService, partnersService } from '@/services';
+import { setRequiresPartnerKyc } from '@/store/slices/authSlice';
 import { colors, spacing } from '@/theme';
 
 export function PartnerRegisterScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+  const dispatch = useDispatch();
   const [businessName, setBusinessName] = useState('');
   const [contactName, setContactName] = useState('');
   const [phone, setPhone] = useState('');
@@ -33,14 +38,21 @@ export function PartnerRegisterScreen() {
     setError('');
     setLoading(true);
     try {
-      await authService.sendOtp(normalizePhone(phone), 'LOGIN');
-      setSuccess(
-        'Your mobile is registered with Kuber Finserve. Complete OTP login to access the app. If login fails, contact your relationship manager to onboard your DSA account.',
-      );
+      const normalizedPhone = normalizePhone(phone);
+      await partnersService.register({
+        businessName: businessName.trim(),
+        contactName: contactName.trim(),
+        phone: normalizedPhone,
+        email: email.trim() || undefined,
+        pan: pan.trim().toUpperCase() || undefined,
+      });
+
+      await authService.sendOtp(normalizedPhone, 'LOGIN');
+      dispatch(setRequiresPartnerKyc(true));
+      setSuccess('Registration submitted. Sign in with OTP to complete KYC verification.');
+      navigation.navigate('OtpLogin', { phone: normalizedPhone, fromRegister: true });
     } catch (e) {
-      setError(
-        `${getApiErrorMessage(e)}. Contact Kuber Finserve to register as a DSA partner with: ${businessName}, ${contactName}, ${email || 'N/A'}, PAN: ${pan || 'N/A'}.`,
-      );
+      setError(getApiErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -57,7 +69,7 @@ export function PartnerRegisterScreen() {
       <Input label="Email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
       <Input label="PAN (optional)" autoCapitalize="characters" maxLength={10} value={pan} onChangeText={setPan} />
 
-      <Button title="Check & Continue" fullWidth loading={loading} onPress={submit} />
+      <Button title="Register & Continue" fullWidth loading={loading} onPress={submit} />
       <Button title="Back to Login" variant="ghost" fullWidth onPress={() => navigation.goBack()} />
     </Screen>
   );

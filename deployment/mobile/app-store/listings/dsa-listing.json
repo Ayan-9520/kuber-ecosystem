@@ -1,0 +1,20 @@
+{
+  "app": "DSA",
+  "bundleId": "com.kuberone.partner",
+  "appName": "KuberOne Partner",
+  "subtitle": "DSA Leads & Commissions",
+  "keywords": "DSA,partner,commission,leads,referrals,loan agent",
+  "description": "KuberOne Partner — the DSA toolkit by Kuber Finserve.\n\n• Lead management & scoring\n• Application pipeline\n• Commission ledger\n• Referral tracking\n• Analytics dashboards\n• Partner support\n\nBuilt for financial partners.",
+  "promotionalText": "Grow your loan business with real-time commissions and leads.",
+  "supportUrl": "https://kuberone.com/partners/support",
+  "marketingUrl": "https://kuberone.com/partners",
+  "privacyPolicyUrl": "https://kuberone.com/privacy",
+  "termsUrl": "https://kuberone.com/terms",
+  "primaryCategory": "Business",
+  "secondaryCategory": "Finance",
+  "ageRating": "17+",
+  "screenshots": [
+    "Login", "Dashboard", "Leads", "Applications", "Customers",
+    "Commissions", "Referrals", "Analytics", "Support", "Profile"
+  ]
+}

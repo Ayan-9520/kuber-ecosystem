@@ -9,10 +9,14 @@ import { PartnerRegisterScreen } from '@/features/auth/screens/PartnerRegisterSc
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
-export function AuthNavigator() {
+type AuthNavigatorProps = {
+  initialRouteName?: keyof AuthStackParamList;
+};
+
+export function AuthNavigator({ initialRouteName = 'OtpLogin' }: AuthNavigatorProps) {
   return (
     <Stack.Navigator
-      initialRouteName="OtpLogin"
+      initialRouteName={initialRouteName}
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: '#071A1F' },

@@ -35,3 +35,5 @@ jobs:
       - run: pnpm --filter @kuberone/admin typecheck
 
       - run: pnpm --filter @kuberone/admin lint
+
+      - run: pnpm --filter @kuberone/admin test

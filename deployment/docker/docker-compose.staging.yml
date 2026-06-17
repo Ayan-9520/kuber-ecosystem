@@ -1,0 +1,99 @@
+# KuberOne Staging Stack — production-like, reduced scale
+name: kuberone-staging
+
+x-staging-env: &staging-env
+  NODE_ENV: production
+  APP_ENV: staging
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports: ["8080:80", "8443:443"]
+    volumes:
+      - ../nginx/kuberone-staging.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [api]
+    networks: [staging]
+
+  api:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/backend/Dockerfile
+    environment:
+      <<: *staging-env
+      API_PORT: 4000
+      DATABASE_URL: ${STAGING_DATABASE_URL}
+      REDIS_URL: ${STAGING_REDIS_URL}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
+      AWS_S3_BUCKET: ${STAGING_S3_BUCKET:-kuberone-staging}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel:4317
+    deploy: { replicas: 2 }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health/live"]
+      interval: 30s
+    networks: [staging]
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/worker/Dockerfile
+    environment:
+      <<: *staging-env
+      DATABASE_URL: ${STAGING_DATABASE_URL}
+      REDIS_URL: ${STAGING_REDIS_URL}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
+      CONTENT_WORKER_ENABLED: "true"
+    networks: [staging]
+
+  redis:
+    image: redis:7.2-alpine
+    command: redis-server --requirepass ${STAGING_REDIS_PASSWORD}
+    volumes: [redis_staging:/data]
+    networks: [staging]
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: kuberone_staging
+      MYSQL_USER: kuberone
+      MYSQL_PASSWORD: ${STAGING_MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${STAGING_MYSQL_ROOT_PASSWORD}
+    volumes: [mysql_staging:/var/lib/mysql]
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    networks: [staging]
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    volumes:
+      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports: ["9091:9090"]
+    networks: [staging]
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    volumes:
+      - ../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3001:3000"]
+    networks: [staging]
+
+  loki:
+    image: grafana/loki:3.0.0
+    volumes: [../monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml:ro]
+    networks: [staging]
+
+  otel:
+    image: otel/opentelemetry-collector-contrib:0.104.0
+    volumes: [../monitoring/otel/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro]
+    networks: [staging]
+
+networks:
+  staging:
+    driver: bridge
+
+volumes:
+  redis_staging:
+  mysql_staging:

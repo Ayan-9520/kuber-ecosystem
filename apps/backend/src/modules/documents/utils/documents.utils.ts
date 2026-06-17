@@ -101,6 +101,14 @@ export function resolveOwnerId(input: {
   return id;
 }
 
+const SENSITIVE_DOC_FIELDS = ['internalNotes', 'verificationRaw', 'ocrRawPayload'] as const;
+
 export function sanitizeDocumentResponse<T extends Record<string, unknown>>(doc: T): T {
-  return doc;
+  const sanitized = { ...doc };
+  for (const field of SENSITIVE_DOC_FIELDS) {
+    if (field in sanitized) {
+      delete sanitized[field];
+    }
+  }
+  return sanitized;
 }

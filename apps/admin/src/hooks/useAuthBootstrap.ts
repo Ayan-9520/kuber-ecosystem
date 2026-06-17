@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
+import { tokenStorage } from '@/lib/token-storage';
 import { authService } from '@/services/auth.service';
 import type { RootState } from '@/store';
 import { clearCredentials, setCredentials } from '@/store/slices/authSlice';
@@ -8,10 +9,10 @@ import { clearCredentials, setCredentials } from '@/store/slices/authSlice';
 export function useAuthBootstrap() {
   const dispatch = useDispatch();
   const auth = useSelector((s: RootState) => s.auth);
-  const [isLoading, setIsLoading] = useState(!auth.isAuthenticated && !!localStorage.getItem('accessToken'));
+  const [isLoading, setIsLoading] = useState(!auth.isAuthenticated && !!tokenStorage.getAccessToken());
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
+    const token = tokenStorage.getAccessToken();
     if (!token) {
       setIsLoading(false);
       return;
@@ -48,8 +49,7 @@ export function useAuthBootstrap() {
         );
       })
       .catch(() => {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        tokenStorage.clearTokens();
         dispatch(clearCredentials());
       })
       .finally(() => setIsLoading(false));

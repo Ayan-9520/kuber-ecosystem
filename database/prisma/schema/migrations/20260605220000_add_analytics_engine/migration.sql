@@ -31,7 +31,7 @@ CREATE TABLE `metric_values` (
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     INDEX `metric_values_snapshot_date_branch_id_region_id_idx`(`snapshot_date`, `branch_id`, `region_id`),
-    UNIQUE INDEX `metric_values_metric_definition_id_snapshot_date_branch_id_region_id_partner_id_employee_id_key`(`metric_definition_id`, `snapshot_date`, `branch_id`, `region_id`, `partner_id`, `employee_id`),
+    UNIQUE INDEX `metric_values_def_date_scope_key`(`metric_definition_id`, `snapshot_date`, `branch_id`, `region_id`, `partner_id`, `employee_id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -100,7 +100,7 @@ CREATE TABLE `analytics_snapshots` (
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     INDEX `analytics_snapshots_snapshot_date_idx`(`snapshot_date`),
-    UNIQUE INDEX `analytics_snapshots_snapshot_date_dashboard_type_branch_id_region_id_partner_id_key`(`snapshot_date`, `dashboard_type`, `branch_id`, `region_id`, `partner_id`),
+    UNIQUE INDEX `analytics_snapshots_date_scope_key`(`snapshot_date`, `dashboard_type`, `branch_id`, `region_id`, `partner_id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 

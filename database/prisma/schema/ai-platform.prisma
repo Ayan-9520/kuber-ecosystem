@@ -41,6 +41,7 @@ enum AiModuleSource {
   RECOMMENDATION
   RAG
   KNOWLEDGE
+  CONTENT
   ADMIN
   API
 }

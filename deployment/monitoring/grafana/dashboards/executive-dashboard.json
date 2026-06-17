@@ -1,0 +1,14 @@
+{
+  "uid": "kuberone-executive",
+  "title": "KuberOne Executive Dashboard",
+  "tags": ["kuberone", "executive"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    { "type": "stat", "title": "API Success Rate", "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "100 - (rate(kuberone_http_errors_total[5m]) / rate(kuberone_http_requests_total[5m]) * 100)", "legendFormat": "success" }] },
+    { "type": "stat", "title": "Availability %", "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "avg(up{job=\"kuberone-backend\"}) * 100", "legendFormat": "uptime" }] },
+    { "type": "stat", "title": "Open Alerts", "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "kuberone_open_alerts", "legendFormat": "alerts" }] },
+    { "type": "timeseries", "title": "Business Events", "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 }, "targets": [{ "expr": "rate(kuberone_business_events_total[5m])", "legendFormat": "{{event}}" }] }
+  ]
+}

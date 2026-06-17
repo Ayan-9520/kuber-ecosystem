@@ -15,6 +15,7 @@ export interface BranchScopedRecord {
   partnerId?: string | null;
   customerId?: string | null;
   userId?: string | null;
+  uploadedById?: string | null;
   rmEmployeeId?: string | null;
 }
 
@@ -321,10 +322,29 @@ export function assertDocumentAccess(actor: AuthenticatedUser, doc: BranchScoped
   switch (actor.dataScope) {
     case DataScope.ORGANIZATION:
       return;
-    case DataScope.BRANCH:
     case DataScope.REGION:
+      if (doc.regionId && actor.regionId && doc.regionId !== actor.regionId) {
+        throw new ForbiddenError('Document outside regional scope');
+      }
+      if (!doc.regionId && doc.uploadedById && doc.uploadedById !== actor.id) {
+        throw new ForbiddenError('Insufficient access to document');
+      }
+      return;
+    case DataScope.BRANCH:
+      if (doc.branchId && actor.branchId && doc.branchId !== actor.branchId) {
+        throw new ForbiddenError('Document outside branch scope');
+      }
+      if (!doc.branchId && doc.uploadedById && doc.uploadedById !== actor.id) {
+        throw new ForbiddenError('Insufficient access to document');
+      }
+      return;
     case DataScope.ASSIGNED:
+      if (doc.uploadedById && doc.uploadedById === actor.id) return;
+      throw new ForbiddenError('Document not accessible in assigned scope');
     case DataScope.OWN:
+      if (doc.uploadedById && doc.uploadedById !== actor.id) {
+        throw new ForbiddenError('Insufficient access to document');
+      }
       return;
     default:
       throw new ForbiddenError('Insufficient data scope');

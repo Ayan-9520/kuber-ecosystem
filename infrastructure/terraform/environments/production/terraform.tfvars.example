@@ -1,0 +1,10 @@
+aws_region           = "ap-south-1"
+vpc_cidr             = "10.10.0.0/16"
+s3_bucket_name       = "kuberone-production"
+db_master_password   = "CHANGE_ME_STRONG_PASSWORD"
+redis_auth_token     = "CHANGE_ME_REDIS_AUTH_TOKEN"
+enable_sticky_sessions = false
+enable_waf           = true
+enable_s3_crr        = false
+create_read_replica  = true
+api_desired_capacity = 4

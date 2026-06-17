@@ -655,6 +655,23 @@ enum NotificationChannel {
   PUSH
 }
 
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum CampaignAudience {
+  ALL_CUSTOMERS
+  LEADS
+  DSA_PARTNERS
+  BRANCH_CUSTOMERS
+  CUSTOM_SEGMENT
+}
+
 enum NotificationEventType {
   LEAD_CREATED
   LEAD_ASSIGNED

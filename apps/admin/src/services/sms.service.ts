@@ -1,4 +1,4 @@
-import { apiGet, apiGetPaginated, apiPatch, apiPost } from '@/lib/api';
+import { apiGet, apiGetPaginated, apiPatch, apiPost, apiPut } from '@/lib/api';
 
 export const smsService = {
   send: (data: unknown) => apiPost('/sms/send', data),
@@ -13,7 +13,7 @@ export const smsService = {
   providers: (params?: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/sms/providers', params ?? {}),
   updateProvider: (id: string, data: unknown) => apiPatch(`/sms/providers/${id}`, data),
   preferences: (params?: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/sms/preferences', params ?? {}),
-  upsertPreference: (data: unknown) => apiPost('/sms/preferences', data),
+  upsertPreference: (data: unknown) => apiPut('/sms/preferences', data),
   queue: (params?: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/sms/queue', params ?? {}),
   processQueue: () => apiPost('/sms/process-queue'),
 };

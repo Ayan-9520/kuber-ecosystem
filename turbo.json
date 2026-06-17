@@ -11,7 +11,8 @@
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "env": ["NODE_OPTIONS"]
     },
     "lint:fix": {
       "cache": false
@@ -21,6 +22,17 @@
     },
     "test": {
       "dependsOn": ["^build"]
+    },
+    "test:coverage": {
+      "dependsOn": ["^build"]
+    },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "test:all": {
+      "dependsOn": ["^build"],
+      "cache": false
     },
     "clean": {
       "cache": false

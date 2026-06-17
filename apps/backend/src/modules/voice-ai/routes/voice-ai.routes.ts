@@ -8,6 +8,7 @@ import { validateMiddleware } from '../../../shared/middleware/validate.middlewa
 import { voiceAiController } from '../controllers/voice-ai.controller.js';
 import {
   createVoiceSessionSchema,
+  listVoiceSessionsQuerySchema,
   voiceAudioSchema,
   voiceMessageSchema,
   voiceSessionIdSchema,
@@ -33,6 +34,13 @@ const voiceAccess = requireAnyPermission(
 voiceAiRoutes.use(authenticateWithSessionMiddleware);
 
 voiceAiRoutes.get('/health', asyncHandler(voiceAiController.health));
+
+voiceAiRoutes.get(
+  '/sessions',
+  voiceAccess,
+  validateMiddleware(listVoiceSessionsQuerySchema, 'query'),
+  asyncHandler(voiceAiController.listSessions),
+);
 
 voiceAiRoutes.post(
   '/sessions',

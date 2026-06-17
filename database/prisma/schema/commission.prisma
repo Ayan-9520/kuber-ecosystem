@@ -13,7 +13,7 @@ model CommissionRule {
   slabDefinition     Json?                       @map("slab_definition")
   productId          String?                     @map("product_id") @db.Char(36)
   lenderId           String?                     @map("lender_id") @db.Char(36)
-  campaignId         String?                     @map("campaign_id") @db.VarChar(36)
+  campaignId         String?                     @map("campaign_id") @db.Char(36)
   minBaseAmount      Decimal?                    @map("min_base_amount") @db.Decimal(15, 2)
   maxBaseAmount      Decimal?                    @map("max_base_amount") @db.Decimal(15, 2)
   minCommission      Decimal?                    @map("min_commission") @db.Decimal(15, 2)
@@ -31,6 +31,7 @@ model CommissionRule {
 
   product   Product? @relation(fields: [productId], references: [id])
   lender    Lender?  @relation(fields: [lenderId], references: [id])
+  campaign  Campaign? @relation(fields: [campaignId], references: [id])
   createdBy User?    @relation("CommissionRuleCreatedBy", fields: [createdById], references: [id])
   updatedBy User?    @relation("CommissionRuleUpdatedBy", fields: [updatedById], references: [id])
   deletedBy User?    @relation("CommissionRuleDeletedBy", fields: [deletedById], references: [id])
@@ -59,7 +60,7 @@ model CommissionLedger {
   branchId           String?                   @map("branch_id") @db.Char(36)
   productId          String?                   @map("product_id") @db.Char(36)
   lenderId           String?                   @map("lender_id") @db.Char(36)
-  campaignId         String?                   @map("campaign_id") @db.VarChar(36)
+  campaignId         String?                   @map("campaign_id") @db.Char(36)
   calculationMethod  CommissionCalculationMethod? @map("calculation_method")
   calculationDetails Json?                     @map("calculation_details")
   notes              String?                   @db.Text
@@ -80,6 +81,7 @@ model CommissionLedger {
   branch      Branch?         @relation(fields: [branchId], references: [id])
   product     Product?        @relation(fields: [productId], references: [id])
   lender      Lender?         @relation(fields: [lenderId], references: [id])
+  campaign    Campaign?       @relation(fields: [campaignId], references: [id])
   createdBy   User?           @relation("CommissionLedgerCreatedBy", fields: [createdById], references: [id])
   updatedBy   User?           @relation("CommissionLedgerUpdatedBy", fields: [updatedById], references: [id])
   deletedBy   User?           @relation("CommissionLedgerDeletedBy", fields: [deletedById], references: [id])

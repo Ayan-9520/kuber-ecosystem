@@ -1,0 +1,10 @@
+variable "aws_region" { type = string default = "ap-south-1" }
+variable "vpc_cidr" { type = string default = "10.10.0.0/16" }
+variable "s3_bucket_name" { type = string default = "kuberone-production" }
+variable "db_master_password" { type = string sensitive = true }
+variable "redis_auth_token" { type = string sensitive = true }
+variable "enable_sticky_sessions" { type = bool default = false }
+variable "enable_waf" { type = bool default = true }
+variable "enable_s3_crr" { type = bool default = false }
+variable "create_read_replica" { type = bool default = false }
+variable "api_desired_capacity" { type = number default = 4 }

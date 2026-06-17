@@ -1,0 +1,10 @@
+flows:
+  - customer/*
+  - dsa/*
+executionOrder:
+  continueOnFailure: false
+  flowsOrder:
+    - customer/auth-login
+    - customer/dashboard-navigation
+    - dsa/auth-login
+    - dsa/leads-flow

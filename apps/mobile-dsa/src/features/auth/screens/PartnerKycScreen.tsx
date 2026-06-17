@@ -1,13 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { StyleSheet, Text, View } from 'react-native';
+import { useDispatch } from 'react-redux';
 
-import { Card, EmptyState, Screen, StatusBadge } from '@/components/ui';
+import { Button, Card, EmptyState, Screen, StatusBadge } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { formatDate, str } from '@/lib/utils';
 import { documentsService, partnersService } from '@/services';
+import { setRequiresPartnerKyc } from '@/store/slices/authSlice';
 import { colors, spacing, typography } from '@/theme';
 
 export function PartnerKycScreen() {
+  const dispatch = useDispatch();
   const { partnerId } = useAuth();
 
   const partner = useQuery({
@@ -56,6 +59,21 @@ export function PartnerKycScreen() {
       <Text style={styles.note}>
         KYC is reviewed by Kuber Finserve compliance. You will be notified once approved.
       </Text>
+
+      {kycStatus === 'VERIFIED' ? (
+        <Button
+          title="Continue to Dashboard"
+          fullWidth
+          onPress={() => dispatch(setRequiresPartnerKyc(false))}
+        />
+      ) : (
+        <Button
+          title="Continue to App"
+          variant="secondary"
+          fullWidth
+          onPress={() => dispatch(setRequiresPartnerKyc(false))}
+        />
+      )}
     </Screen>
   );
 }

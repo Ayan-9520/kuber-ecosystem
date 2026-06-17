@@ -1,0 +1,14 @@
+{
+  "uid": "kuberone-business",
+  "title": "KuberOne Business Dashboard",
+  "tags": ["kuberone", "business"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    { "type": "stat", "title": "Leads Created (24h)", "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "increase(kuberone_leads_created_total[24h])" }] },
+    { "type": "stat", "title": "Applications (24h)", "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "increase(kuberone_applications_created_total[24h])" }] },
+    { "type": "stat", "title": "Disbursements (24h)", "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "increase(kuberone_applications_disbursed_total[24h])" }] },
+    { "type": "stat", "title": "Support Tickets (24h)", "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "increase(kuberone_support_tickets_total[24h])" }] },
+    { "type": "timeseries", "title": "Business Funnel", "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 }, "targets": [{ "expr": "rate(kuberone_business_events_total[1h])", "legendFormat": "{{event}}" }] }
+  ]
+}

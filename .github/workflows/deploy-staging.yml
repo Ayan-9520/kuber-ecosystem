@@ -1,0 +1,62 @@
+name: Staging Deployment Pipeline
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    uses: ./.github/workflows/staging-validation.yml
+    secrets: inherit
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: staging
+    strategy:
+      matrix:
+        component: [backend, admin, worker, monitoring]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pre-deploy gates
+        run: |
+          node scripts/prisma-migration-gate.mjs
+          node scripts/error-deployment-gate.mjs || true
+
+      - name: Deploy ${{ matrix.component }}
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.STAGING_EC2_HOST || secrets.EC2_HOST }}
+          username: ${{ secrets.STAGING_EC2_USER || secrets.EC2_USER }}
+          key: ${{ secrets.STAGING_EC2_SSH_KEY || secrets.EC2_SSH_KEY }}
+          script: |
+            cd /opt/kuberone
+            git pull origin staging
+            case "${{ matrix.component }}" in
+              backend) bash deployment/scripts/deploy-backend.sh staging ;;
+              admin) bash deployment/scripts/deploy-admin.sh staging ;;
+              worker) pm2 reload kuberone-worker --env staging || pm2 startOrReload deployment/pm2/ecosystem.config.cjs --env staging ;;
+              monitoring) cd deployment/monitoring && docker compose -f docker-compose.monitoring.yml up -d ;;
+            esac
+
+      - name: Post-deploy validation
+        if: matrix.component == 'backend' && success()
+        run: node scripts/staging-deploy-validate.mjs
+        env:
+          STAGING_API_URL: ${{ secrets.STAGING_API_URL }}
+          STAGING_WEBHOOK_SECRET: ${{ secrets.STAGING_WEBHOOK_SECRET }}
+          API_BASE_URL: ${{ secrets.DEVOPS_API_URL }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF_NAME: staging
+          STAGING_COMPONENT: ${{ matrix.component }}
+
+      - name: Record deployment
+        if: success()
+        run: |
+          node scripts/ci-record-pipeline.mjs --type STAGING_DEPLOY --name "Staging — ${{ matrix.component }}" --status SUCCESS --branch staging
+        env:
+          DEVOPS_API_URL: ${{ secrets.DEVOPS_API_URL }}
+          DEVOPS_WEBHOOK_SECRET: ${{ secrets.DEVOPS_WEBHOOK_SECRET }}

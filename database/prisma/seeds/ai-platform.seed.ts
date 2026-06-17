@@ -59,7 +59,7 @@ export async function seedAiPlatform(prisma: PrismaClient): Promise<void> {
     });
   }
 
-  const routes: Array<{ module: 'AI_ADVISOR' | 'VOICE_AI' | 'COPILOT' | 'RECOMMENDATION' | 'RAG' | 'KNOWLEDGE'; capability: 'CHAT' | 'EMBEDDING' | 'TRANSCRIPTION' | 'TTS'; primary: string; fallback?: string }> = [
+  const routes: Array<{ module: 'AI_ADVISOR' | 'VOICE_AI' | 'COPILOT' | 'RECOMMENDATION' | 'RAG' | 'KNOWLEDGE' | 'CONTENT'; capability: 'CHAT' | 'EMBEDDING' | 'TRANSCRIPTION' | 'TTS'; primary: string; fallback?: string }> = [
     { module: 'AI_ADVISOR', capability: 'CHAT', primary: 'gpt-4o-mini', fallback: 'gpt-4o' },
     { module: 'VOICE_AI', capability: 'CHAT', primary: 'gpt-4o-mini', fallback: 'gpt-4o' },
     { module: 'VOICE_AI', capability: 'TRANSCRIPTION', primary: 'whisper-1' },
@@ -69,6 +69,7 @@ export async function seedAiPlatform(prisma: PrismaClient): Promise<void> {
     { module: 'RAG', capability: 'CHAT', primary: 'gpt-4o-mini' },
     { module: 'RAG', capability: 'EMBEDDING', primary: 'text-embedding-3-small' },
     { module: 'KNOWLEDGE', capability: 'CHAT', primary: 'gpt-4o-mini' },
+    { module: 'CONTENT', capability: 'CHAT', primary: 'gpt-4o-mini', fallback: 'gpt-4o' },
   ];
 
   for (const route of routes) {
@@ -76,22 +77,26 @@ export async function seedAiPlatform(prisma: PrismaClient): Promise<void> {
     if (!primaryId) continue;
     const fallbackId = route.fallback ? modelIds[route.fallback] : undefined;
 
-    await prisma.aiModelRoute.upsert({
-      where: { module_capability: { module: route.module, capability: route.capability } },
-      create: {
-        id: randomUUID(),
-        module: route.module,
-        capability: route.capability,
-        primaryModelId: primaryId,
-        fallbackModelId: fallbackId,
-        isActive: true,
-      },
-      update: {
-        primaryModelId: primaryId,
-        fallbackModelId: fallbackId,
-        isActive: true,
-      },
-    });
+    try {
+      await prisma.aiModelRoute.upsert({
+        where: { module_capability: { module: route.module, capability: route.capability } },
+        create: {
+          id: randomUUID(),
+          module: route.module,
+          capability: route.capability,
+          primaryModelId: primaryId,
+          fallbackModelId: fallbackId,
+          isActive: true,
+        },
+        update: {
+          primaryModelId: primaryId,
+          fallbackModelId: fallbackId,
+          isActive: true,
+        },
+      });
+    } catch {
+      console.warn(`  ⚠ skipped AI route ${route.module}/${route.capability} — run db:generate + db push if enum drift`);
+    }
   }
 
   const prompts = [

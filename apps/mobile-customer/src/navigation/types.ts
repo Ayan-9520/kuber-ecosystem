@@ -26,7 +26,7 @@ export type ApplicationsStackParamList = {
 
 export type ProductsStackParamList = {
   ProductsList: undefined;
-  ProductDetail: { slug: string; name: string; variant: string };
+  ProductDetail: { slug?: string; id?: string; name?: string; variant?: string };
 };
 
 export type SupportStackParamList = {

@@ -115,11 +115,19 @@ export const documentService = {
     const s3Key = buildS3Key(input.ownerType, ownerId, docType.code, input.fileName);
     const checksum = sha256Checksum(buffer);
 
-    await s3StorageService.uploadObject(s3Key, buffer, input.mimeType, {
-      documentType: docType.code,
-      ownerType: input.ownerType,
-      ownerId,
-    });
+    try {
+      await s3StorageService.uploadObject(s3Key, buffer, input.mimeType, {
+        documentType: docType.code,
+        ownerType: input.ownerType,
+        ownerId,
+      });
+    } catch {
+      throw new AppError(
+        503,
+        'STORAGE_UNAVAILABLE',
+        'Document storage is not available. Configure AWS S3 bucket and credentials.',
+      );
+    }
 
     const lastCode = await documentRepository.getLastDocumentCode();
     const document = await documentRepository.create({
@@ -213,8 +221,16 @@ export const documentService = {
       throw new AppError(400, 'DOCUMENT_TYPE_MISMATCH', 'Document type does not match presigned upload');
     }
 
-    const exists = await s3StorageService.objectExists(input.s3Key);
-    if (!exists) throw new AppError(400, 'S3_OBJECT_MISSING', 'Uploaded file not found in storage');
+    const metadata = await s3StorageService.getObjectMetadata(input.s3Key);
+    if (!metadata.exists) throw new AppError(400, 'S3_OBJECT_MISSING', 'Uploaded file not found in storage');
+
+    if (metadata.contentType && metadata.contentType !== input.mimeType) {
+      throw new AppError(400, 'MIME_MISMATCH', 'Uploaded file content type does not match declared type');
+    }
+
+    if (metadata.contentLength !== undefined && metadata.contentLength > input.fileSizeBytes * 1.05) {
+      throw new AppError(400, 'FILE_SIZE_MISMATCH', 'Uploaded file exceeds declared size');
+    }
 
     const docType = await validateDocumentType(input.documentTypeId, input.mimeType, input.fileSizeBytes);
     const lastCode = await documentRepository.getLastDocumentCode();

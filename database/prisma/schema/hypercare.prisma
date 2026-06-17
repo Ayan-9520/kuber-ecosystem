@@ -1,0 +1,243 @@
+// ── KuberOne Hypercare Support Phase ──
+
+enum HypercareSessionStatus {
+  ACTIVE
+  EXTENDED
+  COMPLETED
+}
+
+enum HypercarePhase {
+  WEEK_1
+  WEEK_2
+  WEEK_3
+  WEEK_4
+  EXTENSION
+}
+
+enum HypercareFinalStatus {
+  UNSTABLE
+  STABILIZING
+  STABLE
+  PRODUCTION_STABILIZED
+}
+
+enum HypercareIssueCategory {
+  CUSTOMER
+  DSA
+  CRM
+  AI
+  NOTIFICATION
+  PERFORMANCE
+  BUG
+  SUPPORT
+}
+
+enum HypercareIssueType {
+  BUG
+  SUPPORT
+  PERFORMANCE
+  HOTFIX
+  PATCH
+}
+
+enum HypercareIssueStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum HypercareIncidentSeverity {
+  SEV_1
+  SEV_2
+  SEV_3
+  SEV_4
+}
+
+enum HypercareIncidentStatus {
+  OPEN
+  INVESTIGATING
+  ESCALATED
+  MITIGATED
+  RESOLVED
+  CLOSED
+}
+
+enum HypercareMetricCategory {
+  SYSTEM
+  API
+  DATABASE
+  QUEUE
+  AI
+  NOTIFICATION
+  BUSINESS
+  ADOPTION
+  PERFORMANCE
+}
+
+enum HypercareReportType {
+  DAILY
+  WEEKLY
+  EXECUTIVE
+  INCIDENT
+  ADOPTION
+  PERFORMANCE
+  HYPERCARE
+}
+
+enum HypercareRCATarget {
+  INCIDENT
+  ISSUE
+  PERFORMANCE
+  SECURITY
+}
+
+enum HypercareRCAStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+  CLOSED
+}
+
+model HypercareSession {
+  id                 String                  @id @default(uuid()) @db.Char(36)
+  code               String                  @unique @db.VarChar(64)
+  name               String                  @db.VarChar(200)
+  status             HypercareSessionStatus  @default(ACTIVE)
+  phase              HypercarePhase          @default(WEEK_1)
+  weekNumber         Int                     @default(1) @map("week_number")
+  launchExecutionId  String?                 @map("launch_execution_id") @db.Char(36)
+  startDate          DateTime                @default(now()) @map("start_date")
+  endDate            DateTime?               @map("end_date")
+  extendedAt         DateTime?               @map("extended_at")
+  stabilityPct       Int                     @default(0) @map("stability_pct")
+  adoptionPct        Int                     @default(0) @map("adoption_pct")
+  resolutionPct      Int                     @default(0) @map("resolution_pct")
+  performanceScore   Int                     @default(0) @map("performance_score")
+  aiStabilityPct     Int                     @default(0) @map("ai_stability_pct")
+  finalStatus        HypercareFinalStatus    @default(STABILIZING) @map("final_status")
+  metadata           Json?
+  createdAt          DateTime                @default(now()) @map("created_at")
+  updatedAt          DateTime                @updatedAt @map("updated_at")
+
+  launchExecution LaunchExecution? @relation(fields: [launchExecutionId], references: [id], onDelete: SetNull)
+  issues          HypercareIssue[]
+  incidents       HypercareIncident[]
+  metrics         HypercareMetric[]
+  reports         HypercareReport[]
+  rcas            HypercareRCA[]
+
+  @@index([status, phase])
+  @@map("hypercare_sessions")
+}
+
+model HypercareIssue {
+  id             String                 @id @default(uuid()) @db.Char(36)
+  sessionId      String                 @map("session_id") @db.Char(36)
+  code           String                 @unique @db.VarChar(64)
+  title          String                 @db.VarChar(300)
+  description    String                 @db.Text
+  category       HypercareIssueCategory
+  issueType      HypercareIssueType     @default(BUG) @map("issue_type")
+  severity       HypercareIncidentSeverity @default(SEV_3)
+  status         HypercareIssueStatus   @default(OPEN)
+  hotfixRequired Boolean                @default(false) @map("hotfix_required")
+  patchRequired  Boolean                @default(false) @map("patch_required")
+  assignedToId   String?                @map("assigned_to_id") @db.Char(36)
+  resolvedAt     DateTime?              @map("resolved_at")
+  metadata       Json?
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  session    HypercareSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  assignedTo User?            @relation("HypercareIssueAssignedTo", fields: [assignedToId], references: [id])
+
+  @@index([sessionId, status, severity])
+  @@index([category, status])
+  @@map("hypercare_issues")
+}
+
+model HypercareIncident {
+  id                  String                    @id @default(uuid()) @db.Char(36)
+  sessionId           String                    @map("session_id") @db.Char(36)
+  code                String                    @unique @db.VarChar(64)
+  title               String                    @db.VarChar(300)
+  description         String                    @db.Text
+  severity            HypercareIncidentSeverity @default(SEV_3)
+  status              HypercareIncidentStatus   @default(OPEN)
+  slaResponseMinutes  Int                       @default(240) @map("sla_response_minutes")
+  slaDeadline         DateTime?                 @map("sla_deadline")
+  respondedAt         DateTime?                 @map("responded_at")
+  resolvedAt          DateTime?                 @map("resolved_at")
+  escalationLevel     Int                       @default(1) @map("escalation_level")
+  runbook             String?                   @db.Text
+  commTemplate        String?                   @map("comm_template") @db.VarChar(128)
+  assignedToId        String?                   @map("assigned_to_id") @db.Char(36)
+  metadata            Json?
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @updatedAt @map("updated_at")
+
+  session    HypercareSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  assignedTo User?            @relation("HypercareIncidentAssignedTo", fields: [assignedToId], references: [id])
+
+  @@index([sessionId, severity, status])
+  @@map("hypercare_incidents")
+}
+
+model HypercareMetric {
+  id         String                  @id @default(uuid()) @db.Char(36)
+  sessionId  String                  @map("session_id") @db.Char(36)
+  category   HypercareMetricCategory
+  name       String                  @db.VarChar(128)
+  value      Float
+  unit       String?                 @db.VarChar(32)
+  threshold  Float?
+  isHealthy  Boolean                 @default(true) @map("is_healthy")
+  metadata   Json?
+  recordedAt DateTime                @default(now()) @map("recorded_at")
+
+  session HypercareSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, category, recordedAt])
+  @@index([name, recordedAt])
+  @@map("hypercare_metrics")
+}
+
+model HypercareReport {
+  id          String              @id @default(uuid()) @db.Char(36)
+  sessionId   String              @map("session_id") @db.Char(36)
+  reportType  HypercareReportType @map("report_type")
+  score       Int                 @default(0)
+  summary     String?             @db.VarChar(500)
+  details     Json?
+  generatedAt DateTime            @default(now()) @map("generated_at")
+
+  session HypercareSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, reportType, generatedAt])
+  @@map("hypercare_reports")
+}
+
+model HypercareRCA {
+  id                String             @id @default(uuid()) @db.Char(36)
+  sessionId         String             @map("session_id") @db.Char(36)
+  targetType        HypercareRCATarget @map("target_type")
+  targetId          String             @map("target_id") @db.Char(36)
+  title             String             @db.VarChar(300)
+  rootCause         String             @map("root_cause") @db.Text
+  correctiveAction  String?            @map("corrective_action") @db.Text
+  preventiveAction  String?            @map("preventive_action") @db.Text
+  status            HypercareRCAStatus @default(DRAFT)
+  authoredById      String?            @map("authored_by_id") @db.Char(36)
+  reviewedAt        DateTime?          @map("reviewed_at")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+
+  session    HypercareSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  authoredBy User?            @relation("HypercareRCAAuthoredBy", fields: [authoredById], references: [id])
+
+  @@index([sessionId, targetType, status])
+  @@index([targetType, targetId])
+  @@map("hypercare_rcas")
+}

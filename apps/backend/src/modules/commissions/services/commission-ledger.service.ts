@@ -99,7 +99,7 @@ export const commissionLedgerService = {
       branch: input.branchId ? { connect: { id: input.branchId } } : undefined,
       product: input.productId ? { connect: { id: input.productId } } : undefined,
       lender: input.lenderId ? { connect: { id: input.lenderId } } : undefined,
-      campaignId: input.campaignId,
+      campaign: input.campaignId ? { connect: { id: input.campaignId } } : undefined,
       calculationMethod: result.calculationMethod as never,
       calculationDetails: result.calculationDetails as Prisma.InputJsonValue,
       notes: input.notes,

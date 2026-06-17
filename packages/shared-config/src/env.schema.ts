@@ -9,6 +9,8 @@ export const baseEnvSchema = z.object({
 
 export const databaseEnvSchema = z.object({
   DATABASE_URL: z.string().url().or(z.string().startsWith('mysql://')),
+  /** Prisma connection pool size per process (append to URL if not set). */
+  DATABASE_CONNECTION_LIMIT: z.coerce.number().int().min(1).max(100).default(10),
 });
 
 export const jwtEnvSchema = z.object({
@@ -40,7 +42,7 @@ export const openaiEnvSchema = z.object({
 
 export const ragEnvSchema = z.object({
   EMBEDDING_PROVIDER: z.enum(['openai', 'local_hash']).default('local_hash'),
-  VECTOR_DB_PROVIDER: z.enum(['local', 'pgvector', 'qdrant', 'pinecone', 'weaviate']).default('local'),
+  VECTOR_DB_PROVIDER: z.enum(['local', 'pgvector', 'qdrant', 'pinecone', 'weaviate']).default('local'), // production: use 'local' (MySQL-backed)
   VECTOR_DB_URL: z.string().optional(),
   VECTOR_DB_API_KEY: z.string().optional(),
   RAG_CHUNK_SIZE: z.coerce.number().default(800),
@@ -55,6 +57,12 @@ export type JwtEnv = z.infer<typeof jwtEnvSchema>;
 export type AwsEnv = z.infer<typeof awsEnvSchema>;
 export type OpenaiEnv = z.infer<typeof openaiEnvSchema>;
 export type RagEnv = z.infer<typeof ragEnvSchema>;
+
+export const redisEnvSchema = z.object({
+  REDIS_URL: z.string().url().or(z.string().startsWith('redis://')).optional(),
+});
+
+export type RedisEnv = z.infer<typeof redisEnvSchema>;
 
 export const communicationEnvSchema = z.object({
   EMAIL_PROVIDER: z.enum(['smtp', 'sendgrid', 'aws_ses', 'mock']).default('mock'),
@@ -109,6 +117,10 @@ export const communicationEnvSchema = z.object({
   NOTIFICATION_WORKER_ENABLED: z.coerce.boolean().default(true),
   NOTIFICATION_WORKER_INTERVAL_MS: z.coerce.number().default(15_000),
   NOTIFICATION_WORKER_BATCH_SIZE: z.coerce.number().default(25),
+  NOTIFICATION_EMAIL_ENABLED: z.coerce.boolean().default(true),
+  NOTIFICATION_SMS_ENABLED: z.coerce.boolean().default(true),
+  NOTIFICATION_WHATSAPP_ENABLED: z.coerce.boolean().default(true),
+  NOTIFICATION_PUSH_ENABLED: z.coerce.boolean().default(true),
   WEBHOOK_SECRET: z.string().optional(),
   ANALYTICS_WORKER_ENABLED: z.coerce.boolean().default(true),
   ANALYTICS_WORKER_INTERVAL_MS: z.coerce.number().default(300_000),
@@ -119,6 +131,13 @@ export const communicationEnvSchema = z.object({
   BRANCH_ANALYTICS_WORKER_INTERVAL_MS: z.coerce.number().default(300_000),
   REGIONAL_ANALYTICS_WORKER_ENABLED: z.coerce.boolean().default(true),
   REGIONAL_ANALYTICS_WORKER_INTERVAL_MS: z.coerce.number().default(300_000),
+  AUTOMATION_WORKER_ENABLED: z.coerce.boolean().default(true),
+  AUTOMATION_WORKER_INTERVAL_MS: z.coerce.number().default(10_000),
+  AUTOMATION_WORKER_BATCH_SIZE: z.coerce.number().default(25),
+  AUTOMATION_MAX_RETRIES: z.coerce.number().default(3),
+  /** When false, API process skips background workers (use dedicated worker instances in production). */
+  API_WORKERS_ENABLED: z.coerce.boolean().default(true),
+  LEAD_EXPORT_MAX_ROWS: z.coerce.number().default(5000),
 });
 
 export type CommunicationEnv = z.infer<typeof communicationEnvSchema>;

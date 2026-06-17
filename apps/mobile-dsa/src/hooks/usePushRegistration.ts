@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
-import { useAuth } from '@/hooks';
+import { useAuth } from '@/hooks/useAuth';
 import { authService } from '@/services';
 
 export const pushPlatform = Platform.OS === 'ios' ? 'IOS' : 'ANDROID';

@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
-import { PageHeader, Tabs, TableSkeleton } from '@/components/ui';
+import { Button, Input, PageHeader, Tabs, TableSkeleton } from '@/components/ui';
 import { Card } from '@/components/ui/Card';
 import { fieldStr } from '@/lib/utils';
 import { settingsService } from '@/services';
@@ -17,7 +17,53 @@ const TABS: { id: TabId; label: string; category?: string }[] = [
   { id: 'ai', label: 'AI', category: 'ai' },
 ];
 
+function SettingValueEditor({
+  item,
+  onSaved,
+}: {
+  item: Record<string, unknown>;
+  onSaved: () => void;
+}) {
+  const key = fieldStr(item, 'key');
+  const initial =
+    typeof item.value === 'object' ? JSON.stringify(item.value, null, 2) : String(item.value ?? '');
+  const [value, setValue] = useState(initial);
+  const [error, setError] = useState<string | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: () => {
+      let parsed: unknown = value;
+      if (typeof item.value === 'object' || value.trim().startsWith('{') || value.trim().startsWith('[')) {
+        parsed = JSON.parse(value);
+      } else if (value === 'true' || value === 'false') {
+        parsed = value === 'true';
+      } else if (value !== '' && !Number.isNaN(Number(value))) {
+        parsed = Number(value);
+      }
+      return settingsService.update(key, { value: parsed });
+    },
+    onSuccess: () => {
+      setError(null);
+      onSaved();
+    },
+    onError: () => setError('Failed to save. Check value format and permissions.'),
+  });
+
+  return (
+    <div style={{ display: 'grid', gap: '0.5rem' }}>
+      <Input label={key} value={value} onChange={(e) => setValue(e.target.value)} />
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <Button variant="secondary" size="sm" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
+          {mutation.isPending ? 'Saving…' : 'Save'}
+        </Button>
+        {error && <span style={{ color: 'var(--color-danger)', fontSize: '0.8125rem' }}>{error}</span>}
+      </div>
+    </div>
+  );
+}
+
 export function SettingsPage() {
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<TabId>('appearance');
   const category = TABS.find((t) => t.id === tab)?.category ?? 'system';
 
@@ -36,6 +82,8 @@ export function SettingsPage() {
       return acc;
     }, {});
   }, [data]);
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['settings', category] });
 
   return (
     <div className="page-container">
@@ -64,22 +112,7 @@ export function SettingsPage() {
             <div className="info-grid">
               {items.map((item) => (
                 <div key={String(item.id)}>
-                  <div className="info-item-label">{fieldStr(item, 'key')}</div>
-                  <div className="info-item-value">
-                    <pre
-                      style={{
-                        fontSize: '0.8125rem',
-                        color: 'var(--color-text-secondary)',
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word',
-                        margin: 0,
-                      }}
-                    >
-                      {typeof item.value === 'object'
-                        ? JSON.stringify(item.value, null, 2)
-                        : String(item.value ?? '—')}
-                    </pre>
-                  </div>
+                  <SettingValueEditor item={item} onSaved={invalidate} />
                 </div>
               ))}
             </div>

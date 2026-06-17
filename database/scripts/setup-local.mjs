@@ -7,7 +7,15 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const dbUrl = process.env.DATABASE_URL ?? 'mysql://root@127.0.0.1:3306/kuberone_dev';
 
 async function ensureDatabase() {
-  const conn = await createConnection({ host: '127.0.0.1', user: 'root', password: '' });
+  let conn;
+  try {
+    conn = await createConnection({ host: '127.0.0.1', user: 'root', password: '', connectTimeout: 5000 });
+  } catch (err) {
+    console.error('❌ Cannot connect to MySQL at 127.0.0.1:3306');
+    console.error('   Start MariaDB/MySQL service, or with Docker: pnpm db:docker');
+    console.error('   Then run: pnpm db:setup');
+    throw err;
+  }
   await conn.query(
     'CREATE DATABASE IF NOT EXISTS kuberone_dev CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
   );

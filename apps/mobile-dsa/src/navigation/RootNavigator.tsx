@@ -37,6 +37,7 @@ const navTheme = {
 export function RootNavigator() {
   const dispatch = useDispatch();
   const isAuthenticated = useSelector((s: RootState) => s.auth.isAuthenticated);
+  const requiresPartnerKyc = useSelector((s: RootState) => s.auth.requiresPartnerKyc);
   const { ready, showOnboarding: initialOnboarding } = useAuthBootstrap();
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const showOnboarding = initialOnboarding && !onboardingComplete;
@@ -68,8 +69,12 @@ export function RootNavigator() {
             {() => <OnboardingScreen onDone={() => setOnboardingComplete(true)} />}
           </Stack.Screen>
         ) : null}
-        {isAuthenticated ? (
+        {isAuthenticated && !requiresPartnerKyc ? (
           <Stack.Screen name="Main" component={MainTabNavigator} />
+        ) : isAuthenticated && requiresPartnerKyc ? (
+          <Stack.Screen name="Auth">
+            {() => <AuthNavigator initialRouteName="PartnerKyc" />}
+          </Stack.Screen>
         ) : (
           <Stack.Screen name="Auth" component={AuthNavigator} />
         )}

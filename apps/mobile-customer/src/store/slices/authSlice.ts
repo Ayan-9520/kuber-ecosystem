@@ -6,12 +6,14 @@ export interface AuthState {
   user: AuthenticatedUser | null;
   accessToken: string | null;
   isAuthenticated: boolean;
+  requiresProfileCompletion: boolean;
 }
 
 const initialState: AuthState = {
   user: null,
   accessToken: null,
   isAuthenticated: false,
+  requiresProfileCompletion: false,
 };
 
 export const authSlice = createSlice({
@@ -30,9 +32,13 @@ export const authSlice = createSlice({
       state.user = null;
       state.accessToken = null;
       state.isAuthenticated = false;
+      state.requiresProfileCompletion = false;
+    },
+    setRequiresProfileCompletion: (state, action: PayloadAction<boolean>) => {
+      state.requiresProfileCompletion = action.payload;
     },
   },
 });
 
-export const { setCredentials, clearCredentials } = authSlice.actions;
+export const { setCredentials, clearCredentials, setRequiresProfileCompletion } = authSlice.actions;
 export const authReducer = authSlice.reducer;

@@ -1,0 +1,24 @@
+config:
+  target: "{{ $processEnvironment.BASE_URL || 'http://localhost:4000' }}"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: Smoke warmup
+  plugins:
+    expect: {}
+  ensure:
+    maxErrorRate: 1
+    p95: 500
+    p99: 1000
+
+scenarios:
+  - name: Health and API gateway
+    flow:
+      - get:
+          url: /health
+          expect:
+            - statusCode: 200
+      - get:
+          url: /api/v1/leads
+          expect:
+            - statusCode: 401

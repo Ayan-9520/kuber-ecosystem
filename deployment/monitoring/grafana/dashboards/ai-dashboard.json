@@ -1,0 +1,13 @@
+{
+  "uid": "kuberone-ai",
+  "title": "KuberOne AI Dashboard",
+  "tags": ["kuberone", "ai"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    { "type": "timeseries", "title": "OpenAI Requests", "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }, "targets": [{ "expr": "rate(kuberone_ai_requests_total[5m])" }] },
+    { "type": "timeseries", "title": "Token Usage", "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 }, "targets": [{ "expr": "rate(kuberone_token_usage_total[5m])" }] },
+    { "type": "timeseries", "title": "AI Response Time P95", "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }, "targets": [{ "expr": "histogram_quantile(0.95, rate(kuberone_ai_response_duration_seconds_bucket[5m]))" }] },
+    { "type": "stat", "title": "AI Cost USD (24h)", "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 }, "targets": [{ "expr": "increase(kuberone_ai_cost_usd[24h])" }] }
+  ]
+}

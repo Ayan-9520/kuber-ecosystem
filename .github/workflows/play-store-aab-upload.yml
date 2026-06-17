@@ -1,0 +1,56 @@
+name: Play Store AAB Upload
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: 'App'
+        type: choice
+        options: [customer, dsa]
+  workflow_call:
+    inputs:
+      app:
+        required: true
+        type: string
+
+jobs:
+  build-and-upload:
+    name: AAB → Play Store (${{ inputs.app || github.event.inputs.app }})
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/play-store-release-gate.mjs
+
+      - name: EAS Build AAB
+        working-directory: apps/mobile-${{ inputs.app || github.event.inputs.app }}
+        env:
+          EXPO_PUBLIC_APP_ENV: production
+        run: eas build --platform android --profile production --non-interactive
+
+      - name: Upload artifact metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: play-store-aab-${{ inputs.app || github.event.inputs.app }}
+          path: deployment/mobile/play-store/
+          if-no-files-found: ignore
+
+      - name: EAS Submit (internal track)
+        working-directory: apps/mobile-${{ inputs.app || github.event.inputs.app }}
+        run: eas submit --platform android --profile production --latest --non-interactive || true

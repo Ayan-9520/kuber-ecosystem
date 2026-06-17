@@ -2,6 +2,7 @@ import type { Prisma } from '@kuberone/database';
 
 import { ValidationError } from '../../../shared/errors/app-error.js';
 import { communicationLogRepository, pushNotificationRepository } from '../../notifications/repositories/notification.repository.js';
+import { channelStatusService } from '../../notifications/services/channel-status.service.js';
 import { rateLimitService } from '../../notifications/services/rate-limit.service.js';
 import { PUSH_MAX_RETRIES, TRANSACTIONAL_PUSH_EVENTS } from '../constants/push.constants.js';
 import { resolveEnterprisePushProvider } from '../providers/push.factory.js';
@@ -98,6 +99,11 @@ export const pushOrchestratorService = {
   async dispatchToToken(
     params: SendPushParams & { fcmToken: string; pushDeviceId?: string; legacyDeviceId?: string },
   ) {
+    const channel = channelStatusService.getStatus('push');
+    if (!channel.deliverable) {
+      return { skipped: true, reason: channelStatusService.skipReason('push') };
+    }
+
     const rendered = await pushTemplateService.render({
       templateCode: params.templateCode,
       eventType: params.eventType,
@@ -109,7 +115,7 @@ export const pushOrchestratorService = {
     const dbProvider = await pushProviderRepository.findDefault();
     const rateKey = `push:${params.userId}`;
     const rateLimit = dbProvider?.rateLimit ?? 100;
-    if (rateLimit && !rateLimitService.check(rateKey, rateLimit)) {
+    if (rateLimit && !(await rateLimitService.checkAsync(rateKey, rateLimit))) {
       throw new ValidationError({ rateLimit: ['Push rate limit exceeded'] });
     }
 

@@ -1,0 +1,21 @@
+{
+  "uid": "kuberone-notification",
+  "title": "KuberOne Notification Dashboard",
+  "tags": ["kuberone", "notification"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    { "type": "timeseries", "title": "Email Sent vs Failed", "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }, "targets": [
+      { "expr": "rate(kuberone_email_sent_total[5m])", "legendFormat": "sent" },
+      { "expr": "rate(kuberone_email_failed_total[5m])", "legendFormat": "failed" }
+    ]},
+    { "type": "timeseries", "title": "SMS Sent vs Failed", "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 }, "targets": [
+      { "expr": "rate(kuberone_sms_sent_total[5m])", "legendFormat": "sent" },
+      { "expr": "rate(kuberone_sms_failed_total[5m])", "legendFormat": "failed" }
+    ]},
+    { "type": "timeseries", "title": "Push Delivered vs Failed", "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 }, "targets": [
+      { "expr": "rate(kuberone_push_delivered_total[5m])", "legendFormat": "delivered" },
+      { "expr": "rate(kuberone_push_failed_total[5m])", "legendFormat": "failed" }
+    ]}
+  ]
+}

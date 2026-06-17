@@ -1,9 +1,10 @@
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Card, EmptyState, QuickAction, Screen, StatCard, StatusBadge } from '@/components/ui';
+import { Card, DashboardHeader, EmptyState, QuickAction, Screen, StatCard, StatusBadge } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { formatCurrency, formatDateTime, str } from '@/lib/utils';
 import type { HomeStackParamList } from '@/navigation/types';
@@ -15,12 +16,19 @@ import {
   notificationsService,
   referralsService,
 } from '@/services';
-import { colors, spacing, typography } from '@/theme';
+import { radius, spacing, typography } from '@/theme';
+import { useAppTheme } from '@/theme/ThemeProvider';
 
 export function DashboardScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
   const { user, partnerId } = useAuth();
-  const name = user?.phone?.slice(-4) ?? user?.email?.split('@')[0] ?? 'Partner';
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const rawName = user?.email?.split('@')[0] ?? user?.phone?.slice(-4) ?? 'Partner';
+  const name = rawName.startsWith('Partner')
+    ? rawName
+    : `Partner ${rawName.charAt(0).toUpperCase()}${rawName.slice(1)}`;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -100,6 +108,10 @@ export function DashboardScreen() {
     navigation.getParent()?.navigate('Applications', { screen: 'ApplicationDetail', params: { id } });
   };
 
+  const goProfile = () => {
+    navigation.getParent()?.navigate('Profile');
+  };
+
   if (leads.isError) {
     return (
       <Screen title="Dashboard" subtitle="DSA partner command center">
@@ -118,10 +130,16 @@ export function DashboardScreen() {
 
   return (
     <Screen scroll padded={false}>
-      <View style={styles.hero}>
-        <Text style={styles.greeting}>Welcome back,</Text>
-        <Text style={styles.name}>Partner {name}</Text>
-        <Text style={styles.heroSub}>DSA partner command center</Text>
+      <DashboardHeader
+        name={name}
+        unreadCount={notifications.data?.meta.total ?? 0}
+        onNotificationsPress={() => navigation.navigate('Notifications')}
+        onProfilePress={goProfile}
+      />
+
+      <View style={styles.sectionHead}>
+        <Text style={styles.sectionTitle}>Quick actions</Text>
+        <Text style={styles.sectionSub}>Tools for your pipeline</Text>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.actions}>
@@ -151,8 +169,12 @@ export function DashboardScreen() {
       </ScrollView>
 
       <View style={styles.section}>
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionTitle}>Pipeline overview</Text>
+          <Text style={styles.sectionSub}>Today's numbers at a glance</Text>
+        </View>
         <View style={styles.statRow}>
-          <StatCard label="Today's Leads" value={todayLeads} icon="today" />
+          <StatCard label="Today's Leads" value={todayLeads} icon="today" accent />
           <StatCard label="Hot Leads" value={hotLeads.data?.meta.total ?? 0} icon="flame" />
         </View>
         <View style={styles.statRow}>
@@ -174,13 +196,20 @@ export function DashboardScreen() {
       </View>
 
       <View style={styles.section}>
-        <Card title="Hot Leads" subtitle="High priority prospects">
+        <Card title="Hot Leads" subtitle="High priority prospects" elevated>
           {(hotLeads.data?.items.length ?? 0) === 0 ? (
             <EmptyState title="No hot leads" description="Create leads with HIGH priority to see them here" />
           ) : (
-            hotLeads.data?.items.map((lead) => (
-              <Pressable key={String(lead.id)} style={styles.row} onPress={() => openLead(String(lead.id))}>
-                <View>
+            hotLeads.data?.items.map((lead, index, arr) => (
+              <Pressable
+                key={String(lead.id)}
+                style={[styles.row, index === arr.length - 1 && styles.rowLast]}
+                onPress={() => openLead(String(lead.id))}
+              >
+                <View style={styles.rowIcon}>
+                  <Text style={styles.rowIconText}>L</Text>
+                </View>
+                <View style={styles.rowBody}>
                   <Text style={styles.rowTitle}>{str(lead.prospectName)}</Text>
                   <Text style={styles.rowSub}>
                     {str(lead.leadNumber)} · {formatCurrency(lead.requestedAmount as number)}
@@ -191,16 +220,21 @@ export function DashboardScreen() {
             ))
           )}
         </Card>
-      </View>
 
-      <View style={styles.section}>
-        <Card title="Recent Applications">
+        <Card title="Recent Applications" subtitle="Latest in your pipeline" elevated>
           {(applications.data?.items.length ?? 0) === 0 ? (
             <EmptyState title="No applications yet" description="Convert leads to start applications" />
           ) : (
-            applications.data?.items.map((app) => (
-              <Pressable key={String(app.id)} style={styles.row} onPress={() => openApp(String(app.id))}>
-                <View>
+            applications.data?.items.map((app, index, arr) => (
+              <Pressable
+                key={String(app.id)}
+                style={[styles.row, index === arr.length - 1 && styles.rowLast]}
+                onPress={() => openApp(String(app.id))}
+              >
+                <View style={[styles.rowIcon, styles.rowIconApp]}>
+                  <Text style={styles.rowIconText}>₹</Text>
+                </View>
+                <View style={styles.rowBody}>
                   <Text style={styles.rowTitle}>{str(app.applicationNumber ?? app.id)}</Text>
                   <Text style={styles.rowSub}>{formatDateTime(app.updatedAt as string)}</Text>
                 </View>
@@ -209,16 +243,24 @@ export function DashboardScreen() {
             ))
           )}
         </Card>
-      </View>
 
-      <View style={[styles.section, { paddingBottom: spacing.xxl }]}>
-        <Card title="Unread Alerts" subtitle={`${notifications.data?.meta.total ?? 0} unread`}>
+        <Card title="Unread Alerts" subtitle={`${notifications.data?.meta.total ?? 0} unread`} elevated>
           {(notifications.data?.items.length ?? 0) === 0 ? (
-            <Text style={styles.muted}>All caught up</Text>
+            <Text style={styles.muted}>All caught up — no new alerts</Text>
           ) : (
-            notifications.data?.items.slice(0, 3).map((n) => (
-              <View key={String(n.id)} style={styles.row}>
-                <Text style={styles.rowTitle}>{str(n.title ?? n.subject)}</Text>
+            notifications.data?.items.slice(0, 3).map((n, index, arr) => (
+              <View key={String(n.id)} style={[styles.row, index === arr.length - 1 && styles.rowLast]}>
+                <View style={[styles.rowIcon, styles.rowIconInfo]}>
+                  <Text style={styles.rowIconText}>!</Text>
+                </View>
+                <View style={styles.rowBody}>
+                  <Text style={styles.rowTitle}>{str(n.title ?? n.subject)}</Text>
+                  {n.message ? (
+                    <Text style={styles.rowSub} numberOfLines={2}>
+                      {str(n.message)}
+                    </Text>
+                  ) : null}
+                </View>
               </View>
             ))
           )}
@@ -228,23 +270,41 @@ export function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  hero: { padding: spacing.lg, paddingTop: spacing.xl },
-  greeting: { ...typography.bodySm, color: colors.textMuted },
-  name: { ...typography.h2, color: colors.text, marginTop: 4 },
-  heroSub: { ...typography.caption, color: colors.textSecondary, marginTop: 4 },
-  actions: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingBottom: spacing.md },
-  section: { paddingHorizontal: spacing.lg, marginBottom: spacing.md },
-  statRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  rowTitle: { ...typography.body, color: colors.text, fontWeight: '600' },
-  rowSub: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
-  muted: { ...typography.bodySm, color: colors.textMuted },
-});
+function createStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    section: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
+    sectionHead: { paddingHorizontal: spacing.md, marginBottom: spacing.sm },
+    sectionTitle: { ...typography.h3, color: colors.text, fontSize: 17 },
+    sectionSub: { ...typography.bodySm, color: colors.textSecondary, marginTop: 2 },
+    actions: {
+      paddingHorizontal: spacing.md,
+      gap: spacing.md,
+      paddingBottom: spacing.lg,
+    },
+    statRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    rowLast: { borderBottomWidth: 0 },
+    rowIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.md,
+      backgroundColor: `${colors.primary}18`,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    rowIconApp: { backgroundColor: `${colors.success}18` },
+    rowIconInfo: { backgroundColor: `${colors.info}22` },
+    rowIconText: { ...typography.label, color: colors.primary, fontSize: 16, fontWeight: '700' },
+    rowBody: { flex: 1 },
+    rowTitle: { ...typography.label, color: colors.text, fontSize: 14 },
+    rowSub: { ...typography.bodySm, color: colors.textSecondary, marginTop: 4, lineHeight: 18 },
+    muted: { ...typography.body, color: colors.textSecondary },
+  });
+}

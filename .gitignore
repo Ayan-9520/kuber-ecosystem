@@ -5,6 +5,7 @@ node_modules/
 # Build outputs
 dist/
 build/
+devops/artifacts/
 *.tsbuildinfo
 .turbo/
 
@@ -34,12 +35,19 @@ Thumbs.db
 
 # Testing
 coverage/
+apps/backend/tests/integration/.artifacts/
 .nyc_output/
 
 # Expo / React Native
 .expo/
 .expo-shared/
 *.jks
+*.keystore
+**/keystore.properties
+**/google-services.json
+!**/google-services.json.example
+**/play-store-service-account.json
+!**/play-store-service-account.json.example
 *.p8
 *.p12
 *.mobileprovision

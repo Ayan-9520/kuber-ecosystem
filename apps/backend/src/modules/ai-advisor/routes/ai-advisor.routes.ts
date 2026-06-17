@@ -11,6 +11,7 @@ import {
   aiContextSchema,
   aiEligibilitySchema,
   aiRecommendationSchema,
+  listConversationsQuerySchema,
 } from '../validators/ai-advisor.validator.js';
 
 export const aiAdvisorRoutes: Router = Router();
@@ -64,4 +65,9 @@ aiAdvisorRoutes.post(
   asyncHandler(aiAdvisorController.eligibility),
 );
 
-aiAdvisorRoutes.get('/conversations', aiAccess, asyncHandler(aiAdvisorController.listConversations));
+aiAdvisorRoutes.get(
+  '/conversations',
+  aiAccess,
+  validateMiddleware(listConversationsQuerySchema, 'query'),
+  asyncHandler(aiAdvisorController.listConversations),
+);

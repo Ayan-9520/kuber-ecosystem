@@ -1,0 +1,4 @@
+aws_region         = "ap-south-1"
+s3_bucket_name     = "kuberone-staging"
+db_master_password = "CHANGE_ME"
+redis_auth_token   = "CHANGE_ME"

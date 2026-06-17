@@ -1,0 +1,294 @@
+// ── KuberOne AI Content Generation Engine ──
+
+enum ContentType {
+  EMAIL
+  SMS
+  WHATSAPP
+  PUSH
+  CAMPAIGN
+  LANDING_PAGE
+  BLOG
+  FAQ
+  KNOWLEDGE_ARTICLE
+  SALES_SCRIPT
+  CALL_SCRIPT
+  FOLLOW_UP
+  REFERRAL_CAMPAIGN
+  COMMISSION_COMMUNICATION
+  SUPPORT_RESPONSE
+  ONBOARDING
+  TRAINING
+  SOCIAL_MEDIA
+}
+
+enum ContentGenerationMode {
+  GENERATE
+  REWRITE
+  EXPAND
+  SUMMARIZE
+  TRANSLATE
+  OPTIMIZE
+  PERSONALIZE
+  AB_VARIANT
+}
+
+enum ContentLanguage {
+  EN
+  HI
+  HINGLISH
+}
+
+enum ContentTone {
+  PROFESSIONAL
+  PREMIUM_FINTECH
+  SALES
+  SUPPORT
+  FORMAL
+  FRIENDLY
+  URGENT
+  PROMOTIONAL
+}
+
+enum ContentWorkflowStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ContentApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ContentQualityStatus {
+  PASSED
+  WARNING
+  FAILED
+}
+
+enum ContentQueueStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model ContentTemplate {
+  id           String      @id @default(uuid()) @db.Char(36)
+  code         String      @unique @db.VarChar(64)
+  name         String      @db.VarChar(200)
+  description  String?     @db.Text
+  contentType  ContentType @map("content_type")
+  category     String?     @db.VarChar(64)
+  tone         ContentTone @default(PROFESSIONAL)
+  language     ContentLanguage @default(EN)
+  systemPrompt String?     @map("system_prompt") @db.Text
+  userPrompt   String?     @map("user_prompt") @db.Text
+  variables    Json?
+  sampleOutput String?     @map("sample_output") @db.Text
+  isActive     Boolean     @default(true) @map("is_active")
+  usageCount   Int         @default(0) @map("usage_count")
+  createdById  String?     @map("created_by") @db.Char(36)
+  updatedById  String?     @map("updated_by") @db.Char(36)
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  createdBy User? @relation("ContentTemplateCreatedBy", fields: [createdById], references: [id])
+  updatedBy User? @relation("ContentTemplateUpdatedBy", fields: [updatedById], references: [id])
+  requests  ContentGenerationRequest[]
+
+  @@index([contentType, isActive])
+  @@index([category])
+  @@map("content_templates")
+}
+
+model ContentGenerationRequest {
+  id              String                @id @default(uuid()) @db.Char(36)
+  templateId      String?               @map("template_id") @db.Char(36)
+  contentType     ContentType           @map("content_type")
+  mode            ContentGenerationMode @default(GENERATE)
+  tone            ContentTone           @default(PROFESSIONAL)
+  language        ContentLanguage       @default(EN)
+  prompt          String?               @db.Text
+  sourceText      String?               @map("source_text") @db.Text
+  personalization Json?
+  ragEnabled      Boolean               @default(true) @map("rag_enabled")
+  status          ContentWorkflowStatus @default(DRAFT)
+  entityType      String?               @map("entity_type") @db.VarChar(64)
+  entityId        String?               @map("entity_id") @db.Char(36)
+  campaignId      String?               @map("campaign_id") @db.Char(36)
+  variantCount    Int                   @default(1) @map("variant_count")
+  metadata        Json?
+  requestedById   String                @map("requested_by") @db.Char(36)
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  template   ContentTemplate?         @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  campaign   Campaign?                @relation(fields: [campaignId], references: [id])
+  requestedBy User                    @relation("ContentRequestRequestedBy", fields: [requestedById], references: [id])
+  results    ContentGenerationResult[]
+  versions   ContentVersion[]
+  approvals  ContentApproval[]
+  feedback   ContentFeedback[]
+  usage      ContentUsage[]
+  queueItems ContentQueue[]
+
+  @@index([contentType, status])
+  @@index([requestedById, createdAt])
+  @@index([entityType, entityId])
+  @@map("content_generation_requests")
+}
+
+model ContentGenerationResult {
+  id              String               @id @default(uuid()) @db.Char(36)
+  requestId       String               @map("request_id") @db.Char(36)
+  variantIndex    Int                  @default(0) @map("variant_index")
+  title           String?              @db.VarChar(500)
+  body            String               @db.Text
+  subject         String?              @db.VarChar(500)
+  ctaLabel        String?              @map("cta_label") @db.VarChar(200)
+  ctaUrl          String?              @map("cta_url") @db.VarChar(500)
+  qualityStatus   ContentQualityStatus @default(PASSED) @map("quality_status")
+  qualityReport   Json?                @map("quality_report")
+  ragSources      Json?                @map("rag_sources")
+  modelCode       String?              @map("model_code") @db.VarChar(80)
+  tokensUsed      Int?                 @map("tokens_used")
+  generationMs    Int?                 @map("generation_ms")
+  estimatedCost   Decimal?             @map("estimated_cost") @db.Decimal(10, 6)
+  status          ContentWorkflowStatus @default(DRAFT)
+  createdAt       DateTime             @default(now()) @map("created_at")
+
+  request ContentGenerationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([qualityStatus])
+  @@map("content_generation_results")
+}
+
+model ContentVersion {
+  id          String                @id @default(uuid()) @db.Char(36)
+  requestId   String                @map("request_id") @db.Char(36)
+  version     Int
+  title       String?               @db.VarChar(500)
+  body        String                @db.Text
+  subject     String?               @db.VarChar(500)
+  changeNote  String?               @map("change_note") @db.VarChar(500)
+  createdById String                @map("created_by") @db.Char(36)
+  createdAt   DateTime              @default(now()) @map("created_at")
+
+  request   ContentGenerationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  createdBy User                     @relation("ContentVersionCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([requestId, version])
+  @@map("content_versions")
+}
+
+model ContentApproval {
+  id          String                @id @default(uuid()) @db.Char(36)
+  requestId   String                @map("request_id") @db.Char(36)
+  status      ContentApprovalStatus @default(PENDING)
+  reviewerId  String?               @map("reviewer_id") @db.Char(36)
+  comments    String?               @db.Text
+  reviewedAt  DateTime?             @map("reviewed_at")
+  createdAt   DateTime              @default(now()) @map("created_at")
+
+  request  ContentGenerationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  reviewer User?                    @relation("ContentApprovalReviewer", fields: [reviewerId], references: [id])
+
+  @@index([requestId, status])
+  @@map("content_approvals")
+}
+
+model ContentFeedback {
+  id          String   @id @default(uuid()) @db.Char(36)
+  requestId   String   @map("request_id") @db.Char(36)
+  rating      Int?
+  comment     String?  @db.Text
+  tags        Json?
+  submittedById String @map("submitted_by") @db.Char(36)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  request     ContentGenerationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  submittedBy User                     @relation("ContentFeedbackSubmittedBy", fields: [submittedById], references: [id])
+
+  @@index([requestId])
+  @@map("content_feedback")
+}
+
+model ContentUsage {
+  id          String      @id @default(uuid()) @db.Char(36)
+  requestId   String      @map("request_id") @db.Char(36)
+  channel     String      @db.VarChar(32)
+  entityType  String?     @map("entity_type") @db.VarChar(64)
+  entityId    String?     @map("entity_id") @db.Char(36)
+  usedAt      DateTime    @default(now()) @map("used_at")
+  usedById    String      @map("used_by") @db.Char(36)
+
+  request ContentGenerationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  usedBy  User                     @relation("ContentUsageUsedBy", fields: [usedById], references: [id])
+
+  @@index([requestId, usedAt])
+  @@index([channel])
+  @@map("content_usage")
+}
+
+model ContentAnalytics {
+  id              String   @id @default(uuid()) @db.Char(36)
+  periodStart     DateTime @map("period_start") @db.Date
+  periodEnd       DateTime @map("period_end") @db.Date
+  contentType     ContentType? @map("content_type")
+  totalGenerated  Int      @default(0) @map("total_generated")
+  totalApproved   Int      @default(0) @map("total_approved")
+  totalRejected   Int      @default(0) @map("total_rejected")
+  totalPublished  Int      @default(0) @map("total_published")
+  totalTokens     Int      @default(0) @map("total_tokens")
+  totalCost       Decimal  @default(0) @map("total_cost") @db.Decimal(12, 4)
+  avgGenerationMs Int      @default(0) @map("avg_generation_ms")
+  templateMetrics Json?    @map("template_metrics")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([periodStart, periodEnd, contentType])
+  @@index([periodStart])
+  @@map("content_analytics")
+}
+
+model ContentAudit {
+  id         String   @id @default(uuid()) @db.Char(36)
+  requestId  String?  @map("request_id") @db.Char(36)
+  action     String   @db.VarChar(64)
+  actorId    String   @map("actor_id") @db.Char(36)
+  before     Json?
+  after      Json?
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  userAgent  String?  @map("user_agent") @db.VarChar(512)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  actor User @relation("ContentAuditActor", fields: [actorId], references: [id])
+
+  @@index([requestId, createdAt])
+  @@index([actorId])
+  @@map("content_audits")
+}
+
+model ContentQueue {
+  id          String             @id @default(uuid()) @db.Char(36)
+  requestId   String             @map("request_id") @db.Char(36)
+  status      ContentQueueStatus @default(PENDING)
+  payload     Json?
+  retryCount  Int                @default(0) @map("retry_count")
+  maxRetries  Int                @default(3) @map("max_retries")
+  lastError   String?            @map("last_error") @db.Text
+  scheduledAt DateTime           @default(now()) @map("scheduled_at")
+  processedAt DateTime?          @map("processed_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  request ContentGenerationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledAt])
+  @@map("content_queue")
+}

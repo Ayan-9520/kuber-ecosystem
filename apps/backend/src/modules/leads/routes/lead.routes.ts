@@ -234,9 +234,11 @@ leadTimelineRoutes.get('/', leadsRead, validateMiddleware(leadTimelineQuerySchem
 
 export const leadAnalyticsRoutes = Router();
 leadAnalyticsRoutes.use(authenticateWithSessionMiddleware);
-leadAnalyticsRoutes.get(
-  '/summary',
+const leadAnalyticsHandler = [
   leadsRead,
   validateMiddleware(leadAnalyticsQuerySchema, 'query'),
   leadAnalyticsController.summary,
-);
+] as const;
+
+leadAnalyticsRoutes.get('/summary', ...leadAnalyticsHandler);
+leadAnalyticsRoutes.get('/', ...leadAnalyticsHandler);

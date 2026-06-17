@@ -1,0 +1,67 @@
+name: Android APK Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: 'App'
+        required: true
+        type: choice
+        options: [customer, dsa, both]
+      environment:
+        description: 'Environment'
+        required: true
+        type: choice
+        options: [development, qa, staging, production]
+
+jobs:
+  build-apk:
+    name: APK — ${{ matrix.app }} (${{ github.event.inputs.environment || 'qa' }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [mobile-customer, mobile-dsa]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/${{ matrix.app }} test
+
+      - name: Prebuild
+        env:
+          EXPO_PUBLIC_APP_ENV: ${{ github.event.inputs.environment || 'qa' }}
+        run: |
+          cd apps/${{ matrix.app }}
+          npx expo prebuild --platform android --clean --non-interactive
+
+      - name: Build APK
+        working-directory: apps/${{ matrix.app }}/android
+        env:
+          EXPO_PUBLIC_APP_ENV: ${{ github.event.inputs.environment || 'qa' }}
+        run: |
+          chmod +x gradlew
+          ENV="${{ github.event.inputs.environment || 'qa' }}"
+          if [ "$ENV" = "development" ]; then
+            ./gradlew assembleDebug
+          else
+            ./gradlew assembleRelease || ./gradlew assembleDebug
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.app }}-apk-${{ github.event.inputs.environment || 'qa' }}
+          path: |
+            apps/${{ matrix.app }}/android/app/build/outputs/apk/release/
+            apps/${{ matrix.app }}/android/app/build/outputs/apk/debug/
+          if-no-files-found: ignore

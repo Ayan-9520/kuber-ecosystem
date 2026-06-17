@@ -20,7 +20,11 @@ export const ticketRepository = {
     prisma.ticket.findFirst({ where: { id, deletedAt: null }, include: ticketInclude }),
 
   getLastTicketNumber: () =>
-    prisma.ticket.findFirst({ orderBy: { createdAt: 'desc' }, select: { ticketNumber: true } }),
+    prisma.ticket.findFirst({
+      where: { ticketNumber: { startsWith: 'TKT-' } },
+      orderBy: { ticketNumber: 'desc' },
+      select: { ticketNumber: true },
+    }),
 
   list: (
     where: Prisma.TicketWhereInput,

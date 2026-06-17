@@ -1,0 +1,29 @@
+{
+  "generatedAt": "2026-06-11T11:19:20.797Z",
+  "customer": {
+    "testCoverage": {
+      "lines": 33.64,
+      "statements": 32.03,
+      "functions": 17.48,
+      "branches": 27.13
+    },
+    "screenCoveragePercent": 92.9,
+    "deviceCoveragePercent": 100
+  },
+  "dsa": {
+    "testCoverage": {
+      "lines": "Unknown",
+      "statements": "Unknown",
+      "functions": "Unknown",
+      "branches": "Unknown"
+    },
+    "screenCoveragePercent": 64.1,
+    "deviceCoveragePercent": 100
+  },
+  "deviceMatrix": "mobile-testing/firebase/test-lab-matrix.json",
+  "e2e": {
+    "detox": true,
+    "maestro": true,
+    "appiumReady": true
+  }
+}

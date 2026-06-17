@@ -1,0 +1,162 @@
+// ── Final UAT Signoff Framework (extends UAT) ──
+
+enum UatStakeholderGroup {
+  MANAGEMENT
+  SALES
+  RELATIONSHIP_MANAGER
+  CREDIT
+  OPERATIONS
+  COMPLIANCE
+  SUPPORT
+  DSA_PARTNER
+  CUSTOMER_JOURNEY
+  TECHNOLOGY
+}
+
+enum UatApprovalStage {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  REWORK_REQUIRED
+}
+
+enum UatReviewArea {
+  CUSTOMER_JOURNEY
+  DSA_JOURNEY
+  CRM_JOURNEY
+  BUSINESS_WORKFLOWS
+  AI_WORKFLOWS
+  NOTIFICATIONS
+  SECURITY
+  OPERATIONS
+  PERFORMANCE
+}
+
+enum UatRiskSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum UatRiskStatus {
+  OPEN
+  MITIGATED
+  ACCEPTED
+  CLOSED
+}
+
+enum UatCommentTarget {
+  APPROVAL
+  REVIEW
+  RISK
+  SIGNOFF
+}
+
+model UatStakeholder {
+  id               String              @id @default(uuid()) @db.Char(36)
+  cycleId          String              @map("cycle_id") @db.Char(36)
+  stakeholderGroup UatStakeholderGroup @map("stakeholder_group")
+  label            String              @db.VarChar(200)
+  department       String?             @db.VarChar(128)
+  isRequired       Boolean             @default(true) @map("is_required")
+  sortOrder        Int                 @default(0) @map("sort_order")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+
+  cycle     UatCycle       @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  approvals UatApproval[]
+
+  @@unique([cycleId, stakeholderGroup])
+  @@index([cycleId, sortOrder])
+  @@map("uat_stakeholders")
+}
+
+model UatApproval {
+  id             String           @id @default(uuid()) @db.Char(36)
+  cycleId        String           @map("cycle_id") @db.Char(36)
+  stakeholderId  String           @map("stakeholder_id") @db.Char(36)
+  stage          UatApprovalStage @default(PENDING)
+  approverName   String?          @map("approver_name") @db.VarChar(200)
+  approverRole   String?          @map("approver_role") @db.VarChar(128)
+  department     String?          @db.VarChar(128)
+  approvedById   String?          @map("approved_by_id") @db.Char(36)
+  approvedAt     DateTime?        @map("approved_at")
+  comments       String?          @db.Text
+  checklist      Json?
+  metadata       Json?
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  cycle       UatCycle       @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  stakeholder UatStakeholder @relation(fields: [stakeholderId], references: [id], onDelete: Cascade)
+  approvedBy  User?          @relation("UatApprovalApprovedBy", fields: [approvedById], references: [id])
+
+  @@unique([cycleId, stakeholderId])
+  @@index([cycleId, stage])
+  @@map("uat_approvals")
+}
+
+model UatReview {
+  id           String        @id @default(uuid()) @db.Char(36)
+  cycleId      String        @map("cycle_id") @db.Char(36)
+  reviewArea   UatReviewArea @map("review_area")
+  stage        UatApprovalStage @default(PENDING)
+  score        Int           @default(0)
+  checklist    Json?
+  findings     Json?
+  reviewedById String?       @map("reviewed_by_id") @db.Char(36)
+  reviewedAt   DateTime?     @map("reviewed_at")
+  comments     String?       @db.Text
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  cycle      UatCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  reviewedBy User?    @relation("UatReviewReviewedBy", fields: [reviewedById], references: [id])
+
+  @@unique([cycleId, reviewArea])
+  @@index([cycleId, stage])
+  @@map("uat_reviews")
+}
+
+model UatRisk {
+  id           String          @id @default(uuid()) @db.Char(36)
+  cycleId      String          @map("cycle_id") @db.Char(36)
+  code         String          @unique @db.VarChar(64)
+  title        String          @db.VarChar(300)
+  description  String          @db.Text
+  severity     UatRiskSeverity @default(MEDIUM)
+  status       UatRiskStatus   @default(OPEN)
+  reviewArea   UatReviewArea?  @map("review_area")
+  mitigation   String?         @db.Text
+  ownerId      String?         @map("owner_id") @db.Char(36)
+  createdById  String?         @map("created_by_id") @db.Char(36)
+  resolvedAt   DateTime?       @map("resolved_at")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  cycle     UatCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  owner     User?    @relation("UatRiskOwner", fields: [ownerId], references: [id])
+  createdBy User?    @relation("UatRiskCreatedBy", fields: [createdById], references: [id])
+
+  @@index([cycleId, severity, status])
+  @@map("uat_risks")
+}
+
+model UatComment {
+  id         String           @id @default(uuid()) @db.Char(36)
+  cycleId    String           @map("cycle_id") @db.Char(36)
+  targetType UatCommentTarget @map("target_type")
+  targetId   String           @map("target_id") @db.Char(36)
+  authorId   String           @map("author_id") @db.Char(36)
+  body       String           @db.Text
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  cycle  UatCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  author User     @relation("UatCommentAuthor", fields: [authorId], references: [id])
+
+  @@index([targetType, targetId])
+  @@index([cycleId, createdAt])
+  @@map("uat_comments")
+}

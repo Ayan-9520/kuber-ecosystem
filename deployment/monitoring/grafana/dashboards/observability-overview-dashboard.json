@@ -1,0 +1,14 @@
+{
+  "uid": "kuberone-observability",
+  "title": "KuberOne Observability Overview",
+  "tags": ["kuberone", "observability"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    { "type": "stat", "title": "API Request Rate", "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "sum(rate(kuberone_http_requests_total[5m]))", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "Error Rate", "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "sum(rate(kuberone_http_errors_total[5m]))", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "P95 Latency", "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "histogram_quantile(0.95, rate(kuberone_http_request_duration_seconds_bucket[5m]))", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "AI Failures", "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "increase(kuberone_ai_failures_total[1h])", "datasource": "Prometheus" }] },
+    { "type": "timeseries", "title": "HTTP Logs (Loki)", "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 }, "targets": [{ "expr": "{service=\"kuberone-api\"} |= \"HTTP request\"", "datasource": "Loki" }] }
+  ]
+}

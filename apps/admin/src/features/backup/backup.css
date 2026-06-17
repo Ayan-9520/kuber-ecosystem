@@ -1,0 +1,12 @@
+.backup-hub .rpo-rto-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.backup-hub .scope-pill {
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.375rem;
+  background: #f1f5f9;
+  font-size: 0.8rem;
+}

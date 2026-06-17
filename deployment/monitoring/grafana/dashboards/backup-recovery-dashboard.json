@@ -1,0 +1,14 @@
+{
+  "uid": "kuberone-backup-recovery",
+  "title": "KuberOne Backup & Recovery",
+  "tags": ["kuberone", "backup", "recovery"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    { "type": "stat", "title": "Backup Success Rate", "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "kuberone_backup_success_total", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "Backup Failures", "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "increase(kuberone_backup_failures_total[24h])", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "Last Backup Age (hours)", "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "kuberone_backup_last_success_age_hours", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "DR Readiness", "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "kuberone_dr_readiness_percent", "datasource": "Prometheus" }] },
+    { "type": "timeseries", "title": "Backup Duration", "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 }, "targets": [{ "expr": "kuberone_backup_duration_seconds", "datasource": "Prometheus" }] }
+  ]
+}

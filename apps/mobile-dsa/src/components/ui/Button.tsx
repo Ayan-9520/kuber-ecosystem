@@ -8,8 +8,8 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
 import { radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 

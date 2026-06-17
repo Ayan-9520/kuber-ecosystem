@@ -1,0 +1,31 @@
+.backend-deployment-hub .backend-deployment-scores {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.backend-deployment-hub .service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.backend-deployment-hub .service-item {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.backend-deployment-hub .module-list {
+  columns: 2;
+  column-gap: 2rem;
+  font-size: 0.875rem;
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .backend-deployment-hub .module-list { columns: 1; }
+}

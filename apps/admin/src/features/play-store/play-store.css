@@ -1,0 +1,49 @@
+.play-store-scores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.play-store-assets-table {
+  width: 100%;
+  font-size: 0.875rem;
+  border-collapse: collapse;
+}
+
+.play-store-assets-table th,
+.play-store-assets-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border, #1e293b);
+}
+
+.play-store-screenshot-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.play-store-screenshot-list li {
+  background: var(--color-surface, #0f172a);
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.play-store-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.play-store-checklist li {
+  padding: 0.35rem 0;
+  font-size: 0.875rem;
+}
+
+.play-store-checklist .passed::before { content: '✓ '; color: #22c55e; }
+.play-store-checklist .pending::before { content: '○ '; color: #94a3b8; }

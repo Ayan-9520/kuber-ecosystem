@@ -129,4 +129,35 @@ export const voiceSessionRepository = {
       audioChunkCount: logs.filter((l) => l.action === VOICE_ACTIONS.AUDIO_RECEIVED).length,
     };
   },
+
+  async listSessions(userId: string, page: number, limit: number): Promise<{ items: VoiceSessionRecord[]; total: number }> {
+    const starts = await prisma.auditLog.findMany({
+      where: {
+        userId,
+        entityType: VOICE_SESSION_ENTITY,
+        action: VOICE_ACTIONS.SESSION_STARTED,
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const total = await prisma.auditLog.count({
+      where: {
+        userId,
+        entityType: VOICE_SESSION_ENTITY,
+        action: VOICE_ACTIONS.SESSION_STARTED,
+      },
+    });
+
+    const items = (
+      await Promise.all(
+        starts
+          .filter((start) => start.entityId)
+          .map((start) => this.getSession(start.entityId!, userId)),
+      )
+    ).filter((session): session is VoiceSessionRecord => session !== null);
+
+    return { items, total };
+  },
 };

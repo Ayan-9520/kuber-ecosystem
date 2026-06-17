@@ -1,0 +1,41 @@
+name: Go-Live Validation
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'apps/backend/src/modules/go-live/**'
+      - 'apps/admin/src/features/go-live/**'
+      - 'database/prisma/schema/go-live.prisma'
+      - 'deployment/go-live/**'
+      - 'scripts/go-live-*.mjs'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/shared-validation build
+      - run: pnpm typecheck
+      - run: node scripts/go-live-readiness-report.mjs
+      - name: Go-Live gate (no DB)
+        run: |
+          node -e "
+          const { existsSync } = require('fs');
+          const required = [
+            'deployment/go-live/GO_LIVE_FRAMEWORK.md',
+            'apps/backend/src/modules/go-live/go-live.module.ts',
+            'apps/admin/src/features/go-live/pages/GoLiveHubPage.tsx',
+          ];
+          const missing = required.filter(f => !existsSync(f));
+          if (missing.length) { console.error('Missing:', missing); process.exit(1); }
+          console.log('Go-Live infrastructure validated');
+          "

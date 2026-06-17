@@ -2,6 +2,7 @@ import type { Prisma } from '@kuberone/database';
 
 import { ValidationError } from '../../../shared/errors/app-error.js';
 import { communicationLogRepository, smsLogRepository } from '../../notifications/repositories/notification.repository.js';
+import { channelStatusService } from '../../notifications/services/channel-status.service.js';
 import { rateLimitService } from '../../notifications/services/rate-limit.service.js';
 import { SMS_MAX_RETRIES, TRANSACTIONAL_SMS_EVENTS } from '../constants/sms.constants.js';
 import { resolveEnterpriseSmsProvider } from '../providers/sms.factory.js';
@@ -58,6 +59,14 @@ export const smsOrchestratorService = {
   },
 
   async dispatchNow(params: SendSmsParams & { toPhone: string }) {
+    const channel = channelStatusService.getStatus('sms');
+    if (!channel.deliverable) {
+      if (params.isOtp) {
+        throw new ValidationError({ phone: [channelStatusService.skipReason('sms')] });
+      }
+      return { skipped: true, reason: channelStatusService.skipReason('sms') };
+    }
+
     const rendered = await smsTemplateService.render({
       templateCode: params.templateCode,
       eventType: params.eventType,
@@ -68,7 +77,7 @@ export const smsOrchestratorService = {
     const dbProvider = await smsProviderRepository.findDefault();
     const rateKey = params.isOtp ? `sms:otp:${params.toPhone}` : `sms:${dbProvider?.code ?? 'default'}`;
     const rateLimit = dbProvider?.rateLimit ?? (params.isOtp ? 5 : null);
-    if (rateLimit && !rateLimitService.check(rateKey, rateLimit)) {
+    if (rateLimit && !(await rateLimitService.checkAsync(rateKey, rateLimit))) {
       throw new ValidationError({ rateLimit: ['SMS rate limit exceeded'] });
     }
 

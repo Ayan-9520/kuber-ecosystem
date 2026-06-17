@@ -1,0 +1,109 @@
+// ── Google Play Store Deployment Platform ──
+
+enum PlayStoreApp {
+  CUSTOMER
+  DSA
+}
+
+enum PlayStoreTrack {
+  INTERNAL
+  CLOSED
+  OPEN
+  PRODUCTION
+}
+
+enum PlayStoreReleaseStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  ROLLED_OUT
+  HALTED
+  ROLLED_BACK
+}
+
+enum PlayStoreReportType {
+  STORE_READINESS
+  COMPLIANCE
+  RELEASE
+  LAUNCH
+  PRE_LAUNCH
+}
+
+model PlayStoreListing {
+  id               String       @id @default(uuid()) @db.Char(36)
+  app              PlayStoreApp @unique
+  packageName      String       @map("package_name") @db.VarChar(128)
+  appName          String       @map("app_name") @db.VarChar(128)
+  shortDescription String       @map("short_description") @db.VarChar(80)
+  fullDescription  String       @map("full_description") @db.Text
+  keywords         String?      @db.VarChar(500)
+  category         String       @default("FINANCE") @db.VarChar(64)
+  secondaryCategory String?     @map("secondary_category") @db.VarChar(64)
+  privacyPolicyUrl String       @map("privacy_policy_url") @db.VarChar(500)
+  termsUrl         String       @map("terms_url") @db.VarChar(500)
+  contactEmail     String?      @map("contact_email") @db.VarChar(255)
+  contactWebsite   String?      @map("contact_website") @db.VarChar(500)
+  listingComplete  Boolean      @default(false) @map("listing_complete")
+  assetsComplete   Boolean      @default(false) @map("assets_complete")
+  complianceComplete Boolean    @default(false) @map("compliance_complete")
+  metadata         Json?
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  releases PlayStoreRelease[]
+  reports  PlayStoreReport[]
+
+  @@map("play_store_listings")
+}
+
+model PlayStoreRelease {
+  id              String                 @id @default(uuid()) @db.Char(36)
+  listingId       String                 @map("listing_id") @db.Char(36)
+  versionName     String                 @map("version_name") @db.VarChar(32)
+  versionCode     Int                    @map("version_code")
+  track           PlayStoreTrack         @default(INTERNAL)
+  status          PlayStoreReleaseStatus @default(DRAFT)
+  rolloutPercent  Int                    @default(0) @map("rollout_percent")
+  releaseNotes    String?                @map("release_notes") @db.Text
+  aabArtifactUrl  String?                @map("aab_artifact_url") @db.VarChar(500)
+  playConsoleUrl  String?                @map("play_console_url") @db.VarChar(500)
+  publishedById   String?                @map("published_by_id") @db.Char(36)
+  publishedAt     DateTime?              @map("published_at")
+  metadata        Json?
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+
+  listing PlayStoreListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, track, status, createdAt])
+  @@map("play_store_releases")
+}
+
+model PlayStoreReport {
+  id          String              @id @default(uuid()) @db.Char(36)
+  listingId   String?             @map("listing_id") @db.Char(36)
+  app         PlayStoreApp
+  reportType  PlayStoreReportType @map("report_type")
+  score       Float?
+  readinessPct Float?             @map("readiness_pct")
+  summary     String?             @db.Text
+  details     Json?
+  generatedAt DateTime            @default(now()) @map("generated_at")
+
+  listing PlayStoreListing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  @@index([app, reportType, generatedAt])
+  @@map("play_store_reports")
+}
+
+model PlayStoreAudit {
+  id        String   @id @default(uuid()) @db.Char(36)
+  app       PlayStoreApp
+  action    String   @db.VarChar(64)
+  actorId   String?  @map("actor_id") @db.Char(36)
+  details   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([app, createdAt])
+  @@map("play_store_audits")
+}

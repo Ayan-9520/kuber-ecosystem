@@ -1,0 +1,15 @@
+config:
+  target: "{{ $processEnvironment.BASE_URL || 'http://localhost:4000' }}"
+  phases:
+    - duration: "{{ $processEnvironment.ENDURANCE_SECONDS || 120 }}"
+      arrivalRate: 20
+      name: Endurance (set ENDURANCE_SECONDS=14400 for 4h)
+
+scenarios:
+  - name: Sustained health polling
+    flow:
+      - get:
+          url: /health
+      - think: 1
+      - get:
+          url: /api/v1/leads

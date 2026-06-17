@@ -13,6 +13,7 @@ import type {
 } from '@kuberone/shared-validation';
 
 import { AppError, NotFoundError } from '../../../shared/errors/app-error.js';
+import { emitAutomationEvent } from '../../../shared/utils/automation-emitter.util.js';
 import { applyTicketScope } from '../../../shared/utils/data-scope.js';
 import { authAuditRepository } from '../../auth/repositories/audit.repository.js';
 import { customerRepository } from '../../customers/repositories/customer.repository.js';
@@ -167,6 +168,13 @@ export const ticketService = {
 
     await auditTicketMutation(authAuditRepository.log, ctx, 'TICKET_CREATED', ticket.id, input);
     await notifyTicketEvent(ticket, 'SUPPORT_TICKET_CREATED', { subject: ticket.subject });
+    emitAutomationEvent({
+      triggerType: 'SUPPORT_TICKET_CREATED',
+      subjectType: 'ticket',
+      subjectId: ticket.id,
+      userId: ctx.actorId,
+      context: { ticketNumber, priority: ticket.priority, customerId: ticket.customerId },
+    });
 
     return ticketRepository.findById(ticket.id);
   },
@@ -327,6 +335,13 @@ export const ticketService = {
 
     await auditTicketMutation(authAuditRepository.log, ctx, 'TICKET_CLOSED', id, input);
     await notifyTicketEvent(existing, 'SUPPORT_TICKET_CLOSED', { reason: input.reason });
+    emitAutomationEvent({
+      triggerType: 'SUPPORT_TICKET_CLOSED',
+      subjectType: 'ticket',
+      subjectId: id,
+      userId: ctx.actorId,
+      context: { reason: input.reason, ticketNumber: existing.ticketNumber },
+    });
     return ticket;
   },
 

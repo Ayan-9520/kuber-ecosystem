@@ -1,0 +1,14 @@
+{
+  "uid": "kuberone-ai-observability",
+  "title": "KuberOne AI Observability",
+  "tags": ["kuberone", "observability", "ai"],
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    { "type": "stat", "title": "AI Requests/hr", "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "increase(kuberone_ai_requests_total[1h])", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "AI Failures/hr", "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "increase(kuberone_ai_failures_total[1h])", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "Token Usage", "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "kuberone_ai_tokens_total", "datasource": "Prometheus" }] },
+    { "type": "stat", "title": "AI Cost USD", "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 }, "targets": [{ "expr": "kuberone_ai_cost_usd_total", "datasource": "Prometheus" }] },
+    { "type": "timeseries", "title": "AI Latency P95", "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 }, "targets": [{ "expr": "histogram_quantile(0.95, rate(kuberone_ai_latency_seconds_bucket[5m]))", "datasource": "Prometheus" }] }
+  ]
+}

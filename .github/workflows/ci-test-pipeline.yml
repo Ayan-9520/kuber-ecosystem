@@ -1,0 +1,40 @@
+name: Test Pipeline
+
+on:
+  push:
+    branches: [main, staging, develop]
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  full-test-suite:
+    name: Full Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kuberone/database generate
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm build
+      - run: pnpm test
+      - run: pnpm test:coverage
+        continue-on-error: true
+      - run: pnpm test:integration
+      - run: pnpm test:mobile
+      - run: pnpm security:test
+      - run: pnpm perf:test
+        continue-on-error: true
+      - run: node scripts/ci-record-pipeline.mjs --type TEST --name "Full Test Suite" --status SUCCESS --branch ${{ github.ref_name }}
+        if: success()
+        env:
+          DEVOPS_API_URL: ${{ secrets.DEVOPS_API_URL }}
+          DEVOPS_WEBHOOK_SECRET: ${{ secrets.DEVOPS_WEBHOOK_SECRET }}

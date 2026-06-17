@@ -1,0 +1,179 @@
+// ── Disaster Recovery Platform (extends backup-recovery) ──
+
+enum RecoveryExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum FailoverType {
+  DNS
+  TRAFFIC_SWITCH
+  BLUE_GREEN
+  READ_REPLICA_PROMOTION
+}
+
+enum FailoverStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  ROLLED_BACK
+}
+
+enum DRDrillType {
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+}
+
+enum DRReportType {
+  DR_READINESS
+  RECOVERY
+  FAILOVER
+  BUSINESS_CONTINUITY
+}
+
+model DisasterScenario {
+  id          String     @id @default(uuid()) @db.Char(36)
+  code        String     @unique @db.VarChar(64)
+  name        String     @db.VarChar(200)
+  scenario    DrScenario
+  severity    String     @default("HIGH") @db.VarChar(32)
+  description String     @db.Text
+  rpoMinutes  Int        @default(15) @map("rpo_minutes")
+  rtoMinutes  Int        @default(60) @map("rto_minutes")
+  isActive    Boolean    @default(true) @map("is_active")
+  metadata    Json?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  runbooks RecoveryRunbook[]
+
+  @@index([scenario, isActive])
+  @@map("disaster_scenarios")
+}
+
+model RecoveryRunbook {
+  id                String   @id @default(uuid()) @db.Char(36)
+  code              String   @unique @db.VarChar(64)
+  name              String   @db.VarChar(200)
+  scenarioId        String?  @map("scenario_id") @db.Char(36)
+  scenario          DrScenario?
+  steps             Json
+  emergencyContacts Json?    @map("emergency_contacts")
+  escalationMatrix  Json?    @map("escalation_matrix")
+  approvalRequired  Boolean  @default(true) @map("approval_required")
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  scenarioRef  DisasterScenario?   @relation(fields: [scenarioId], references: [id], onDelete: SetNull)
+  executions   RecoveryExecution[]
+
+  @@index([scenario, isActive])
+  @@map("recovery_runbooks")
+}
+
+model RecoveryExecution {
+  id            String                  @id @default(uuid()) @db.Char(36)
+  runbookId     String?                 @map("runbook_id") @db.Char(36)
+  scenario      DrScenario
+  status        RecoveryExecutionStatus @default(PENDING)
+  startedAt     DateTime?               @map("started_at")
+  completedAt   DateTime?               @map("completed_at")
+  rpoAchieved   Int?                    @map("rpo_achieved")
+  rtoAchieved   Int?                    @map("rto_achieved")
+  passed        Boolean?
+  findings      String?                 @db.Text
+  executedById  String?                 @map("executed_by_id") @db.Char(36)
+  approvedById  String?                 @map("approved_by_id") @db.Char(36)
+  metadata      Json?
+  createdAt     DateTime                @default(now()) @map("created_at")
+
+  runbook    RecoveryRunbook? @relation(fields: [runbookId], references: [id], onDelete: SetNull)
+  executedBy User?            @relation("RecoveryExecutionExecutedBy", fields: [executedById], references: [id])
+  approvedBy User?            @relation("RecoveryExecutionApprovedBy", fields: [approvedById], references: [id])
+  audits     RecoveryAuditLog[]
+
+  @@index([scenario, status])
+  @@index([runbookId, createdAt])
+  @@map("recovery_executions")
+}
+
+model FailoverExecution {
+  id           String         @id @default(uuid()) @db.Char(36)
+  failoverType FailoverType   @map("failover_type")
+  status       FailoverStatus @default(PENDING)
+  primaryEnv   String         @map("primary_env") @db.VarChar(64)
+  standbyEnv   String         @map("standby_env") @db.VarChar(64)
+  dnsUpdated   Boolean        @default(false) @map("dns_updated")
+  trafficSwitched Boolean     @default(false) @map("traffic_switched")
+  startedAt    DateTime?      @map("started_at")
+  completedAt  DateTime?      @map("completed_at")
+  failbackAt   DateTime?      @map("failback_at")
+  executedById String?        @map("executed_by_id") @db.Char(36)
+  findings     String?        @db.Text
+  metadata     Json?
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  executedBy User? @relation("FailoverExecutionExecutedBy", fields: [executedById], references: [id])
+
+  @@index([status, createdAt])
+  @@map("failover_executions")
+}
+
+model DRDrill {
+  id           String        @id @default(uuid()) @db.Char(36)
+  drillType    DRDrillType   @map("drill_type")
+  scenario     DrScenario
+  status       DrDrillStatus @default(SCHEDULED)
+  scheduledAt  DateTime?     @map("scheduled_at")
+  startedAt    DateTime?     @map("started_at")
+  completedAt  DateTime?     @map("completed_at")
+  rpoAchieved  Int?          @map("rpo_achieved")
+  rtoAchieved  Int?          @map("rto_achieved")
+  passed       Boolean?
+  findings     String?       @db.Text
+  report       Json?
+  executedById String?       @map("executed_by_id") @db.Char(36)
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  executedBy User? @relation("DRDrillExecutedBy", fields: [executedById], references: [id])
+
+  @@index([drillType, status])
+  @@index([scenario, createdAt])
+  @@map("dr_drills")
+}
+
+model DRReport {
+  id          String       @id @default(uuid()) @db.Char(36)
+  reportType  DRReportType @map("report_type")
+  score       Int          @default(0)
+  coveragePct Int          @default(0) @map("coverage_pct")
+  summary     String?      @db.VarChar(500)
+  details     Json?
+  generatedAt DateTime     @default(now()) @map("generated_at")
+
+  @@index([reportType, generatedAt])
+  @@map("dr_reports")
+}
+
+model RecoveryAuditLog {
+  id          String   @id @default(uuid()) @db.Char(36)
+  executionId String?  @map("execution_id") @db.Char(36)
+  action      String   @db.VarChar(64)
+  actorId     String?  @map("actor_id") @db.Char(36)
+  compliance  String?  @db.VarChar(64)
+  details     Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  execution RecoveryExecution? @relation(fields: [executionId], references: [id], onDelete: SetNull)
+  actor     User?              @relation("RecoveryAuditLogActor", fields: [actorId], references: [id])
+
+  @@index([action, createdAt])
+  @@index([executionId])
+  @@map("recovery_audit_logs")
+}

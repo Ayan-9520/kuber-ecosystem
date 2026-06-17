@@ -1,0 +1,11 @@
+appId: com.kuberfinserve.kuberone.dsa
+---
+- launchApp
+- assertVisible: "KuberOne DSA"
+- tapOn: "Mobile Number"
+- inputText: "8888777766"
+- tapOn: "Send OTP"
+- tapOn: "OTP"
+- inputText: "123456"
+- tapOn: "Verify & Sign In"
+- assertVisible: "Quick actions"

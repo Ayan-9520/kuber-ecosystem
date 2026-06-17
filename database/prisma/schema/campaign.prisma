@@ -1,0 +1,43 @@
+// ── Marketing Campaigns ──
+
+model Campaign {
+  id          String            @id @default(uuid()) @db.Char(36)
+  name        String            @db.VarChar(200)
+  description String?           @db.Text
+  channel     NotificationChannel
+  audience    CampaignAudience
+  status      CampaignStatus    @default(DRAFT)
+  subject     String?           @db.VarChar(500)
+  body        String?           @db.Text
+  metadata    Json?
+  sent        Int               @default(0)
+  opened      Int               @default(0)
+  clicked     Int               @default(0)
+  converted   Int               @default(0)
+  startDate   DateTime?         @map("start_date")
+  endDate     DateTime?         @map("end_date")
+  branchId    String?           @map("branch_id") @db.Char(36)
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  createdById String?           @map("created_by") @db.Char(36)
+  updatedById String?           @map("updated_by") @db.Char(36)
+  deletedAt   DateTime?         @map("deleted_at")
+  deletedById String?           @map("deleted_by") @db.Char(36)
+
+  branch    Branch? @relation(fields: [branchId], references: [id])
+  createdBy User?   @relation("CampaignCreatedBy", fields: [createdById], references: [id])
+  updatedBy User?   @relation("CampaignUpdatedBy", fields: [updatedById], references: [id])
+  deletedBy User?   @relation("CampaignDeletedBy", fields: [deletedById], references: [id])
+
+  automationWorkflows       AutomationWorkflow[]
+  commissionRules           CommissionRule[]
+  commissionLedger          CommissionLedger[]
+  contentGenerationRequests ContentGenerationRequest[]
+  emailAnalytics            EmailAnalytics[]
+
+  @@index([status, deletedAt])
+  @@index([channel])
+  @@index([startDate])
+  @@index([branchId])
+  @@map("campaigns")
+}

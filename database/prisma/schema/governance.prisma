@@ -1,0 +1,475 @@
+// ── Audit & Compliance Center ──
+
+enum AuditSource {
+  AUTH
+  RBAC
+  CUSTOMERS
+  PARTNERS
+  LEADS
+  APPLICATIONS
+  DOCUMENTS
+  REFERRALS
+  COMMISSIONS
+  NOTIFICATIONS
+  SUPPORT
+  AI
+  ANALYTICS
+  CAMPAIGNS
+  AUTOMATION
+  CONTENT
+  KNOWLEDGE
+  RAG
+  SETTINGS
+  SYSTEM
+}
+
+enum AuditActionType {
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  ASSIGN
+  ESCALATE
+  EXPORT
+  LOGIN
+  LOGOUT
+  FAILED_LOGIN
+  PERMISSION_CHANGE
+  ROLE_CHANGE
+  CONFIG_CHANGE
+  AI_ACTION
+  VOICE_ACTION
+  VIEW
+  DOWNLOAD
+  PUBLISH
+  ARCHIVE
+}
+
+enum ComplianceFramework {
+  DPDP
+  KYC
+  AML
+  INTERNAL_POLICY
+  SECURITY
+  OPERATIONAL
+  AUDIT
+}
+
+enum ComplianceRuleSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ViolationStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  DISMISSED
+  ESCALATED
+}
+
+enum RiskType {
+  OPERATIONAL
+  CREDIT
+  COMPLIANCE
+  SECURITY
+  AI
+  FRAUD
+  PARTNER
+}
+
+enum RiskSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RiskStatus {
+  IDENTIFIED
+  ASSESSING
+  MITIGATING
+  ACCEPTED
+  CLOSED
+}
+
+enum SecurityEventType {
+  FAILED_LOGIN
+  ACCOUNT_LOCKOUT
+  SUSPICIOUS_ACTIVITY
+  PERMISSION_ESCALATION
+  API_ABUSE
+  RATE_LIMIT_VIOLATION
+  FILE_UPLOAD_RISK
+  AI_PROMPT_ABUSE
+  SESSION_HIJACK
+  BRUTE_FORCE
+}
+
+enum SecurityAlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  INVESTIGATING
+  RESOLVED
+  FALSE_POSITIVE
+}
+
+enum DataAccessType {
+  PII_ACCESS
+  SENSITIVE_DATA
+  DATA_EXPORT
+  BULK_ACTION
+  FILE_DOWNLOAD
+  DOCUMENT_VIEW
+}
+
+enum GovernancePolicyType {
+  DATA_GOVERNANCE
+  ACCESS_GOVERNANCE
+  AI_GOVERNANCE
+  DOCUMENT_RETENTION
+  SECURITY
+  COMPLIANCE
+}
+
+enum RetentionAction {
+  ARCHIVE
+  DELETE
+  ANONYMIZE
+  REVIEW
+}
+
+enum ReportFormat {
+  CSV
+  EXCEL
+  PDF
+  JSON
+}
+
+enum ReportStatus {
+  DRAFT
+  GENERATING
+  COMPLETED
+  FAILED
+  ARCHIVED
+}
+
+model AuditEvent {
+  id                String          @id @default(uuid()) @db.Char(36)
+  traceId           String          @map("trace_id") @db.VarChar(64)
+  source            AuditSource
+  action            AuditActionType
+  entityType        String          @map("entity_type") @db.VarChar(64)
+  entityId          String?         @map("entity_id") @db.Char(36)
+  userId            String?         @map("user_id") @db.Char(36)
+  userRole          String?         @map("user_role") @db.VarChar(64)
+  sessionId         String?         @map("session_id") @db.VarChar(64)
+  beforeValue       Json?           @map("before_value")
+  afterValue        Json?           @map("after_value")
+  ipAddress         String?         @map("ip_address") @db.VarChar(45)
+  userAgent         String?         @map("user_agent") @db.Text
+  deviceFingerprint String?         @map("device_fingerprint") @db.VarChar(128)
+  geoLocation       String?         @map("geo_location") @db.VarChar(128)
+  requestId         String?         @map("request_id") @db.VarChar(64)
+  integrityHash     String          @map("integrity_hash") @db.VarChar(64)
+  metadata          Json?
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  user User? @relation("AuditEventUser", fields: [userId], references: [id])
+
+  @@index([source, createdAt])
+  @@index([action, createdAt])
+  @@index([entityType, entityId])
+  @@index([userId, createdAt])
+  @@index([traceId])
+  @@index([createdAt])
+  @@map("audit_events")
+}
+
+model AuditReport {
+  id          String       @id @default(uuid()) @db.Char(36)
+  code        String       @unique @db.VarChar(64)
+  name        String       @db.VarChar(200)
+  description String?      @db.Text
+  reportType  String       @map("report_type") @db.VarChar(64)
+  filters     Json?
+  format      ReportFormat @default(CSV)
+  status      ReportStatus @default(DRAFT)
+  fileUrl     String?      @map("file_url") @db.VarChar(500)
+  rowCount    Int          @default(0) @map("row_count")
+  generatedById String?    @map("generated_by") @db.Char(36)
+  generatedAt DateTime?    @map("generated_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  generatedBy User? @relation("AuditReportGeneratedBy", fields: [generatedById], references: [id])
+
+  @@index([status, createdAt])
+  @@map("audit_reports")
+}
+
+model AuditExport {
+  id          String       @id @default(uuid()) @db.Char(36)
+  exportType  String       @map("export_type") @db.VarChar(64)
+  format      ReportFormat @default(CSV)
+  filters     Json?
+  fileName    String       @map("file_name") @db.VarChar(255)
+  rowCount    Int          @default(0) @map("row_count")
+  checksum    String?      @db.VarChar(64)
+  exportedById String      @map("exported_by") @db.Char(36)
+  exportedAt  DateTime     @default(now()) @map("exported_at")
+
+  exportedBy User @relation("AuditExportExportedBy", fields: [exportedById], references: [id])
+
+  @@index([exportedById, exportedAt])
+  @@map("audit_exports")
+}
+
+model ComplianceRule {
+  id          String                 @id @default(uuid()) @db.Char(36)
+  code        String                 @unique @db.VarChar(64)
+  name        String                 @db.VarChar(200)
+  description String?                @db.Text
+  framework   ComplianceFramework
+  severity    ComplianceRuleSeverity @default(MEDIUM)
+  ruleType    String                 @map("rule_type") @db.VarChar(64)
+  condition   Json
+  isActive    Boolean                @default(true) @map("is_active")
+  createdById String?                @map("created_by") @db.Char(36)
+  updatedById String?                @map("updated_by") @db.Char(36)
+  createdAt   DateTime               @default(now()) @map("created_at")
+  updatedAt   DateTime               @updatedAt @map("updated_at")
+
+  violations ComplianceViolation[]
+  createdBy  User? @relation("ComplianceRuleCreatedBy", fields: [createdById], references: [id])
+  updatedBy  User? @relation("ComplianceRuleUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([framework, isActive])
+  @@map("compliance_rules")
+}
+
+model ComplianceViolation {
+  id           String          @id @default(uuid()) @db.Char(36)
+  ruleId       String          @map("rule_id") @db.Char(36)
+  status       ViolationStatus @default(OPEN)
+  severity     ComplianceRuleSeverity
+  entityType   String?         @map("entity_type") @db.VarChar(64)
+  entityId     String?         @map("entity_id") @db.Char(36)
+  userId       String?         @map("user_id") @db.Char(36)
+  description  String          @db.Text
+  evidence     Json?
+  resolvedById String?         @map("resolved_by") @db.Char(36)
+  resolvedAt   DateTime?       @map("resolved_at")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  rule       ComplianceRule @relation(fields: [ruleId], references: [id])
+  user       User?          @relation("ComplianceViolationUser", fields: [userId], references: [id])
+  resolvedBy User?          @relation("ComplianceViolationResolvedBy", fields: [resolvedById], references: [id])
+
+  @@index([status, severity])
+  @@index([ruleId, createdAt])
+  @@map("compliance_violations")
+}
+
+model ComplianceReport {
+  id            String             @id @default(uuid()) @db.Char(36)
+  code          String             @unique @db.VarChar(64)
+  name          String             @db.VarChar(200)
+  framework     ComplianceFramework?
+  periodStart   DateTime           @map("period_start") @db.Date
+  periodEnd     DateTime           @map("period_end") @db.Date
+  complianceScore Decimal          @default(0) @map("compliance_score") @db.Decimal(5, 2)
+  violationCount Int               @default(0) @map("violation_count")
+  summary       Json?
+  format        ReportFormat       @default(PDF)
+  status        ReportStatus       @default(DRAFT)
+  generatedById String?            @map("generated_by") @db.Char(36)
+  generatedAt   DateTime?          @map("generated_at")
+  createdAt     DateTime           @default(now()) @map("created_at")
+
+  generatedBy User? @relation("ComplianceReportGeneratedBy", fields: [generatedById], references: [id])
+
+  @@index([framework, periodStart])
+  @@map("compliance_reports")
+}
+
+model RiskRegister {
+  id            String       @id @default(uuid()) @db.Char(36)
+  code          String       @unique @db.VarChar(64)
+  title         String       @db.VarChar(200)
+  description   String?      @db.Text
+  riskType      RiskType       @map("risk_type")
+  severity      RiskSeverity   @default(MEDIUM)
+  status        RiskStatus     @default(IDENTIFIED)
+  likelihood    Int            @default(50)
+  impact        Int            @default(50)
+  riskScore     Int            @default(0) @map("risk_score")
+  ownerId       String?        @map("owner_id") @db.Char(36)
+  mitigationPlan String?       @map("mitigation_plan") @db.Text
+  createdById   String?        @map("created_by") @db.Char(36)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  owner     User?            @relation("RiskRegisterOwner", fields: [ownerId], references: [id])
+  createdBy User?            @relation("RiskRegisterCreatedBy", fields: [createdById], references: [id])
+  assessments RiskAssessment[]
+  events    RiskEvent[]
+
+  @@index([riskType, status])
+  @@index([severity, riskScore])
+  @@map("risk_register")
+}
+
+model RiskAssessment {
+  id           String     @id @default(uuid()) @db.Char(36)
+  riskId       String     @map("risk_id") @db.Char(36)
+  assessorId   String     @map("assessor_id") @db.Char(36)
+  likelihood   Int
+  impact       Int
+  riskScore    Int        @map("risk_score")
+  notes        String?    @db.Text
+  assessedAt   DateTime   @default(now()) @map("assessed_at")
+
+  risk     RiskRegister @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  assessor User         @relation("RiskAssessmentAssessor", fields: [assessorId], references: [id])
+
+  @@index([riskId, assessedAt])
+  @@map("risk_assessments")
+}
+
+model RiskEvent {
+  id          String       @id @default(uuid()) @db.Char(36)
+  riskId      String?      @map("risk_id") @db.Char(36)
+  riskType    RiskType     @map("risk_type")
+  severity    RiskSeverity
+  title       String       @db.VarChar(200)
+  description String?      @db.Text
+  entityType  String?      @map("entity_type") @db.VarChar(64)
+  entityId    String?      @map("entity_id") @db.Char(36)
+  metadata    Json?
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  risk RiskRegister? @relation(fields: [riskId], references: [id], onDelete: SetNull)
+
+  @@index([riskType, createdAt])
+  @@index([severity, createdAt])
+  @@map("risk_events")
+}
+
+model SecurityEvent {
+  id          String            @id @default(uuid()) @db.Char(36)
+  eventType   SecurityEventType @map("event_type")
+  severity    RiskSeverity      @default(MEDIUM)
+  userId      String?           @map("user_id") @db.Char(36)
+  ipAddress   String?           @map("ip_address") @db.VarChar(45)
+  userAgent   String?           @map("user_agent") @db.Text
+  description String            @db.Text
+  metadata    Json?
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  user   User?           @relation("SecurityEventUser", fields: [userId], references: [id])
+  alerts SecurityAlert[]
+
+  @@index([eventType, createdAt])
+  @@index([userId, createdAt])
+  @@map("security_events")
+}
+
+model SecurityAlert {
+  id          String              @id @default(uuid()) @db.Char(36)
+  eventId     String?             @map("event_id") @db.Char(36)
+  title       String              @db.VarChar(200)
+  description String?             @db.Text
+  severity    RiskSeverity        @default(HIGH)
+  status      SecurityAlertStatus @default(OPEN)
+  assignedToId String?            @map("assigned_to") @db.Char(36)
+  resolvedById String?             @map("resolved_by") @db.Char(36)
+  resolvedAt  DateTime?           @map("resolved_at")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  event      SecurityEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  assignedTo User?          @relation("SecurityAlertAssignedTo", fields: [assignedToId], references: [id])
+  resolvedBy User?          @relation("SecurityAlertResolvedBy", fields: [resolvedById], references: [id])
+
+  @@index([status, severity])
+  @@map("security_alerts")
+}
+
+model DataAccessLog {
+  id          String         @id @default(uuid()) @db.Char(36)
+  accessType  DataAccessType @map("access_type")
+  userId      String         @map("user_id") @db.Char(36)
+  entityType  String         @map("entity_type") @db.VarChar(64)
+  entityId    String?        @map("entity_id") @db.Char(36)
+  fieldNames  Json?          @map("field_names")
+  recordCount Int            @default(1) @map("record_count")
+  ipAddress   String?        @map("ip_address") @db.VarChar(45)
+  purpose     String?        @db.VarChar(255)
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  user User @relation("DataAccessLogUser", fields: [userId], references: [id])
+
+  @@index([accessType, createdAt])
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+  @@map("data_access_logs")
+}
+
+model GovernancePolicy {
+  id          String               @id @default(uuid()) @db.Char(36)
+  code        String               @unique @db.VarChar(64)
+  name        String               @db.VarChar(200)
+  policyType  GovernancePolicyType @map("policy_type")
+  description String?              @db.Text
+  content     String               @db.Text
+  version     Int                  @default(1)
+  isActive    Boolean              @default(true) @map("is_active")
+  effectiveFrom DateTime?          @map("effective_from")
+  createdById String?              @map("created_by") @db.Char(36)
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  createdBy User? @relation("GovernancePolicyCreatedBy", fields: [createdById], references: [id])
+
+  @@index([policyType, isActive])
+  @@map("governance_policies")
+}
+
+model RetentionPolicy {
+  id            String          @id @default(uuid()) @db.Char(36)
+  code          String          @unique @db.VarChar(64)
+  name          String          @db.VarChar(200)
+  entityType    String          @map("entity_type") @db.VarChar(64)
+  retentionDays Int             @map("retention_days")
+  action        RetentionAction @default(ARCHIVE)
+  framework     ComplianceFramework?
+  isActive      Boolean         @default(true) @map("is_active")
+  description   String?         @db.Text
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  @@index([entityType, isActive])
+  @@map("retention_policies")
+}
+
+model ComplianceAudit {
+  id          String              @id @default(uuid()) @db.Char(36)
+  framework   ComplianceFramework
+  auditType   String              @map("audit_type") @db.VarChar(64)
+  title       String              @db.VarChar(200)
+  findings    Json?
+  score       Decimal             @default(0) @db.Decimal(5, 2)
+  auditorId   String?             @map("auditor_id") @db.Char(36)
+  auditedAt   DateTime            @default(now()) @map("audited_at")
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  auditor User? @relation("ComplianceAuditAuditor", fields: [auditorId], references: [id])
+
+  @@index([framework, auditedAt])
+  @@map("compliance_audits")
+}

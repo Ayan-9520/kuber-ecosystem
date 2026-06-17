@@ -1,0 +1,16 @@
+{
+  "ci": {
+    "collect": {
+      "url": ["http://localhost:5173/"],
+      "numberOfRuns": 1
+    },
+    "assert": {
+      "assertions": {
+        "first-contentful-paint": ["warn", { "maxNumericValue": 2000 }],
+        "interactive": ["error", { "maxNumericValue": 3000 }],
+        "speed-index": ["warn", { "maxNumericValue": 2500 }],
+        "total-blocking-time": ["warn", { "maxNumericValue": 300 }]
+      }
+    }
+  }
+}

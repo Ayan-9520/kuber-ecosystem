@@ -1,0 +1,42 @@
+.observability-hub .pillar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.observability-hub .pillar-pill {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--surface-muted, #f1f5f9);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.observability-hub .pillar-pill.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.observability-hub .coverage-bar {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+.observability-hub .log-level {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.observability-hub .log-level.error { color: #dc2626; }
+.observability-hub .log-level.warn { color: #ca8a04; }
+.observability-hub .log-level.info { color: #2563eb; }
+.observability-hub .log-level.debug { color: #64748b; }
+
+.observability-hub .mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8rem;
+}

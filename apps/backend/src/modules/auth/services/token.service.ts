@@ -54,11 +54,14 @@ export const tokenService = {
   issueAccessToken(payload: JwtPayload): string {
     return jwt.sign(payload, env.JWT_ACCESS_SECRET, {
       expiresIn: env.JWT_ACCESS_EXPIRY as jwt.SignOptions['expiresIn'],
+      algorithm: 'HS256',
     });
   },
 
   verifyAccessToken(token: string): JwtPayload {
-    return jwt.verify(token, env.JWT_ACCESS_SECRET) as JwtPayload;
+    return jwt.verify(token, env.JWT_ACCESS_SECRET, {
+      algorithms: ['HS256'],
+    }) as JwtPayload;
   },
 
   createRefreshTokenPair(): { plain: string; hash: string } {

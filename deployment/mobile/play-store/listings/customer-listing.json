@@ -1,0 +1,25 @@
+{
+  "app": "CUSTOMER",
+  "packageName": "com.kuberone.customer",
+  "appName": "KuberOne",
+  "shortDescription": "AI-powered loans, EMI calculator & instant eligibility — by Kuber Finserve",
+  "fullDescription": "KuberOne by Kuber Finserve is your intelligent financial companion for personal loans, home loans, business loans, and more.\n\nKEY FEATURES\n• Instant loan eligibility check\n• EMI calculator & loan comparison\n• Guided application wizard\n• Secure document upload & KYC\n• AI Advisor for personalized recommendations\n• Voice AI assistant for hands-free guidance\n• Real-time application tracking\n• 24/7 in-app support\n\nSECURITY & TRUST\n• Bank-grade encryption\n• RBI-compliant processes\n• Secure document storage\n\nDownload KuberOne and take control of your financial journey today.",
+  "keywords": "loan, EMI, personal loan, home loan, eligibility, Kuber Finserve, KuberOne, finance, AI advisor",
+  "category": "FINANCE",
+  "secondaryCategory": "BUSINESS",
+  "privacyPolicyUrl": "https://kuberone.com/privacy",
+  "termsUrl": "https://kuberone.com/terms",
+  "contactEmail": "support@kuberfinserve.com",
+  "contactWebsite": "https://kuberone.com",
+  "screenshots": [
+    { "screen": "Login", "required": true, "devices": ["phone", "tablet"] },
+    { "screen": "Dashboard", "required": true, "devices": ["phone", "tablet"] },
+    { "screen": "Eligibility", "required": true, "devices": ["phone"] },
+    { "screen": "EMI Calculator", "required": true, "devices": ["phone"] },
+    { "screen": "Application", "required": true, "devices": ["phone", "tablet"] },
+    { "screen": "Documents", "required": true, "devices": ["phone"] },
+    { "screen": "Support", "required": true, "devices": ["phone"] },
+    { "screen": "AI Advisor", "required": true, "devices": ["phone"] },
+    { "screen": "Voice AI", "required": false, "devices": ["phone"] }
+  ]
+}

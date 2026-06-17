@@ -1,0 +1,24 @@
+{
+  "app": "DSA",
+  "packageName": "com.kuberone.partner",
+  "appName": "KuberOne Partner",
+  "shortDescription": "DSA partner app — leads, commissions, referrals & analytics by Kuber Finserve",
+  "fullDescription": "KuberOne Partner empowers Direct Selling Agents (DSAs) and financial partners with tools to grow their business.\n\nKEY FEATURES\n• Lead management & scoring\n• Application pipeline tracking\n• Commission ledger & payouts\n• Referral program management\n• Branch & regional analytics\n• Document collection for customers\n• In-app support & escalations\n\nBUILT FOR PARTNERS\n• Real-time commission visibility\n• Performance dashboards\n• Secure customer data handling\n\nJoin the Kuber Finserve partner network with KuberOne Partner.",
+  "keywords": "DSA, partner, commission, leads, referrals, loan agent, Kuber Finserve, KuberOne",
+  "category": "BUSINESS",
+  "secondaryCategory": "FINANCE",
+  "privacyPolicyUrl": "https://kuberone.com/privacy",
+  "termsUrl": "https://kuberone.com/terms",
+  "contactEmail": "partners@kuberfinserve.com",
+  "contactWebsite": "https://kuberone.com/partners",
+  "screenshots": [
+    { "screen": "Login", "required": true, "devices": ["phone", "tablet"] },
+    { "screen": "Dashboard", "required": true, "devices": ["phone", "tablet"] },
+    { "screen": "Leads", "required": true, "devices": ["phone"] },
+    { "screen": "Applications", "required": true, "devices": ["phone", "tablet"] },
+    { "screen": "Commissions", "required": true, "devices": ["phone"] },
+    { "screen": "Referrals", "required": true, "devices": ["phone"] },
+    { "screen": "Analytics", "required": true, "devices": ["phone", "tablet"] },
+    { "screen": "Support", "required": true, "devices": ["phone"] }
+  ]
+}
