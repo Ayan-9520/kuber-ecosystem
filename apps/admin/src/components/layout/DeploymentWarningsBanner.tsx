@@ -31,13 +31,19 @@ export function DeploymentWarningsBanner() {
   const inactiveChannels = channels.filter((c) => str(c.status) !== 'Active');
 
   return (
-    <div className="deployment-warnings-banner" role="status">
-      <div className="deployment-warnings-banner__icon" aria-hidden>
-        <AlertTriangle size={18} />
-      </div>
+    <details className="deployment-warnings-banner">
+      <summary className="deployment-warnings-banner__summary">
+        <span className="deployment-warnings-banner__icon" aria-hidden>
+          <AlertTriangle size={18} />
+        </span>
+        <span>
+          Deployment readiness: {stagedPercent}% staged · {publicPercent}% public launch
+          {warnings.length > 0 ? ` · ${warnings.length} item(s)` : ''}
+        </span>
+      </summary>
       <div className="deployment-warnings-banner__content">
         <strong>
-          Staged rollout ({rolloutPhase}) — {stagedPercent}% deployable · {publicPercent}% public launch ready
+          Rollout phase: {rolloutPhase}
         </strong>
         {inactiveChannels.length > 0 && (
           <p>
@@ -55,6 +61,6 @@ export function DeploymentWarningsBanner() {
           </ul>
         )}
       </div>
-    </div>
+    </details>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 
-import { useAuth } from '@/hooks';
+import { useAuth } from './useAuth';
 import { pushService } from '@/services/push.service';
 
 type NotificationPayload = {

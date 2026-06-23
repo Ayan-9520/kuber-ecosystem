@@ -15,6 +15,9 @@ import { authService, customerService } from '@/services';
 import { setRequiresProfileCompletion } from '@/store/slices/authSlice';
 import { colors, spacing, typography } from '@/theme';
 
+const DEMO_CUSTOMER_PHONE = '9876543210';
+const DEV_OTP = '123456';
+
 export function OtpLoginScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const dispatch = useDispatch();
@@ -43,6 +46,40 @@ export function OtpLoginScreen() {
     }
   };
 
+  const completeLogin = async (normalizedPhone: string, otpCode: string) => {
+    const tokens = await authService.verifyOtp(normalizedPhone, otpCode, 'LOGIN');
+    await login(tokens.accessToken, tokens.refreshToken);
+
+    const me = await authService.me();
+    if (me.customerId) {
+      const customer = await customerService.getById(me.customerId);
+      if (isCustomerProfileIncomplete(customer)) {
+        dispatch(setRequiresProfileCompletion(true));
+      }
+    }
+  };
+
+  const demoLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const normalized = normalizePhone(DEMO_CUSTOMER_PHONE);
+      setPhone(DEMO_CUSTOMER_PHONE);
+      setOtp(DEV_OTP);
+      setOtpSent(true);
+      try {
+        await authService.sendOtp(normalized, 'LOGIN');
+      } catch {
+        /* dev bypass accepts 123456 without a prior send */
+      }
+      await completeLogin(normalized, DEV_OTP);
+    } catch (e) {
+      setError(getApiErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const verify = async () => {
     const otpErr = validateOtp(otp);
     if (otpErr) {
@@ -52,16 +89,7 @@ export function OtpLoginScreen() {
     setError('');
     setLoading(true);
     try {
-      const tokens = await authService.verifyOtp(normalizePhone(phone), otp, 'LOGIN');
-      await login(tokens.accessToken, tokens.refreshToken);
-
-      const me = await authService.me();
-      if (me.customerId) {
-        const customer = await customerService.getById(me.customerId);
-        if (isCustomerProfileIncomplete(customer)) {
-          dispatch(setRequiresProfileCompletion(true));
-        }
-      }
+      await completeLogin(normalizePhone(phone), otp);
     } catch (e) {
       setError(getApiErrorMessage(e));
     } finally {
@@ -83,26 +111,22 @@ export function OtpLoginScreen() {
         {__DEV__ ? (
           <>
             <Text style={styles.devHint}>
-              Dev OTP hamesha 123456. Test numbers: 9876543210 ya 9520776129
+              Dev mode: OTP hamesha {DEV_OTP}. Demo: {DEMO_CUSTOMER_PHONE}
             </Text>
             <Button
-              title="Quick Test Login"
+              title="Quick Demo Login"
               variant="secondary"
               fullWidth
               style={styles.devBtn}
-              onPress={() => {
-                setPhone('9520776129');
-                setOtp('123456');
-                setOtpSent(true);
-                setError('');
-              }}
+              loading={loading}
+              onPress={() => void demoLogin()}
             />
           </>
         ) : null}
 
         <Input
           label="Mobile Number"
-          placeholder="9876543210"
+          placeholder="10-digit mobile number"
           keyboardType="phone-pad"
           maxLength={10}
           value={phone}

@@ -17,7 +17,7 @@ export function ThemeAppearanceCard() {
   const styles = createStyles(colors);
 
   return (
-    <Card title="Appearance" subtitle="Theme syncs with KuberOne CRM when using the same device storage key.">
+    <Card title="Appearance" subtitle="Light, dark, or match your device system theme.">
       <View style={styles.row}>
         {OPTIONS.map((option) => {
           const active = preference === option.id;

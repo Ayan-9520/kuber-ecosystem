@@ -1,104 +1,128 @@
 import { Ionicons } from '@expo/vector-icons';
-import { CommonActions, type RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { type RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Button, Card, EmptyState, Screen } from '@/components/ui';
-import {
-  flattenProductsWithVariants,
-  mapProductToDisplay,
-  type ProductDisplayItem,
-  resolveProductFromApi,
-} from '@/lib/product-mapper';
+import { navigateToApplicationWizard } from '@/lib/application-navigation';
+import { getProductFamilyMeta } from '@/lib/product-display';
+import { fetchCustomerCatalog } from '@/lib/product-mapper';
 import { formatCurrency } from '@/lib/utils';
 import type { ProductsStackParamList } from '@/navigation/types';
-import { productsService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+
+import { Button, Card, EmptyState, Screen } from '@/components/ui';
 
 type ProductDetailRoute = RouteProp<ProductsStackParamList, 'ProductDetail'>;
 
-function hasCompleteParams(params: ProductDetailRoute['params']): boolean {
-  return !!(params.slug && params.name && params.variant);
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
+    hero: {
+      backgroundColor: colors.card,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+      padding: spacing.lg,
+      marginBottom: spacing.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    heroIcon: {
+      width: 64,
+      height: 64,
+      borderRadius: radius.lg,
+      backgroundColor: `${colors.primary}18`,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: `${colors.primary}33`,
+    },
+    heroStats: { flex: 1, gap: spacing.sm },
+    stat: { gap: 2 },
+    statLabel: { ...typography.caption, color: colors.textMuted },
+    statValue: { ...typography.label, color: colors.text },
+    featureRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
+    featureText: { ...typography.body, color: colors.textSecondary, flex: 1 },
+    eligibilityGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    eligibilityItem: {
+      width: '47%',
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      padding: spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    eligibilityLabel: { ...typography.caption, color: colors.textMuted, fontSize: 10 },
+    eligibilityValue: { ...typography.label, color: colors.text, marginTop: 4, fontSize: 12 },
+    docGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    docChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.surface,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    docText: { ...typography.bodySm, color: colors.textSecondary },
+    stepRow: { flexDirection: 'row', gap: spacing.md, paddingVertical: spacing.sm },
+    stepNum: {
+      width: 28,
+      height: 28,
+      borderRadius: radius.full,
+      backgroundColor: `${colors.primary}22`,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stepNumText: { ...typography.label, color: colors.primary, fontSize: 13 },
+    stepText: { ...typography.body, color: colors.textSecondary, flex: 1, lineHeight: 20 },
+    ctaHint: {
+      ...typography.bodySm,
+      color: colors.textMuted,
+      textAlign: 'center',
+      marginTop: spacing.sm,
+      marginBottom: spacing.md,
+    },
+  });
 }
 
 export function ProductDetailScreen() {
   const { params } = useRoute<ProductDetailRoute>();
   const navigation = useNavigation<NativeStackNavigationProp<ProductsStackParamList>>();
-
-  const productQuery = useQuery({
-    queryKey: ['product-detail', params.id, params.slug, params.name, params.variant],
-    queryFn: async (): Promise<ProductDisplayItem | null> => {
-      if (hasCompleteParams(params) && params.slug && params.name && params.variant) {
-        if (params.id) {
-          const resolved = await resolveProductFromApi({
-            id: params.id,
-            variant: params.variant,
-          });
-          if (resolved) return resolved;
-        }
-        return mapProductToDisplay(
-          {
-            id: params.id ?? params.slug,
-            code: params.slug,
-            name: params.name,
-          },
-          { variantCode: params.variant, name: params.name },
-        );
-      }
-
-      return resolveProductFromApi({
-        id: params.id,
-        slug: params.slug,
-        variant: params.variant,
-      });
-    },
-  });
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const catalogQuery = useQuery({
-    queryKey: ['product-catalog-detail'],
-    queryFn: async () => {
-      const [products, variants] = await Promise.all([
-        productsService.list({ limit: 50, isActive: true }),
-        productsService.variants(),
-      ]);
-      return flattenProductsWithVariants(products.items, variants.items);
-    },
-    enabled: productQuery.isError,
+    queryKey: ['product-catalog-detail', params.slug, params.id],
+    queryFn: () => fetchCustomerCatalog(),
   });
 
-  const product =
-    productQuery.data ??
-    (params.slug
-      ? catalogQuery.data?.find(
-          (p) =>
-            p.slug === params.slug?.toUpperCase() &&
-            (!params.variant || p.variant === params.variant) &&
-            (!params.name || p.name === params.name),
-        )
-      : undefined);
+  const product = useMemo(() => {
+    const items = catalogQuery.data ?? [];
+    return (
+      items.find((p) => params.id && p.productId === params.id) ??
+      items.find(
+        (p) =>
+          p.slug === params.slug?.toUpperCase() &&
+          (!params.variant || p.variant === params.variant),
+      ) ??
+      items.find((p) => p.slug === params.slug?.toUpperCase())
+    );
+  }, [catalogQuery.data, params.id, params.slug, params.variant]);
+
+  const meta = getProductFamilyMeta(product?.familyCode ?? params.familyCode ?? '');
 
   const handleApply = () => {
     if (!product) return;
-    const wizardParams = {
-      productSlug: product.slug,
-      productName: product.name,
-      variant: product.variant,
-    };
-    const parent = navigation.getParent();
-    if (parent) {
-      parent.navigate('Applications', { screen: 'ApplicationWizard', params: wizardParams });
-      return;
-    }
-    navigation.dispatch(
-      CommonActions.navigate({
-        name: 'Applications',
-        params: { screen: 'ApplicationWizard', params: wizardParams },
-      } as Parameters<typeof CommonActions.navigate>[0]),
-    );
+    navigateToApplicationWizard(navigation, product);
   };
 
-  if (productQuery.isLoading) {
+  if (catalogQuery.isLoading) {
     return (
       <Screen loading title="Product Details">
         {null}
@@ -111,7 +135,7 @@ export function ProductDetailScreen() {
       <Screen>
         <EmptyState
           title="Product not found"
-          description="This loan product may no longer be available"
+          description="This product may no longer be available"
           action={
             <Button title="Back to Products" variant="secondary" onPress={() => navigation.goBack()} />
           }
@@ -128,19 +152,28 @@ export function ProductDetailScreen() {
         </View>
         <View style={styles.heroStats}>
           <View style={styles.stat}>
-            <Text style={styles.statLabel}>Interest Rate</Text>
-            <Text style={styles.statValue}>
-              {product.interestMin}% – {product.interestMax}%
-            </Text>
+            <Text style={styles.statLabel}>{meta.statPrimaryLabel}</Text>
+            <Text style={styles.statValue}>{meta.statPrimaryValue(product)}</Text>
           </View>
           <View style={styles.stat}>
-            <Text style={styles.statLabel}>Max Amount</Text>
-            <Text style={styles.statValue}>{formatCurrency(product.maxAmount)}</Text>
+            <Text style={styles.statLabel}>{meta.statSecondaryLabel}</Text>
+            <Text style={styles.statValue}>{meta.statSecondaryValue(product)}</Text>
           </View>
         </View>
       </View>
 
-      <Card title="Key Features">
+      <Card title={meta.processTitle} elevated>
+        {meta.processSteps.map((step, index) => (
+          <View key={step} style={styles.stepRow}>
+            <View style={styles.stepNum}>
+              <Text style={styles.stepNumText}>{index + 1}</Text>
+            </View>
+            <Text style={styles.stepText}>{step}</Text>
+          </View>
+        ))}
+      </Card>
+
+      <Card title="Key Benefits" elevated>
         {product.features.map((feature) => (
           <View key={feature} style={styles.featureRow}>
             <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
@@ -149,30 +182,28 @@ export function ProductDetailScreen() {
         ))}
       </Card>
 
-      <Card title="Eligibility Range" subtitle="Typical qualifying criteria">
+      <Card title="Eligibility Snapshot" subtitle="Indicative criteria — final decision by lender" elevated>
         <View style={styles.eligibilityGrid}>
           <View style={styles.eligibilityItem}>
-            <Text style={styles.eligibilityLabel}>Loan Type</Text>
-            <Text style={styles.eligibilityValue}>{product.slug.replace(/_/g, ' ')}</Text>
+            <Text style={styles.eligibilityLabel}>Product</Text>
+            <Text style={styles.eligibilityValue}>{product.name}</Text>
           </View>
           <View style={styles.eligibilityItem}>
-            <Text style={styles.eligibilityLabel}>Variant</Text>
-            <Text style={styles.eligibilityValue}>{product.variant.replace(/_/g, ' ')}</Text>
-          </View>
-          <View style={styles.eligibilityItem}>
-            <Text style={styles.eligibilityLabel}>Max Funding</Text>
+            <Text style={styles.eligibilityLabel}>{meta.fundingLabel}</Text>
             <Text style={styles.eligibilityValue}>{formatCurrency(product.maxAmount)}</Text>
           </View>
           <View style={styles.eligibilityItem}>
-            <Text style={styles.eligibilityLabel}>Rate Band</Text>
-            <Text style={styles.eligibilityValue}>
-              {product.interestMin}% – {product.interestMax}% p.a.
-            </Text>
+            <Text style={styles.eligibilityLabel}>{meta.rateLabel}</Text>
+            <Text style={styles.eligibilityValue}>{meta.statPrimaryValue(product)}</Text>
+          </View>
+          <View style={styles.eligibilityItem}>
+            <Text style={styles.eligibilityLabel}>Processing</Text>
+            <Text style={styles.eligibilityValue}>100% digital via KuberOne</Text>
           </View>
         </View>
       </Card>
 
-      <Card title="Required Documents">
+      <Card title="Documents You'll Need" elevated>
         <View style={styles.docGrid}>
           {product.documents.map((doc) => (
             <View key={doc} style={styles.docChip}>
@@ -184,63 +215,12 @@ export function ProductDetailScreen() {
       </Card>
 
       <Button
-        title="Apply Now"
+        title={meta.applyLabel}
         fullWidth
         onPress={handleApply}
-        icon={<Ionicons name="arrow-forward" size={18} color={colors.background} />}
+        icon={<Ionicons name="arrow-forward" size={18} color={colors.onPrimary} />}
       />
+      <Text style={styles.ctaHint}>Takes about 5 minutes · No branch visit required</Text>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  hero: {
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  heroIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.lg,
-    backgroundColor: 'rgba(34,211,166,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroStats: { flex: 1, gap: spacing.sm },
-  stat: { gap: 2 },
-  statLabel: { ...typography.caption, color: colors.textMuted },
-  statValue: { ...typography.label, color: colors.text },
-  featureRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
-  featureText: { ...typography.body, color: colors.textSecondary, flex: 1 },
-  eligibilityGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  eligibilityItem: {
-    width: '47%',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  eligibilityLabel: { ...typography.caption, color: colors.textMuted, fontSize: 10 },
-  eligibilityValue: { ...typography.label, color: colors.text, marginTop: 4, fontSize: 12 },
-  docGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  docChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.surface,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  docText: { ...typography.bodySm, color: colors.textSecondary },
-});

@@ -7,6 +7,7 @@ import { paginationRange } from '@/lib/utils';
 
 export { Button } from './Button';
 export { Card } from './Card';
+export { ChartPanel } from './ChartPanel';
 export { Input } from './Input';
 export { Select } from './Select';
 export { StatusBadge } from './Badge';
@@ -80,16 +81,22 @@ interface StatCardProps {
   value: string | number;
   icon?: ReactNode;
   change?: string;
+  onClick?: () => void;
 }
 
-export function StatCard({ label, value, icon, change }: StatCardProps) {
+export function StatCard({ label, value, icon, change, onClick }: StatCardProps) {
+  const Tag = onClick ? 'button' : 'div';
   return (
-    <div className="stat-card">
+    <Tag
+      type={onClick ? 'button' : undefined}
+      className={`stat-card${onClick ? ' stat-card--clickable' : ''}`}
+      onClick={onClick}
+    >
       {icon && <div className="stat-card-icon">{icon}</div>}
       <span className="stat-card-label">{label}</span>
       <span className="stat-card-value">{value}</span>
       {change && <span className="stat-card-change">{change}</span>}
-    </div>
+    </Tag>
   );
 }
 

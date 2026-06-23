@@ -11,6 +11,11 @@ import {
 
 import { Button, Card, EmptyState, Screen, StatusBadge } from '@/components/ui';
 import { useAuth } from '@/hooks';
+import {
+  fetchCommunicationLogs,
+  fetchNotificationInbox,
+  notificationQueryKeys,
+} from '@/lib/notification-queries';
 import { formatDateTime, getApiErrorMessage, str } from '@/lib/utils';
 import { notificationsService } from '@/services';
 import { colors, radius, spacing, typography } from '@/theme';
@@ -27,42 +32,32 @@ export function NotificationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const notifications = useQuery({
-    queryKey: ['notifications', user?.id],
-    queryFn: () =>
-      notificationsService.list({
-        userId: user?.id,
-        limit: 50,
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
-      }),
+    queryKey: notificationQueryKeys.inbox(user?.id),
+    queryFn: () => fetchNotificationInbox(user!.id),
     enabled: !!user?.id,
+    staleTime: 120_000,
   });
 
   const communicationLogs = useQuery({
-    queryKey: ['communication-logs', user?.id],
-    queryFn: () =>
-      notificationsService.communicationLogs({
-        recipientUserId: user?.id,
-        limit: 30,
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
-      }),
+    queryKey: notificationQueryKeys.communicationLogs(user?.id),
+    queryFn: () => fetchCommunicationLogs(user!.id),
     enabled: !!user?.id,
+    staleTime: 120_000,
   });
 
   const markRead = useMutation({
     mutationFn: (id: string) => notificationsService.markRead(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard', 'notifications'] });
+      queryClient.invalidateQueries({ queryKey: notificationQueryKeys.inbox(user?.id) });
+      queryClient.invalidateQueries({ queryKey: notificationQueryKeys.unreadSummary(user?.id) });
     },
   });
 
   const markAllRead = useMutation({
     mutationFn: () => notificationsService.markAllRead(user!.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard', 'notifications'] });
+      queryClient.invalidateQueries({ queryKey: notificationQueryKeys.inbox(user?.id) });
+      queryClient.invalidateQueries({ queryKey: notificationQueryKeys.unreadSummary(user?.id) });
     },
   });
 
@@ -107,6 +102,12 @@ export function NotificationsScreen() {
       <Card title="Inbox" subtitle="Tap unread alerts to mark as read">
         {notifications.isLoading ? (
           <Text style={styles.muted}>Loading notifications...</Text>
+        ) : notifications.isError ? (
+          <EmptyState
+            title="Could not load notifications"
+            description={getApiErrorMessage(notifications.error)}
+            action={<Button title="Retry" variant="secondary" onPress={() => void notifications.refetch()} />}
+          />
         ) : (notifications.data?.items.length ?? 0) === 0 ? (
           <EmptyState
             title="All caught up"
@@ -151,14 +152,17 @@ export function NotificationsScreen() {
             );
           })
         )}
-        {notifications.isError && (
-          <Text style={styles.error}>{getApiErrorMessage(notifications.error)}</Text>
-        )}
       </Card>
 
       <Card title="Communication History" subtitle="SMS, email, push & in-app delivery logs">
         {communicationLogs.isLoading ? (
           <Text style={styles.muted}>Loading history...</Text>
+        ) : communicationLogs.isError ? (
+          <EmptyState
+            title="Could not load history"
+            description={getApiErrorMessage(communicationLogs.error)}
+            action={<Button title="Retry" variant="secondary" onPress={() => void communicationLogs.refetch()} />}
+          />
         ) : (communicationLogs.data?.items.length ?? 0) === 0 ? (
           <EmptyState
             title="No communication logs"
@@ -182,9 +186,6 @@ export function NotificationsScreen() {
               </Text>
             </View>
           ))
-        )}
-        {communicationLogs.isError && (
-          <Text style={styles.error}>{getApiErrorMessage(communicationLogs.error)}</Text>
         )}
       </Card>
     </Screen>

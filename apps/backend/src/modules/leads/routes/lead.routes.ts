@@ -3,6 +3,7 @@ import { Router } from 'express';
 import type { z } from 'zod';
 
 import { RBAC_PERMISSIONS } from '../../../shared/constants/rbac.constants.js';
+import { asyncHandler } from '../../../shared/middleware/async-handler.middleware.js';
 import { authenticateWithSessionMiddleware } from '../../../shared/middleware/authenticate.middleware.js';
 import { requireAnyPermission } from '../../../shared/middleware/rbac.middleware.js';
 import { validateMiddleware } from '../../../shared/middleware/validate.middleware.js';
@@ -75,59 +76,59 @@ function crudRoutes(
   createSchema: unknown,
   updateSchema: unknown,
 ) {
-  router.get('/', readPerm, validateMiddleware(listSchema, 'query'), controller.list);
-  router.post('/', writePerm, validateMiddleware(createSchema as never), controller.create);
-  router.get('/:id', readPerm, validateMiddleware(uuidParamSchema, 'params'), controller.getById);
+  router.get('/', readPerm, validateMiddleware(listSchema, 'query'), asyncHandler(controller.list));
+  router.post('/', writePerm, validateMiddleware(createSchema as never), asyncHandler(controller.create));
+  router.get('/:id', readPerm, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(controller.getById));
   router.patch(
     '/:id',
     writePerm,
     validateMiddleware(uuidParamSchema, 'params'),
     validateMiddleware(updateSchema as never),
-    controller.update,
+    asyncHandler(controller.update),
   );
 }
 
 export const leadRoutes = Router();
 leadRoutes.use(authenticateWithSessionMiddleware);
-leadRoutes.get('/export', leadsExport, validateMiddleware(exportLeadsQuerySchema, 'query'), leadController.export);
-leadRoutes.post('/score', leadsWrite, validateMiddleware(scoreLeadSchema), leadController.score);
-leadRoutes.get('/', leadsRead, validateMiddleware(listLeadsQuerySchema, 'query'), leadController.list);
-leadRoutes.post('/', leadsWrite, validateMiddleware(createLeadSchema), leadController.create);
-leadRoutes.get('/:id', leadsRead, validateMiddleware(uuidParamSchema, 'params'), leadController.getById);
+leadRoutes.get('/export', leadsExport, validateMiddleware(exportLeadsQuerySchema, 'query'), asyncHandler(leadController.export));
+leadRoutes.post('/score', leadsWrite, validateMiddleware(scoreLeadSchema), asyncHandler(leadController.score));
+leadRoutes.get('/', leadsRead, validateMiddleware(listLeadsQuerySchema, 'query'), asyncHandler(leadController.list));
+leadRoutes.post('/', leadsWrite, validateMiddleware(createLeadSchema), asyncHandler(leadController.create));
+leadRoutes.get('/:id', leadsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(leadController.getById));
 leadRoutes.patch(
   '/:id',
   leadsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateLeadSchema),
-  leadController.update,
+  asyncHandler(leadController.update),
 );
-leadRoutes.delete('/:id', leadsApprove, validateMiddleware(uuidParamSchema, 'params'), leadController.remove);
+leadRoutes.delete('/:id', leadsApprove, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(leadController.remove));
 leadRoutes.post(
   '/:id/assign',
   leadsAssign,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(assignLeadSchema),
-  leadController.assign,
+  asyncHandler(leadController.assign),
 );
 leadRoutes.post(
   '/:id/reassign',
   leadsAssign,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(assignLeadSchema),
-  leadController.reassign,
+  asyncHandler(leadController.reassign),
 );
 leadRoutes.post(
   '/:id/auto-assign',
   leadsAssign,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(autoAssignLeadSchema),
-  leadController.autoAssign,
+  asyncHandler(leadController.autoAssign),
 );
 leadRoutes.post(
   '/:id/schedule-followup',
   leadsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
-  leadController.scheduleFollowUp,
+  asyncHandler(leadController.scheduleFollowUp),
 );
 
 export const leadSourceRoutes = Router();
@@ -145,14 +146,14 @@ leadSourceRoutes.post(
   '/:id/deactivate',
   leadsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
-  leadSourceController.deactivate,
+  asyncHandler(leadSourceController.deactivate),
 );
 
 export const leadScoreRoutes = Router();
 leadScoreRoutes.use(authenticateWithSessionMiddleware);
-leadScoreRoutes.get('/', leadsRead, validateMiddleware(listLeadScoresQuerySchema, 'query'), leadScoreController.list);
-leadScoreRoutes.post('/score', leadsWrite, validateMiddleware(scoreLeadSchema), leadScoreController.score);
-leadScoreRoutes.get('/:id', leadsRead, validateMiddleware(uuidParamSchema, 'params'), leadScoreController.getById);
+leadScoreRoutes.get('/', leadsRead, validateMiddleware(listLeadScoresQuerySchema, 'query'), asyncHandler(leadScoreController.list));
+leadScoreRoutes.post('/score', leadsWrite, validateMiddleware(scoreLeadSchema), asyncHandler(leadScoreController.score));
+leadScoreRoutes.get('/:id', leadsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(leadScoreController.getById));
 
 export const leadAssignmentRoutes = Router();
 leadAssignmentRoutes.use(authenticateWithSessionMiddleware);
@@ -160,13 +161,13 @@ leadAssignmentRoutes.get(
   '/',
   leadsRead,
   validateMiddleware(listLeadAssignmentsQuerySchema, 'query'),
-  leadAssignmentController.list,
+  asyncHandler(leadAssignmentController.list),
 );
 leadAssignmentRoutes.get(
   '/:id',
   leadsRead,
   validateMiddleware(uuidParamSchema, 'params'),
-  leadAssignmentController.getById,
+  asyncHandler(leadAssignmentController.getById),
 );
 
 export const leadActivityRoutes = Router();
@@ -175,69 +176,69 @@ leadActivityRoutes.get(
   '/',
   leadsRead,
   validateMiddleware(listLeadActivitiesQuerySchema, 'query'),
-  leadActivityController.list,
+  asyncHandler(leadActivityController.list),
 );
-leadActivityRoutes.post('/', leadsWrite, validateMiddleware(createLeadActivitySchema), leadActivityController.create);
+leadActivityRoutes.post('/', leadsWrite, validateMiddleware(createLeadActivitySchema), asyncHandler(leadActivityController.create));
 leadActivityRoutes.get(
   '/:id',
   leadsRead,
   validateMiddleware(uuidParamSchema, 'params'),
-  leadActivityController.getById,
+  asyncHandler(leadActivityController.getById),
 );
 
 export const leadNoteRoutes = Router();
 leadNoteRoutes.use(authenticateWithSessionMiddleware);
-leadNoteRoutes.get('/', leadsRead, validateMiddleware(listLeadNotesQuerySchema, 'query'), leadNoteController.list);
-leadNoteRoutes.post('/', leadsWrite, validateMiddleware(createLeadNoteSchema), leadNoteController.create);
-leadNoteRoutes.get('/:id', leadsRead, validateMiddleware(uuidParamSchema, 'params'), leadNoteController.getById);
+leadNoteRoutes.get('/', leadsRead, validateMiddleware(listLeadNotesQuerySchema, 'query'), asyncHandler(leadNoteController.list));
+leadNoteRoutes.post('/', leadsWrite, validateMiddleware(createLeadNoteSchema), asyncHandler(leadNoteController.create));
+leadNoteRoutes.get('/:id', leadsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(leadNoteController.getById));
 leadNoteRoutes.patch(
   '/:id',
   leadsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateLeadNoteSchema),
-  leadNoteController.update,
+  asyncHandler(leadNoteController.update),
 );
 leadNoteRoutes.delete(
   '/:id',
   leadsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
-  leadNoteController.remove,
+  asyncHandler(leadNoteController.remove),
 );
 
 export const leadFollowUpRoutes = Router();
 leadFollowUpRoutes.use(authenticateWithSessionMiddleware);
-leadFollowUpRoutes.post('/process-reminders', leadsApprove, leadFollowUpController.processReminders);
+leadFollowUpRoutes.post('/process-reminders', leadsApprove, asyncHandler(leadFollowUpController.processReminders));
 leadFollowUpRoutes.get(
   '/',
   leadsRead,
   validateMiddleware(listLeadFollowUpsQuerySchema, 'query'),
-  leadFollowUpController.list,
+  asyncHandler(leadFollowUpController.list),
 );
-leadFollowUpRoutes.post('/', leadsWrite, validateMiddleware(createLeadFollowUpSchema), leadFollowUpController.create);
+leadFollowUpRoutes.post('/', leadsWrite, validateMiddleware(createLeadFollowUpSchema), asyncHandler(leadFollowUpController.create));
 leadFollowUpRoutes.get(
   '/:id',
   leadsRead,
   validateMiddleware(uuidParamSchema, 'params'),
-  leadFollowUpController.getById,
+  asyncHandler(leadFollowUpController.getById),
 );
 leadFollowUpRoutes.patch(
   '/:id',
   leadsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateLeadFollowUpSchema),
-  leadFollowUpController.update,
+  asyncHandler(leadFollowUpController.update),
 );
 
 export const leadTimelineRoutes = Router();
 leadTimelineRoutes.use(authenticateWithSessionMiddleware);
-leadTimelineRoutes.get('/', leadsRead, validateMiddleware(leadTimelineQuerySchema, 'query'), leadTimelineController.get);
+leadTimelineRoutes.get('/', leadsRead, validateMiddleware(leadTimelineQuerySchema, 'query'), asyncHandler(leadTimelineController.get));
 
 export const leadAnalyticsRoutes = Router();
 leadAnalyticsRoutes.use(authenticateWithSessionMiddleware);
 const leadAnalyticsHandler = [
   leadsRead,
   validateMiddleware(leadAnalyticsQuerySchema, 'query'),
-  leadAnalyticsController.summary,
+  asyncHandler(leadAnalyticsController.summary),
 ] as const;
 
 leadAnalyticsRoutes.get('/summary', ...leadAnalyticsHandler);

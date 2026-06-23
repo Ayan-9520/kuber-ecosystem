@@ -1,9 +1,10 @@
+import { buildEmiBreakdown } from '@kuberone/shared-utils';
+
 import {
   applicationsService,
   aiService,
   documentsService,
   eligibilityService,
-  emiService,
 } from '@/services';
 
 export interface ChatMessage {
@@ -23,14 +24,8 @@ export async function processAiMessage(
     const amountMatch = message.match(/(\d[\d,]*)/);
     const amount = amountMatch?.[1] ? parseInt(amountMatch[1].replace(/,/g, ''), 10) : 1000000;
     try {
-      const result = await emiService.calculate({
-        loanAmount: amount,
-        interestRate: 9.5,
-        tenureMonths: 240,
-        includeAmortization: true,
-        customerId: context.customerId,
-      });
-      return `For ${amount.toLocaleString('en-IN')} at 9.5% over 20 years:\n\n• EMI: ₹${Number(result.emi).toLocaleString('en-IN')}\n• Total interest: ₹${Number(result.interestPayable).toLocaleString('en-IN')}\n• Total repayment: ₹${Number(result.totalRepayment).toLocaleString('en-IN')}\n\nUse the EMI Calculator for custom scenarios.`;
+      const result = buildEmiBreakdown(amount, 9.5, 240, 0);
+      return `For ${amount.toLocaleString('en-IN')} at 9.5% over 20 years:\n\n• EMI: ₹${result.emi.toLocaleString('en-IN')}\n• Total interest: ₹${result.interestPayable.toLocaleString('en-IN')}\n• Total repayment: ₹${result.totalRepayment.toLocaleString('en-IN')}\n\nUse the EMI Calculator for custom scenarios.`;
     } catch {
       return 'I could not calculate EMI right now. Please try the EMI Calculator from the home screen.';
     }

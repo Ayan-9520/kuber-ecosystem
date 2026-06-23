@@ -1,14 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { type RouteProp, useRoute } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Card, EmptyState, Screen, StatusBadge } from '@/components/ui';
 import { formatCurrency, formatDateTime, getApiErrorMessage, str } from '@/lib/utils';
 import type { ApplicationsStackParamList } from '@/navigation/types';
 import { applicationsService, documentsService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
 
 type ApplicationDetailRoute = RouteProp<ApplicationsStackParamList, 'ApplicationDetail'>;
 
@@ -23,9 +24,70 @@ const TABS: { key: DetailTab; label: string; icon: keyof typeof Ionicons.glyphMa
   { key: 'docs', label: 'Pending Docs', icon: 'document' },
 ];
 
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
+    header: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      backgroundColor: colors.card,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+    headerInfo: { flex: 1, marginRight: spacing.md },
+    appNumber: { ...typography.h2, color: colors.text, fontSize: 20 },
+    product: { ...typography.bodySm, color: colors.textMuted, marginTop: 2 },
+    amount: { ...typography.h3, color: colors.primary, marginTop: spacing.sm },
+    updated: { ...typography.bodySm, color: colors.textMuted, marginTop: spacing.sm, fontSize: 11 },
+    tabBar: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      gap: spacing.sm,
+      backgroundColor: colors.background,
+    },
+    tab: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    tabActive: { backgroundColor: `${colors.primary}1F`, borderColor: colors.primary },
+    tabLabel: { ...typography.bodySm, color: colors.textMuted, fontSize: 12 },
+    tabLabelActive: { color: colors.primary, fontWeight: '600' },
+    tabContent: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
+    muted: { ...typography.bodySm, color: colors.textMuted, textAlign: 'center', paddingVertical: spacing.xl },
+    errorText: { ...typography.bodySm, color: colors.danger },
+    timelineRow: { flexDirection: 'row', gap: spacing.md, paddingVertical: spacing.sm },
+    timelineDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: colors.primary,
+      marginTop: 6,
+    },
+    timelineContent: { flex: 1, borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: spacing.sm },
+    timelineTitle: { ...typography.label, color: colors.text },
+    timelineDesc: { ...typography.bodySm, color: colors.textMuted, marginTop: 2 },
+    timelineDate: { ...typography.bodySm, color: colors.textMuted, marginTop: 4, fontSize: 10 },
+    itemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+    itemInfo: { flex: 1, marginRight: spacing.sm },
+    itemTitle: { ...typography.label, color: colors.text },
+    itemSub: { ...typography.bodySm, color: colors.textMuted, marginTop: 2, fontSize: 11 },
+    itemNote: { ...typography.bodySm, color: colors.textSecondary, marginTop: spacing.sm },
+    itemMeta: { ...typography.bodySm, color: colors.primary, marginTop: spacing.xs, fontSize: 11 },
+  });
+}
+
 export function ApplicationDetailScreen() {
   const { params } = useRoute<ApplicationDetailRoute>();
   const [activeTab, setActiveTab] = useState<DetailTab>('timeline');
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const application = useQuery({
     queryKey: ['application', params.id],
@@ -110,18 +172,14 @@ export function ApplicationDetailScreen() {
           <View style={styles.headerInfo}>
             <Text style={styles.appNumber}>{str(app.applicationNumber ?? app.id)}</Text>
             <Text style={styles.product}>{str(app.productName)}</Text>
-            <Text style={styles.amount}>{formatCurrency(app.requestedAmount as number)}</Text>
+            <Text style={styles.amount}>{formatCurrency((app.loanAmount ?? app.requestedAmount) as number)}</Text>
           </View>
           <StatusBadge status={str(app.status)} />
         </View>
         <Text style={styles.updated}>Updated {formatDateTime(app.updatedAt as string)}</Text>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabBar}
-      >
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBar}>
         {TABS.map((tab) => (
           <Pressable
             key={tab.key}
@@ -133,9 +191,7 @@ export function ApplicationDetailScreen() {
               size={14}
               color={activeTab === tab.key ? colors.primary : colors.textMuted}
             />
-            <Text style={[styles.tabLabel, activeTab === tab.key && styles.tabLabelActive]}>
-              {tab.label}
-            </Text>
+            <Text style={[styles.tabLabel, activeTab === tab.key && styles.tabLabelActive]}>{tab.label}</Text>
           </Pressable>
         ))}
       </ScrollView>
@@ -150,6 +206,7 @@ export function ApplicationDetailScreen() {
         ) : (
           <TabContent
             tab={activeTab}
+            styles={styles}
             timeline={timeline.data?.items ?? []}
             bankLogins={bankLogins.data?.items ?? []}
             creditReviews={creditReviews.data?.items ?? []}
@@ -163,8 +220,11 @@ export function ApplicationDetailScreen() {
   );
 }
 
+type DetailStyles = ReturnType<typeof createStyles>;
+
 function TabContent({
   tab,
+  styles,
   timeline,
   bankLogins,
   creditReviews,
@@ -173,6 +233,7 @@ function TabContent({
   pendingDocs,
 }: {
   tab: DetailTab;
+  styles: DetailStyles;
   timeline: Record<string, unknown>[];
   bankLogins: Record<string, unknown>[];
   creditReviews: Record<string, unknown>[];
@@ -190,11 +251,11 @@ function TabContent({
           <View key={String(event.id)} style={styles.timelineRow}>
             <View style={styles.timelineDot} />
             <View style={styles.timelineContent}>
-              <Text style={styles.timelineTitle}>{str(event.title)}</Text>
-              {!!event.description && (
-                <Text style={styles.timelineDesc}>{str(event.description)}</Text>
-              )}
-              <Text style={styles.timelineDate}>{formatDateTime(event.createdAt as string)}</Text>
+              <Text style={styles.timelineTitle}>{str(event.title ?? event.eventType)}</Text>
+              {!!event.description && <Text style={styles.timelineDesc}>{str(event.description)}</Text>}
+              <Text style={styles.timelineDate}>
+                {formatDateTime((event.occurredAt ?? event.createdAt) as string)}
+              </Text>
             </View>
           </View>
         ))}
@@ -259,7 +320,9 @@ function TabContent({
         </View>
         {!!item.conditions && <Text style={styles.itemNote}>{str(item.conditions)}</Text>}
         {item.interestRate != null && (
-          <Text style={styles.itemMeta}>Rate: {str(item.interestRate)}% · Tenure: {str(item.tenureMonths)} mo</Text>
+          <Text style={styles.itemMeta}>
+            Rate: {str(item.interestRate)}% · Tenure: {str(item.tenureMonths)} mo
+          </Text>
         )}
       </Card>
     ));
@@ -278,12 +341,8 @@ function TabContent({
           </View>
           <StatusBadge status={str(item.status)} />
         </View>
-        {!!item.bankReference && (
-          <Text style={styles.itemNote}>Ref: {str(item.bankReference)}</Text>
-        )}
-        {!!item.disbursementMode && (
-          <Text style={styles.itemMeta}>Mode: {str(item.disbursementMode)}</Text>
-        )}
+        {!!item.bankReference && <Text style={styles.itemNote}>Ref: {str(item.bankReference)}</Text>}
+        {!!item.disbursementMode && <Text style={styles.itemMeta}>Mode: {str(item.disbursementMode)}</Text>}
       </Card>
     ));
   }
@@ -304,66 +363,8 @@ function TabContent({
           <StatusBadge status={str(item.status)} />
         </View>
         {!!item.notes && <Text style={styles.itemNote}>{str(item.notes)}</Text>}
-        {!!item.dueDate && (
-          <Text style={styles.itemMeta}>Due: {formatDateTime(item.dueDate as string)}</Text>
-        )}
+        {!!item.dueDate && <Text style={styles.itemMeta}>Due: {formatDateTime(item.dueDate as string)}</Text>}
       </Card>
     );
   });
 }
-
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  headerInfo: { flex: 1, marginRight: spacing.md },
-  appNumber: { ...typography.h2, color: colors.text, fontSize: 20 },
-  product: { ...typography.bodySm, color: colors.textMuted, marginTop: 2 },
-  amount: { ...typography.h3, color: colors.primary, marginTop: spacing.sm },
-  updated: { ...typography.bodySm, color: colors.textMuted, marginTop: spacing.sm, fontSize: 11 },
-  tabBar: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
-  },
-  tab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  tabActive: { backgroundColor: 'rgba(34,211,166,0.12)', borderColor: colors.primary },
-  tabLabel: { ...typography.bodySm, color: colors.textMuted, fontSize: 12 },
-  tabLabelActive: { color: colors.primary, fontWeight: '600' },
-  tabContent: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
-  muted: { ...typography.bodySm, color: colors.textMuted, textAlign: 'center', paddingVertical: spacing.xl },
-  errorText: { ...typography.bodySm, color: colors.danger },
-  timelineRow: { flexDirection: 'row', gap: spacing.md, paddingVertical: spacing.sm },
-  timelineDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.primary,
-    marginTop: 6,
-  },
-  timelineContent: { flex: 1, borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: spacing.sm },
-  timelineTitle: { ...typography.label, color: colors.text },
-  timelineDesc: { ...typography.bodySm, color: colors.textMuted, marginTop: 2 },
-  timelineDate: { ...typography.bodySm, color: colors.textMuted, marginTop: 4, fontSize: 10 },
-  itemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  itemInfo: { flex: 1, marginRight: spacing.sm },
-  itemTitle: { ...typography.label, color: colors.text },
-  itemSub: { ...typography.bodySm, color: colors.textMuted, marginTop: 2, fontSize: 11 },
-  itemNote: { ...typography.bodySm, color: colors.textSecondary, marginTop: spacing.sm },
-  itemMeta: { ...typography.bodySm, color: colors.primary, marginTop: spacing.xs, fontSize: 11 },
-});

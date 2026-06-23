@@ -125,7 +125,7 @@ export default async function globalSetup() {
   }
 
   console.log('[integration] Seeding integration database...');
-  execSync('pnpm exec tsx prisma/seeds/index.ts', {
+  execSync('pnpm exec tsx prisma/seeds/integration.seed.ts', {
     cwd: databaseDir,
     env: testEnv,
     stdio: 'inherit',

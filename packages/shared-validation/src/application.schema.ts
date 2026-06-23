@@ -152,7 +152,7 @@ export const listBankLoginsQuerySchema = paginationSchema.extend({
 
 export const createCreditReviewSchema = z.object({
   applicationId: z.string().uuid(),
-  reviewerId: z.string().uuid(),
+  reviewerId: z.string().uuid().optional(),
   reviewType: creditReviewTypeSchema,
   reviewNotes: z.string().max(5000).optional(),
   riskIndicators: z.array(z.string()).optional(),

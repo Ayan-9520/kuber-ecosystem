@@ -15,6 +15,9 @@ export const documentRepository = {
   findById: (id: string) =>
     prisma.document.findFirst({ where: { id, deletedAt: null }, include: documentInclude }),
 
+  findByS3Key: (s3Key: string) =>
+    prisma.document.findFirst({ where: { s3Key, deletedAt: null }, include: documentInclude }),
+
   getLastDocumentCode: () =>
     prisma.document.findFirst({ orderBy: { createdAt: 'desc' }, select: { documentCode: true } }),
 

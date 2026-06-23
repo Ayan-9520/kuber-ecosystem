@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
   DataTable,
@@ -18,11 +18,12 @@ import { documentsService } from '@/services/index';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All Statuses' },
+  { value: 'UPLOADED', label: 'Uploaded' },
   { value: 'PENDING_VERIFICATION', label: 'Pending Verification' },
   { value: 'VERIFIED', label: 'Verified' },
-  { value: 'APPROVED', label: 'Approved' },
   { value: 'REJECTED', label: 'Rejected' },
   { value: 'DEFICIENT', label: 'Deficient' },
+  { value: 'EXPIRED', label: 'Expired' },
 ];
 
 function str(v: unknown): string {
@@ -32,14 +33,16 @@ function str(v: unknown): string {
 
 export function DocumentsPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { page, limit, setPage, reset } = usePagination();
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState(searchParams.get('status') ?? '');
   const debouncedSearch = useDebounce(search);
 
   useEffect(() => {
+    setStatus(searchParams.get('status') ?? '');
     reset();
-  }, [debouncedSearch, status, reset]);
+  }, [searchParams, reset]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['documents', page, limit, debouncedSearch, status],

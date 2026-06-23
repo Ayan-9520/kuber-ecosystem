@@ -81,6 +81,17 @@ export function decodeBase64Content(contentBase64: string): Buffer {
   return Buffer.from(base64, 'base64');
 }
 
+const MIME_ALIASES: Record<string, string> = {
+  'image/jpg': 'image/jpeg',
+  'image/pjpeg': 'image/jpeg',
+  'image/x-png': 'image/png',
+};
+
+export function normalizeDocumentMimeType(mimeType: string): string {
+  const trimmed = mimeType.trim().toLowerCase();
+  return MIME_ALIASES[trimmed] ?? trimmed;
+}
+
 export function resolveOwnerId(input: {
   ownerType: string;
   customerId?: string;

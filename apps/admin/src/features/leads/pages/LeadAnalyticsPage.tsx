@@ -9,7 +9,6 @@ import {
   Legend,
   Pie,
   PieChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -18,6 +17,7 @@ import {
 import {
   Button,
   Card,
+  ChartPanel,
   EmptyState,
   LoadingSpinner,
   PageHeader,
@@ -105,10 +105,10 @@ export function LeadAnalyticsPage() {
           {statusData.length === 0 ? (
             <EmptyState title="No data" />
           ) : (
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
+            <ChartPanel>
+              {({ width, height }) => (
+                <PieChart width={width} height={height}>
+                  <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius="65%" label>
                     {statusData.map((_, i) => (
                       <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                     ))}
@@ -116,8 +116,8 @@ export function LeadAnalyticsPage() {
                   <Tooltip contentStyle={CHART_TOOLTIP} />
                   <Legend />
                 </PieChart>
-              </ResponsiveContainer>
-            </div>
+              )}
+            </ChartPanel>
           )}
         </Card>
 
@@ -125,17 +125,17 @@ export function LeadAnalyticsPage() {
           {gradeData.length === 0 ? (
             <EmptyState title="No data" />
           ) : (
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={gradeData}>
+            <ChartPanel>
+              {({ width, height }) => (
+                <BarChart width={width} height={height} data={gradeData}>
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
                   <XAxis dataKey="name" tick={{ fill: CHART_TICK, fontSize: 12 }} />
                   <YAxis tick={{ fill: CHART_TICK, fontSize: 12 }} />
                   <Tooltip contentStyle={CHART_TOOLTIP} />
                   <Bar dataKey="value" name="Leads" fill={CHART_COLORS[0]} radius={[4, 4, 0, 0]} />
                 </BarChart>
-              </ResponsiveContainer>
-            </div>
+              )}
+            </ChartPanel>
           )}
         </Card>
       </div>
@@ -145,17 +145,17 @@ export function LeadAnalyticsPage() {
           {sourceData.length === 0 ? (
             <EmptyState title="No source data" />
           ) : (
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={sourceData} layout="vertical">
+            <ChartPanel>
+              {({ width, height }) => (
+                <BarChart width={width} height={height} data={sourceData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
                   <XAxis type="number" tick={{ fill: CHART_TICK, fontSize: 12 }} />
                   <YAxis type="category" dataKey="name" width={120} tick={{ fill: CHART_TICK, fontSize: 11 }} />
                   <Tooltip contentStyle={CHART_TOOLTIP} />
                   <Bar dataKey="count" name="Leads" fill={CHART_COLORS[2]} radius={[0, 4, 4, 0]} />
                 </BarChart>
-              </ResponsiveContainer>
-            </div>
+              )}
+            </ChartPanel>
           )}
         </Card>
 
@@ -163,9 +163,9 @@ export function LeadAnalyticsPage() {
           {branchData.length === 0 ? (
             <EmptyState title="No branch data" />
           ) : (
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={branchData}>
+            <ChartPanel>
+              {({ width, height }) => (
+                <BarChart width={width} height={height} data={branchData}>
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
                   <XAxis dataKey="name" tick={{ fill: CHART_TICK, fontSize: 12 }} />
                   <YAxis tick={{ fill: CHART_TICK, fontSize: 12 }} />
@@ -175,8 +175,8 @@ export function LeadAnalyticsPage() {
                   <Bar dataKey="converted" name="Converted" fill={CHART_SUCCESS} radius={[4, 4, 0, 0]} />
                   <Bar dataKey="lost" name="Lost" fill={CHART_DANGER} radius={[4, 4, 0, 0]} />
                 </BarChart>
-              </ResponsiveContainer>
-            </div>
+              )}
+            </ChartPanel>
           )}
         </Card>
       </div>
@@ -185,9 +185,9 @@ export function LeadAnalyticsPage() {
         {executiveData.length === 0 ? (
           <EmptyState title="No executive data" />
         ) : (
-          <div className="chart-container" style={{ height: 320 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={executiveData}>
+          <ChartPanel height={320}>
+            {({ width, height }) => (
+              <BarChart width={width} height={height} data={executiveData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
                 <XAxis dataKey="name" tick={{ fill: CHART_TICK, fontSize: 11 }} />
                 <YAxis tick={{ fill: CHART_TICK, fontSize: 12 }} />
@@ -196,8 +196,8 @@ export function LeadAnalyticsPage() {
                 <Bar dataKey="total" name="Assigned" fill={CHART_COLORS[2]} radius={[4, 4, 0, 0]} />
                 <Bar dataKey="converted" name="Converted" fill={CHART_COLORS[0]} radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
-          </div>
+            )}
+          </ChartPanel>
         )}
       </Card>
     </div>

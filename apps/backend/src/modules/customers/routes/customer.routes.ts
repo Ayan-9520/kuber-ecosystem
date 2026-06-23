@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { RBAC_PERMISSIONS } from '../../../shared/constants/rbac.constants.js';
+import { asyncHandler } from '../../../shared/middleware/async-handler.middleware.js';
 import { authenticateWithSessionMiddleware } from '../../../shared/middleware/authenticate.middleware.js';
 import { requireAnyPermission } from '../../../shared/middleware/rbac.middleware.js';
 import { validateMiddleware } from '../../../shared/middleware/validate.middleware.js';
@@ -49,90 +50,90 @@ const writePerm = requireAnyPermission(
 
 export const customerRoutes: Router = Router();
 customerRoutes.use(authenticateWithSessionMiddleware);
-customerRoutes.get('/', readPerm, validateMiddleware(listCustomersQuerySchema, 'query'), customerController.list);
-customerRoutes.post('/', writePerm, validateMiddleware(createCustomerSchema), customerController.create);
-customerRoutes.get('/:id', readPerm, validateMiddleware(uuidParamSchema, 'params'), customerController.getById);
+customerRoutes.get('/', readPerm, validateMiddleware(listCustomersQuerySchema, 'query'), asyncHandler(customerController.list));
+customerRoutes.post('/', writePerm, validateMiddleware(createCustomerSchema), asyncHandler(customerController.create));
+customerRoutes.get('/:id', readPerm, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(customerController.getById));
 customerRoutes.patch(
   '/:id',
   writePerm,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateCustomerSchema),
-  customerController.update,
+  asyncHandler(customerController.update),
 );
 customerRoutes.delete(
   '/:id',
   writePerm,
   validateMiddleware(uuidParamSchema, 'params'),
-  customerController.remove,
+  asyncHandler(customerController.remove),
 );
 
 export const customerProfileRoutes: Router = Router();
 customerProfileRoutes.use(authenticateWithSessionMiddleware);
-customerProfileRoutes.get('/', readPerm, validateMiddleware(customerIdQuerySchema, 'query'), customerProfileController.get);
-customerProfileRoutes.put('/', writePerm, validateMiddleware(upsertCustomerProfileSchema), customerProfileController.upsert);
-customerProfileRoutes.post('/', writePerm, validateMiddleware(upsertCustomerProfileSchema), customerProfileController.upsert);
+customerProfileRoutes.get('/', readPerm, validateMiddleware(customerIdQuerySchema, 'query'), asyncHandler(customerProfileController.get));
+customerProfileRoutes.put('/', writePerm, validateMiddleware(upsertCustomerProfileSchema), asyncHandler(customerProfileController.upsert));
+customerProfileRoutes.post('/', writePerm, validateMiddleware(upsertCustomerProfileSchema), asyncHandler(customerProfileController.upsert));
 
 export const customerAddressRoutes: Router = Router();
 customerAddressRoutes.use(authenticateWithSessionMiddleware);
-customerAddressRoutes.get('/', readPerm, validateMiddleware(listCustomerAddressesQuerySchema, 'query'), customerAddressController.list);
-customerAddressRoutes.post('/', writePerm, validateMiddleware(createCustomerAddressSchema), customerAddressController.create);
+customerAddressRoutes.get('/', readPerm, validateMiddleware(listCustomerAddressesQuerySchema, 'query'), asyncHandler(customerAddressController.list));
+customerAddressRoutes.post('/', writePerm, validateMiddleware(createCustomerAddressSchema), asyncHandler(customerAddressController.create));
 customerAddressRoutes.patch(
   '/:id',
   writePerm,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateCustomerAddressSchema),
-  customerAddressController.update,
+  asyncHandler(customerAddressController.update),
 );
 customerAddressRoutes.delete(
   '/:id',
   writePerm,
   validateMiddleware(uuidParamSchema, 'params'),
-  customerAddressController.remove,
+  asyncHandler(customerAddressController.remove),
 );
 
 export const customerEmploymentRoutes: Router = Router();
 customerEmploymentRoutes.use(authenticateWithSessionMiddleware);
-customerEmploymentRoutes.get('/', readPerm, validateMiddleware(listCustomerEmploymentQuerySchema, 'query'), customerEmploymentController.list);
-customerEmploymentRoutes.post('/', writePerm, validateMiddleware(createCustomerEmploymentSchema), customerEmploymentController.create);
+customerEmploymentRoutes.get('/', readPerm, validateMiddleware(listCustomerEmploymentQuerySchema, 'query'), asyncHandler(customerEmploymentController.list));
+customerEmploymentRoutes.post('/', writePerm, validateMiddleware(createCustomerEmploymentSchema), asyncHandler(customerEmploymentController.create));
 customerEmploymentRoutes.patch(
   '/:id',
   writePerm,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateCustomerEmploymentSchema),
-  customerEmploymentController.update,
+  asyncHandler(customerEmploymentController.update),
 );
 customerEmploymentRoutes.delete(
   '/:id',
   writePerm,
   validateMiddleware(uuidParamSchema, 'params'),
-  customerEmploymentController.remove,
+  asyncHandler(customerEmploymentController.remove),
 );
 
 export const customerIncomeRoutes: Router = Router();
 customerIncomeRoutes.use(authenticateWithSessionMiddleware);
-customerIncomeRoutes.get('/', readPerm, validateMiddleware(listCustomerIncomeQuerySchema, 'query'), customerIncomeController.list);
-customerIncomeRoutes.post('/', writePerm, validateMiddleware(createCustomerIncomeSchema), customerIncomeController.create);
+customerIncomeRoutes.get('/', readPerm, validateMiddleware(listCustomerIncomeQuerySchema, 'query'), asyncHandler(customerIncomeController.list));
+customerIncomeRoutes.post('/', writePerm, validateMiddleware(createCustomerIncomeSchema), asyncHandler(customerIncomeController.create));
 customerIncomeRoutes.patch(
   '/:id',
   writePerm,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateCustomerIncomeSchema),
-  customerIncomeController.update,
+  asyncHandler(customerIncomeController.update),
 );
 customerIncomeRoutes.delete(
   '/:id',
   writePerm,
   validateMiddleware(uuidParamSchema, 'params'),
-  customerIncomeController.remove,
+  asyncHandler(customerIncomeController.remove),
 );
 
 export const customerPreferencesRoutes: Router = Router();
 customerPreferencesRoutes.use(authenticateWithSessionMiddleware);
-customerPreferencesRoutes.get('/', readPerm, validateMiddleware(customerIdQuerySchema, 'query'), customerPreferencesController.get);
-customerPreferencesRoutes.put('/', writePerm, validateMiddleware(upsertCustomerPreferencesSchema), customerPreferencesController.upsert);
-customerPreferencesRoutes.post('/', writePerm, validateMiddleware(upsertCustomerPreferencesSchema), customerPreferencesController.upsert);
+customerPreferencesRoutes.get('/', readPerm, validateMiddleware(customerIdQuerySchema, 'query'), asyncHandler(customerPreferencesController.get));
+customerPreferencesRoutes.put('/', writePerm, validateMiddleware(upsertCustomerPreferencesSchema), asyncHandler(customerPreferencesController.upsert));
+customerPreferencesRoutes.post('/', writePerm, validateMiddleware(upsertCustomerPreferencesSchema), asyncHandler(customerPreferencesController.upsert));
 
 export const customerConsentRoutes: Router = Router();
 customerConsentRoutes.use(authenticateWithSessionMiddleware);
-customerConsentRoutes.get('/', readPerm, validateMiddleware(listCustomerConsentsQuerySchema, 'query'), customerConsentController.list);
-customerConsentRoutes.post('/', writePerm, validateMiddleware(createCustomerConsentSchema), customerConsentController.create);
+customerConsentRoutes.get('/', readPerm, validateMiddleware(listCustomerConsentsQuerySchema, 'query'), asyncHandler(customerConsentController.list));
+customerConsentRoutes.post('/', writePerm, validateMiddleware(createCustomerConsentSchema), asyncHandler(customerConsentController.create));

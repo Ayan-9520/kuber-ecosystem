@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { RBAC_PERMISSIONS } from '../../../shared/constants/rbac.constants.js';
+import { asyncHandler } from '../../../shared/middleware/async-handler.middleware.js';
 import { authenticateWithSessionMiddleware } from '../../../shared/middleware/authenticate.middleware.js';
 import { requireAnyPermission } from '../../../shared/middleware/rbac.middleware.js';
 import { validateMiddleware } from '../../../shared/middleware/validate.middleware.js';
@@ -22,21 +23,21 @@ userRoutes.get(
   '/',
   requireAnyPermission(RBAC_PERMISSIONS.USERS_READ, 'users.read:all'),
   validateMiddleware(listUsersQuerySchema, 'query'),
-  userController.list,
+  asyncHandler(userController.list),
 );
 
 userRoutes.post(
   '/',
   requireAnyPermission(RBAC_PERMISSIONS.USERS_WRITE, 'users.create:all'),
   validateMiddleware(createUserSchema),
-  userController.create,
+  asyncHandler(userController.create),
 );
 
 userRoutes.get(
   '/:id',
   requireAnyPermission(RBAC_PERMISSIONS.USERS_READ, 'users.read:branch', 'users.read:all'),
   validateMiddleware(uuidParamSchema, 'params'),
-  userController.getById,
+  asyncHandler(userController.getById),
 );
 
 userRoutes.patch(
@@ -44,21 +45,21 @@ userRoutes.patch(
   requireAnyPermission(RBAC_PERMISSIONS.USERS_WRITE, 'users.update:all'),
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateUserSchema),
-  userController.update,
+  asyncHandler(userController.update),
 );
 
 userRoutes.delete(
   '/:id',
   requireAnyPermission(RBAC_PERMISSIONS.USERS_WRITE, 'users.delete:all'),
   validateMiddleware(uuidParamSchema, 'params'),
-  userController.remove,
+  asyncHandler(userController.remove),
 );
 
 userRoutes.get(
   '/:id/roles',
   requireAnyPermission(RBAC_PERMISSIONS.USERS_READ, 'users.read:branch', 'users.read:all'),
   validateMiddleware(uuidParamSchema, 'params'),
-  userController.listUserRoles,
+  asyncHandler(userController.listUserRoles),
 );
 
 export const userRoleRoutes: Router = Router();
@@ -69,19 +70,19 @@ userRoleRoutes.get(
   '/',
   requireAnyPermission(RBAC_PERMISSIONS.USERS_READ, RBAC_PERMISSIONS.RBAC_READ, 'rbac.read:all'),
   validateMiddleware(listUserRolesQuerySchema, 'query'),
-  userRoleController.list,
+  asyncHandler(userRoleController.list),
 );
 
 userRoleRoutes.post(
   '/',
   requireAnyPermission(RBAC_PERMISSIONS.USERS_WRITE, 'users.update:all'),
   validateMiddleware(assignUserRoleSchema),
-  userRoleController.assign,
+  asyncHandler(userRoleController.assign),
 );
 
 userRoleRoutes.delete(
   '/:id',
   requireAnyPermission(RBAC_PERMISSIONS.USERS_WRITE, 'users.update:all'),
   validateMiddleware(uuidParamSchema, 'params'),
-  userRoleController.remove,
+  asyncHandler(userRoleController.remove),
 );

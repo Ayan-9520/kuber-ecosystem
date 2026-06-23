@@ -4,8 +4,12 @@ import { Prisma, ProductPriority, ProductVariantCode } from '@prisma/client';
 const FAMILIES = [
   { code: 'HL', name: 'Home Loan', isSecured: true, displayOrder: 1 },
   { code: 'LAP', name: 'Loan Against Property', isSecured: true, displayOrder: 2 },
-  { code: 'BL', name: 'Business Loan', isSecured: false, displayOrder: 3 },
-  { code: 'AL', name: 'Auto Loan', isSecured: true, displayOrder: 4 },
+  { code: 'PL', name: 'Personal Loan', isSecured: false, displayOrder: 3 },
+  { code: 'BL', name: 'Business Loan', isSecured: false, displayOrder: 4 },
+  { code: 'AL', name: 'Auto Loan', isSecured: true, displayOrder: 5 },
+  { code: 'ML', name: 'Machinery Loan', isSecured: true, displayOrder: 6 },
+  { code: 'INS', name: 'Insurance', isSecured: false, displayOrder: 7 },
+  { code: 'CC', name: 'Credit Cards', isSecured: false, displayOrder: 8 },
 ];
 
 type ProductSeed = {
@@ -185,7 +189,84 @@ const PRODUCTS: ProductSeed[] = [
     priority: ProductPriority.P2,
     variants: [{ variantCode: ProductVariantCode.BT_TOP_UP, name: 'Car Refinance' }],
   },
+  {
+    familyCode: 'PL',
+    code: 'PL-01',
+    name: 'Personal Loan',
+    minAmount: new Prisma.Decimal(50000),
+    maxAmount: new Prisma.Decimal(4000000),
+    minTenureMonths: 12,
+    maxTenureMonths: 60,
+    priority: ProductPriority.P0,
+    variants: [{ variantCode: ProductVariantCode.FRESH, name: 'Personal Loan' }],
+  },
+  {
+    familyCode: 'ML',
+    code: 'ML-01',
+    name: 'Machinery Loan',
+    minAmount: new Prisma.Decimal(500000),
+    maxAmount: new Prisma.Decimal(50000000),
+    minTenureMonths: 12,
+    maxTenureMonths: 84,
+    priority: ProductPriority.P1,
+    variants: [{ variantCode: ProductVariantCode.FRESH, name: 'Machinery Loan' }],
+  },
+  {
+    familyCode: 'INS',
+    code: 'INS-01',
+    name: 'Insurance',
+    minAmount: new Prisma.Decimal(10000),
+    maxAmount: new Prisma.Decimal(50000000),
+    minTenureMonths: 12,
+    maxTenureMonths: 360,
+    priority: ProductPriority.P1,
+    variants: [{ variantCode: ProductVariantCode.FRESH, name: 'Life & General Insurance' }],
+  },
+  {
+    familyCode: 'CC',
+    code: 'CC-01',
+    name: 'Credit Card',
+    minAmount: new Prisma.Decimal(10000),
+    maxAmount: new Prisma.Decimal(1000000),
+    minTenureMonths: 12,
+    maxTenureMonths: 60,
+    priority: ProductPriority.P1,
+    variants: [{ variantCode: ProductVariantCode.FRESH, name: 'Credit Card' }],
+  },
 ];
+
+const RATES_BY_FAMILY: Record<string, { min: number; max: number }> = {
+  HL: { min: 8.4, max: 10.5 },
+  LAP: { min: 9.0, max: 11.5 },
+  AL: { min: 8.75, max: 12.5 },
+  PL: { min: 10.5, max: 18.0 },
+  BL: { min: 11.0, max: 16.0 },
+  ML: { min: 10.0, max: 14.0 },
+  INS: { min: 0, max: 0 },
+  CC: { min: 0, max: 0 },
+};
+
+function buildVariantConfig(familyCode: string, productCode: string, variantName: string): Prisma.InputJsonValue {
+  const docsByFamily: Record<string, string[]> = {
+    HL: ['PAN', 'Aadhaar', 'Salary slips', 'Bank statements', 'Property papers'],
+    LAP: ['PAN', 'Aadhaar', 'Property documents', 'Bank statements', 'ITR'],
+    PL: ['PAN', 'Aadhaar', 'Salary slips', 'Bank statements'],
+    BL: ['PAN', 'Aadhaar', 'GST certificate', 'Business proof', 'Bank statements', 'ITR'],
+    AL: ['PAN', 'Aadhaar', 'Invoice / RC', 'Bank statements', 'Income proof'],
+    ML: ['PAN', 'Aadhaar', 'Quotation', 'Business proof', 'Bank statements'],
+    INS: ['PAN', 'Aadhaar', 'Age proof', 'Medical reports (if applicable)'],
+    CC: ['PAN', 'Aadhaar', 'Salary slips', 'Bank statements'],
+  };
+
+  return {
+    documents: docsByFamily[familyCode] ?? ['PAN', 'Aadhaar', 'Income proof', 'Bank statements'],
+    features: [
+      variantName,
+      productCode.startsWith('AL-02') ? 'Up to 72 months tenure' : 'Flexible repayment',
+      'Digital application & tracking',
+    ],
+  };
+}
 
 export async function seedProducts(prisma: PrismaClient): Promise<void> {
   for (const family of FAMILIES) {
@@ -206,6 +287,8 @@ export async function seedProducts(prisma: PrismaClient): Promise<void> {
     });
     if (!family) continue;
 
+    const rates = RATES_BY_FAMILY[product.familyCode] ?? { min: 8.5, max: 12 };
+
     const savedProduct = await prisma.product.upsert({
       where: { code: product.code },
       update: {
@@ -214,6 +297,8 @@ export async function seedProducts(prisma: PrismaClient): Promise<void> {
         maxAmount: product.maxAmount,
         minTenureMonths: product.minTenureMonths,
         maxTenureMonths: product.maxTenureMonths,
+        minInterestRate: new Prisma.Decimal(rates.min),
+        maxInterestRate: new Prisma.Decimal(rates.max),
         priority: product.priority,
         familyId: family.id,
       },
@@ -225,11 +310,14 @@ export async function seedProducts(prisma: PrismaClient): Promise<void> {
         maxAmount: product.maxAmount,
         minTenureMonths: product.minTenureMonths,
         maxTenureMonths: product.maxTenureMonths,
+        minInterestRate: new Prisma.Decimal(rates.min),
+        maxInterestRate: new Prisma.Decimal(rates.max),
         priority: product.priority,
       },
     });
 
     for (const variant of product.variants) {
+      const config = buildVariantConfig(product.familyCode, product.code, variant.name);
       await prisma.productVariant.upsert({
         where: {
           productId_variantCode: {
@@ -237,11 +325,12 @@ export async function seedProducts(prisma: PrismaClient): Promise<void> {
             variantCode: variant.variantCode,
           },
         },
-        update: { name: variant.name },
+        update: { name: variant.name, config },
         create: {
           productId: savedProduct.id,
           variantCode: variant.variantCode,
           name: variant.name,
+          config,
         },
       });
     }

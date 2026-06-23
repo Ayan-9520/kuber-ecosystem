@@ -7,6 +7,7 @@ import { leadActivityRepository } from '../repositories/lead-activity.repository
 import { leadRepository } from '../repositories/lead.repository.js';
 import type { RequestContext } from '../types/leads.types.js';
 import { auditLeadMutation, buildPaginationMeta } from '../utils/leads.utils.js';
+import { serializeLeadActivity } from '../utils/lead-subresource-serializer.js';
 
 export const leadActivityService = {
   async list(query: ListLeadActivitiesQuery) {
@@ -31,7 +32,10 @@ export const leadActivityService = {
       leadActivityRepository.count(where),
     ]);
 
-    return { items, meta: buildPaginationMeta(query.page, query.limit, total) };
+    return {
+      items: items.map(serializeLeadActivity),
+      meta: buildPaginationMeta(query.page, query.limit, total),
+    };
   },
 
   async getById(id: string) {

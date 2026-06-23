@@ -38,6 +38,7 @@ export const leadsService = {
   timeline: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/lead-timeline', params),
   scores: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/lead-scores', params),
   assign: (id: string, data: unknown) => apiPost(`/leads/${id}/assign`, data),
+  remove: (id: string) => apiDelete(`/leads/${id}`),
 };
 
 export const customersService = {
@@ -55,13 +56,18 @@ export const applicationsService = {
   getById: (id: string) => apiGet<Record<string, unknown>>(`/applications/${id}`),
   create: (data: unknown) => apiPost('/applications', data),
   update: (id: string, data: unknown) => apiPatch(`/applications/${id}`, data),
+  submit: (id: string, data?: unknown) => apiPost(`/applications/${id}/submit`, data ?? {}),
+  evaluateEligibility: (data: unknown) => apiPost('/eligibility-results/evaluate', data),
+  createBankLogin: (data: unknown) => apiPost('/bank-logins', data),
+  createCreditReview: (data: unknown) => apiPost('/credit-reviews', data),
+  createSanction: (data: unknown) => apiPost('/sanctions', data),
+  createDisbursement: (data: unknown) => apiPost('/disbursements', data),
   timeline: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/application-timeline', params),
   eligibility: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/eligibility-results', params),
   bankLogins: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/bank-logins', params),
   creditReviews: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/credit-reviews', params),
   sanctions: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/sanctions', params),
   disbursements: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/disbursements', params),
-  submit: (id: string) => apiPost(`/applications/${id}/submit`),
 };
 
 export const documentsService = {

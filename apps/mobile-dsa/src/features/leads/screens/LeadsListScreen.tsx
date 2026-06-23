@@ -82,8 +82,8 @@ export function LeadsListScreen() {
           leads.data?.items.map((lead) => (
             <ListRow
               key={String(lead.id)}
-              title={str(lead.prospectName)}
-              subtitle={`${str(lead.leadNumber)} · ${formatCurrency(lead.requestedAmount as number)} · Score: ${str(lead.score ?? lead.grade)}`}
+              title={str(lead.fullName ?? lead.prospectName ?? lead.name)}
+              subtitle={`${str(lead.leadNumber)} · ${str(lead.productName ?? 'Product')} · ${formatCurrency((lead.loanAmount ?? lead.requestedAmount) as number)} · ${str(lead.grade ?? lead.gradeAlias ?? lead.score)}`}
               status={str(lead.status)}
               icon="person"
               onPress={() => navigation.navigate('LeadDetail', { id: String(lead.id) })}

@@ -10,6 +10,7 @@ import { leadNoteRepository } from '../repositories/lead-note.repository.js';
 import { leadRepository } from '../repositories/lead.repository.js';
 import type { RequestContext } from '../types/leads.types.js';
 import { auditLeadMutation, buildPaginationMeta } from '../utils/leads.utils.js';
+import { serializeLeadNote } from '../utils/lead-subresource-serializer.js';
 
 export const leadNoteService = {
   async list(query: ListLeadNotesQuery) {
@@ -26,7 +27,10 @@ export const leadNoteService = {
       leadNoteRepository.count(where),
     ]);
 
-    return { items, meta: buildPaginationMeta(query.page, query.limit, total) };
+    return {
+      items: items.map(serializeLeadNote),
+      meta: buildPaginationMeta(query.page, query.limit, total),
+    };
   },
 
   async getById(id: string) {

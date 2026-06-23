@@ -169,6 +169,6 @@ export const leadTimelineController = {
 
 export const leadAnalyticsController = {
   summary: async (req: Request, res: Response) => {
-    res.json(successResponse(await leadAnalyticsService.getSummary(req.query as never)));
+    res.json(successResponse(await leadAnalyticsService.getSummary(req.query as never, req.user!)));
   },
 };

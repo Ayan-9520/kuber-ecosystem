@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, EmptyState, Screen, StatusBadge } from '@/components/ui';
@@ -9,11 +10,14 @@ import { useAuth } from '@/hooks';
 import { formatCurrency, formatDateTime, getApiErrorMessage, str } from '@/lib/utils';
 import type { ApplicationsStackParamList } from '@/navigation/types';
 import { applicationsService } from '@/services';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { useAppTheme } from '@/theme/ThemeProvider';
 
 export function ApplicationsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ApplicationsStackParamList>>();
   const { customerId } = useAuth();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const applications = useQuery({
     queryKey: ['applications', customerId],
@@ -85,7 +89,7 @@ export function ApplicationsScreen() {
               <View style={styles.info}>
                 <Text style={styles.appNumber}>{str(app.applicationNumber ?? app.id)}</Text>
                 <Text style={styles.product}>{str(app.productName)}</Text>
-                <Text style={styles.amount}>{formatCurrency(app.requestedAmount as number)}</Text>
+                <Text style={styles.amount}>{formatCurrency((app.loanAmount ?? app.requestedAmount) as number)}</Text>
                 <Text style={styles.date}>{formatDateTime(app.createdAt as string)}</Text>
               </View>
               <View style={styles.trailing}>
@@ -100,13 +104,15 @@ export function ApplicationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  info: { flex: 1 },
-  appNumber: { ...typography.label, color: colors.text },
-  product: { ...typography.bodySm, color: colors.textMuted, marginTop: 2 },
-  amount: { ...typography.h3, color: colors.primary, marginTop: spacing.sm, fontSize: 16 },
-  date: { ...typography.bodySm, color: colors.textMuted, marginTop: 4, fontSize: 11 },
-  trailing: { alignItems: 'flex-end', gap: spacing.sm },
-  chevron: { marginTop: spacing.xs },
-});
+function createStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    info: { flex: 1 },
+    appNumber: { ...typography.label, color: colors.text },
+    product: { ...typography.bodySm, color: colors.textMuted, marginTop: 2 },
+    amount: { ...typography.h3, color: colors.primary, marginTop: spacing.sm, fontSize: 16 },
+    date: { ...typography.bodySm, color: colors.textMuted, marginTop: 4, fontSize: 11 },
+    trailing: { alignItems: 'flex-end', gap: spacing.sm },
+    chevron: { marginTop: spacing.xs },
+  });
+}

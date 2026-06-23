@@ -62,90 +62,91 @@ const rejectSchema = z.object({ reason: z.string().min(1).max(200) });
 
 export const documentRoutes = Router();
 documentRoutes.use(authenticateWithSessionMiddleware);
-documentRoutes.get('/', docsRead, validateMiddleware(listDocumentsQuerySchema, 'query'), documentController.list);
+documentRoutes.get('/', docsRead, validateMiddleware(listDocumentsQuerySchema, 'query'), asyncHandler(documentController.list));
+documentRoutes.get('/local-download', docsDownload, asyncHandler(documentController.localDownload));
 documentRoutes.post('/upload', docsWrite, validateMiddleware(uploadDocumentSchema), asyncHandler(documentController.upload));
-documentRoutes.post('/presign-upload', docsWrite, validateMiddleware(presignUploadSchema), documentController.presignUpload);
-documentRoutes.post('/confirm-upload', docsWrite, validateMiddleware(confirmUploadSchema), documentController.confirmUpload);
-documentRoutes.get('/:id/download-url', docsDownload, validateMiddleware(uuidParamSchema, 'params'), documentController.downloadUrl);
-documentRoutes.get('/:id', docsRead, validateMiddleware(uuidParamSchema, 'params'), documentController.getById);
+documentRoutes.post('/presign-upload', docsWrite, validateMiddleware(presignUploadSchema), asyncHandler(documentController.presignUpload));
+documentRoutes.post('/confirm-upload', docsWrite, validateMiddleware(confirmUploadSchema), asyncHandler(documentController.confirmUpload));
+documentRoutes.get('/:id/download-url', docsDownload, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(documentController.downloadUrl));
+documentRoutes.get('/:id', docsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(documentController.getById));
 documentRoutes.patch(
   '/:id/replace',
   docsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(replaceDocumentSchema),
-  documentController.replace,
+  asyncHandler(documentController.replace),
 );
 documentRoutes.post(
   '/:id/verify',
   docsVerify,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(verifyDocumentSchema),
-  documentController.verify,
+  asyncHandler(documentController.verify),
 );
-documentRoutes.post('/:id/approve', docsApprove, validateMiddleware(uuidParamSchema, 'params'), documentController.approve);
+documentRoutes.post('/:id/approve', docsApprove, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(documentController.approve));
 documentRoutes.post(
   '/:id/reject',
   docsApprove,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(rejectSchema),
-  documentController.reject,
+  asyncHandler(documentController.reject),
 );
-documentRoutes.delete('/:id', docsWrite, validateMiddleware(uuidParamSchema, 'params'), documentController.remove);
+documentRoutes.delete('/:id', docsWrite, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(documentController.remove));
 
 export const documentTypeRoutes = Router();
 documentTypeRoutes.use(authenticateWithSessionMiddleware);
-documentTypeRoutes.get('/', docsRead, validateMiddleware(listDocumentTypesQuerySchema, 'query'), documentTypeController.list);
-documentTypeRoutes.post('/', docsWrite, validateMiddleware(createDocumentTypeSchema), documentTypeController.create);
-documentTypeRoutes.get('/:id', docsRead, validateMiddleware(uuidParamSchema, 'params'), documentTypeController.getById);
+documentTypeRoutes.get('/', docsRead, validateMiddleware(listDocumentTypesQuerySchema, 'query'), asyncHandler(documentTypeController.list));
+documentTypeRoutes.post('/', docsWrite, validateMiddleware(createDocumentTypeSchema), asyncHandler(documentTypeController.create));
+documentTypeRoutes.get('/:id', docsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(documentTypeController.getById));
 documentTypeRoutes.patch(
   '/:id',
   docsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateDocumentTypeSchema),
-  documentTypeController.update,
+  asyncHandler(documentTypeController.update),
 );
-documentTypeRoutes.post('/:id/deactivate', docsWrite, validateMiddleware(uuidParamSchema, 'params'), documentTypeController.deactivate);
+documentTypeRoutes.post('/:id/deactivate', docsWrite, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(documentTypeController.deactivate));
 
 export const documentRequestRoutes = Router();
 documentRequestRoutes.use(authenticateWithSessionMiddleware);
-documentRequestRoutes.get('/', docsRead, validateMiddleware(listDocumentRequestsQuerySchema, 'query'), documentRequestController.list);
-documentRequestRoutes.post('/', docsWrite, validateMiddleware(createDocumentRequestSchema), documentRequestController.create);
-documentRequestRoutes.get('/:id', docsRead, validateMiddleware(uuidParamSchema, 'params'), documentRequestController.getById);
+documentRequestRoutes.get('/', docsRead, validateMiddleware(listDocumentRequestsQuerySchema, 'query'), asyncHandler(documentRequestController.list));
+documentRequestRoutes.post('/', docsWrite, validateMiddleware(createDocumentRequestSchema), asyncHandler(documentRequestController.create));
+documentRequestRoutes.get('/:id', docsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(documentRequestController.getById));
 documentRequestRoutes.patch(
   '/:id',
   docsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateDocumentRequestSchema),
-  documentRequestController.update,
+  asyncHandler(documentRequestController.update),
 );
 
 export const documentVersionRoutes = Router();
 documentVersionRoutes.use(authenticateWithSessionMiddleware);
-documentVersionRoutes.get('/', docsRead, validateMiddleware(listDocumentVersionsQuerySchema, 'query'), documentVersionController.list);
-documentVersionRoutes.get('/:id', docsRead, validateMiddleware(uuidParamSchema, 'params'), documentVersionController.getById);
+documentVersionRoutes.get('/', docsRead, validateMiddleware(listDocumentVersionsQuerySchema, 'query'), asyncHandler(documentVersionController.list));
+documentVersionRoutes.get('/:id', docsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(documentVersionController.getById));
 
 export const ocrResultRoutes = Router();
 ocrResultRoutes.use(authenticateWithSessionMiddleware);
-ocrResultRoutes.get('/', docsRead, validateMiddleware(listOcrResultsQuerySchema, 'query'), ocrResultController.list);
-ocrResultRoutes.post('/run', docsWrite, validateMiddleware(runOcrSchema), ocrResultController.run);
-ocrResultRoutes.get('/:id', docsRead, validateMiddleware(uuidParamSchema, 'params'), ocrResultController.getById);
+ocrResultRoutes.get('/', docsRead, validateMiddleware(listOcrResultsQuerySchema, 'query'), asyncHandler(ocrResultController.list));
+ocrResultRoutes.post('/run', docsWrite, validateMiddleware(runOcrSchema), asyncHandler(ocrResultController.run));
+ocrResultRoutes.get('/:id', docsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(ocrResultController.getById));
 
 export const verificationResultRoutes = Router();
 verificationResultRoutes.use(authenticateWithSessionMiddleware);
-verificationResultRoutes.get('/', docsRead, validateMiddleware(listVerificationResultsQuerySchema, 'query'), verificationResultController.list);
-verificationResultRoutes.post('/auto-verify', docsVerify, validateMiddleware(autoVerifySchema), verificationResultController.autoVerify);
-verificationResultRoutes.get('/:id', docsRead, validateMiddleware(uuidParamSchema, 'params'), verificationResultController.getById);
+verificationResultRoutes.get('/', docsRead, validateMiddleware(listVerificationResultsQuerySchema, 'query'), asyncHandler(verificationResultController.list));
+verificationResultRoutes.post('/auto-verify', docsVerify, validateMiddleware(autoVerifySchema), asyncHandler(verificationResultController.autoVerify));
+verificationResultRoutes.get('/:id', docsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(verificationResultController.getById));
 
 export const documentDeficiencyRoutes = Router();
 documentDeficiencyRoutes.use(authenticateWithSessionMiddleware);
-documentDeficiencyRoutes.post('/scan', docsVerify, validateMiddleware(scanDeficienciesSchema), documentDeficiencyController.scan);
-documentDeficiencyRoutes.get('/', docsRead, validateMiddleware(listDocumentDeficienciesQuerySchema, 'query'), documentDeficiencyController.list);
-documentDeficiencyRoutes.post('/', docsWrite, validateMiddleware(createDocumentDeficiencySchema), documentDeficiencyController.create);
-documentDeficiencyRoutes.get('/:id', docsRead, validateMiddleware(uuidParamSchema, 'params'), documentDeficiencyController.getById);
+documentDeficiencyRoutes.post('/scan', docsVerify, validateMiddleware(scanDeficienciesSchema), asyncHandler(documentDeficiencyController.scan));
+documentDeficiencyRoutes.get('/', docsRead, validateMiddleware(listDocumentDeficienciesQuerySchema, 'query'), asyncHandler(documentDeficiencyController.list));
+documentDeficiencyRoutes.post('/', docsWrite, validateMiddleware(createDocumentDeficiencySchema), asyncHandler(documentDeficiencyController.create));
+documentDeficiencyRoutes.get('/:id', docsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(documentDeficiencyController.getById));
 documentDeficiencyRoutes.patch(
   '/:id',
   docsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateDocumentDeficiencySchema),
-  documentDeficiencyController.update,
+  asyncHandler(documentDeficiencyController.update),
 );

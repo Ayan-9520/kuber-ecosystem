@@ -78,6 +78,14 @@ export function buildCustomerListWhere(
     return where;
   }
 
+  if (actor.userType === UserType.PARTNER && actor.partnerId) {
+    where.OR = [
+      { leads: { some: { partnerId: actor.partnerId, deletedAt: null } } },
+      { applications: { some: { partnerId: actor.partnerId } } },
+    ];
+    return where;
+  }
+
   switch (actor.dataScope) {
     case DataScope.ORGANIZATION:
       break;

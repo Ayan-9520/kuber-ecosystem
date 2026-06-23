@@ -4,12 +4,14 @@ import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ThemeAppearanceCard } from '@/components/ThemeAppearanceCard';
 import { Button, Card, Screen, StatusBadge } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { formatDate, maskPhone, str } from '@/lib/utils';
 import type { ProfileStackParamList } from '@/navigation/types';
 import { customerService, kycService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { radius, spacing, typography } from '@/theme';
+import { useAppTheme } from '@/theme/ThemeProvider';
 
 type Nav = NativeStackNavigationProp<ProfileStackParamList, 'ProfileHome'>;
 
@@ -23,13 +25,15 @@ interface MenuItem {
 const MENU: MenuItem[] = [
   { label: 'KYC Verification', icon: 'shield-checkmark', route: 'Kyc', subtitle: 'PAN & Aadhaar' },
   { label: 'Documents', icon: 'folder-open', route: 'Documents', subtitle: 'Upload & track' },
-  { label: 'Settings', icon: 'settings-outline', route: 'Settings', subtitle: 'Preferences' },
+  { label: 'Settings', icon: 'settings-outline', route: 'Settings', subtitle: 'Theme & notifications' },
   { label: 'Edit Profile', icon: 'create-outline', route: 'EditProfile', subtitle: 'Name & email' },
 ];
 
 export function ProfileScreen() {
   const navigation = useNavigation<Nav>();
   const { user, customerId, logout } = useAuth();
+  const { colors } = useAppTheme();
+  const styles = createStyles(colors);
 
   const customer = useQuery({
     queryKey: ['customer', customerId],
@@ -85,6 +89,8 @@ export function ProfileScreen() {
         ) : null}
       </Card>
 
+      <ThemeAppearanceCard />
+
       <Text style={styles.sectionTitle}>Account</Text>
       {MENU.map((item) => (
         <Pressable
@@ -110,13 +116,14 @@ export function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   avatar: {
     width: 64,
     height: 64,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(34,211,166,0.15)',
+    backgroundColor: `${colors.primary}26`,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -144,7 +151,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(34,211,166,0.1)',
+    backgroundColor: `${colors.primary}1A`,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -152,4 +159,5 @@ const styles = StyleSheet.create({
   menuLabel: { ...typography.label, color: colors.text },
   menuSub: { ...typography.bodySm, color: colors.textMuted, marginTop: 2 },
   logoutWrap: { marginTop: spacing.lg, marginBottom: spacing.xl },
-});
+  });
+}

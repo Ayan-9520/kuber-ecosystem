@@ -1,7 +1,9 @@
 import type { Prisma } from '@kuberone/database';
+import type { AuthenticatedUser } from '@kuberone/shared-types';
 import type { LeadAnalyticsQuery } from '@kuberone/shared-validation';
 
 import { prisma } from '../../../config/database.js';
+import { applyLeadScope } from '../../../shared/utils/data-scope.js';
 import { CONVERTED_STATUSES, GRADE_ALIASES } from '../constants/leads.constants.js';
 import { leadRepository } from '../repositories/lead.repository.js';
 import type { LeadAnalyticsSummary } from '../types/leads.types.js';
@@ -18,6 +20,7 @@ function buildBaseWhere(query: LeadAnalyticsQuery): Prisma.LeadWhereInput {
     ...(query.branchId ? { branchId: query.branchId } : {}),
     ...(query.regionId ? { regionId: query.regionId } : {}),
     ...(query.assignedToId ? { assignedToId: query.assignedToId } : {}),
+    ...(query.partnerId ? { partnerId: query.partnerId } : {}),
     ...(query.fromDate || query.toDate
       ? {
           createdAt: {
@@ -30,27 +33,49 @@ function buildBaseWhere(query: LeadAnalyticsQuery): Prisma.LeadWhereInput {
 }
 
 export const leadAnalyticsService = {
-  async getSummary(query: LeadAnalyticsQuery): Promise<LeadAnalyticsSummary & { gradeAliases: typeof GRADE_ALIASES }> {
-    const baseWhere = buildBaseWhere(query);
+  async getSummary(
+    query: LeadAnalyticsQuery,
+    actor?: AuthenticatedUser,
+  ): Promise<
+    LeadAnalyticsSummary & {
+      gradeAliases: typeof GRADE_ALIASES;
+      totalLeads: number;
+      inProcess: number;
+      rejected: number;
+      converted: number;
+      conversionRate: string;
+      conversionPct: number;
+      pipelineValue: number;
+      byStatusList: Array<{ status: string; count: number }>;
+    }
+  > {
+    const baseWhere = actor ? applyLeadScope(actor, buildBaseWhere(query)) : buildBaseWhere(query);
     const today = startOfToday();
 
     const [
+      totalLeads,
       todayLeads,
       qualifiedLeads,
       hotLeads,
       convertedLeads,
       lostLeads,
+      pipelineAgg,
       byStatus,
       byGrade,
       bySource,
       byAssignee,
       byBranch,
     ] = await Promise.all([
+      leadRepository.count(baseWhere),
       leadRepository.count({ ...baseWhere, createdAt: { gte: today } }),
       leadRepository.count({ ...baseWhere, status: 'QUALIFIED' }),
       leadRepository.count({ ...baseWhere, grade: { in: ['A_PLUS', 'A'] } }),
       leadRepository.count({ ...baseWhere, status: { in: [...CONVERTED_STATUSES] } }),
       leadRepository.count({ ...baseWhere, status: 'LOST' }),
+      prisma.lead.aggregate({
+        where: baseWhere,
+        _sum: { requestedAmount: true },
+      }),
       leadRepository.groupByStatus(baseWhere),
       leadRepository.groupByGrade(baseWhere),
       leadRepository.groupBySource(baseWhere),
@@ -121,13 +146,25 @@ export const leadAnalyticsService = {
       }),
     );
 
+    const byStatusMap = Object.fromEntries(byStatus.map((s) => [s.status, s._count.id]));
+    const inProcess = Math.max(totalLeads - convertedLeads - lostLeads, 0);
+    const conversionPct = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
+
     return {
+      totalLeads,
       todayLeads,
       qualifiedLeads,
       hotLeads,
       convertedLeads,
       lostLeads,
-      byStatus: Object.fromEntries(byStatus.map((s) => [s.status, s._count.id])),
+      inProcess,
+      rejected: lostLeads,
+      converted: convertedLeads,
+      conversionRate: `${conversionPct.toFixed(1)}%`,
+      conversionPct,
+      pipelineValue: Number(pipelineAgg._sum.requestedAmount ?? 0),
+      byStatus: byStatusMap,
+      byStatusList: byStatus.map((s) => ({ status: s.status, count: s._count.id })),
       byGrade: Object.fromEntries(byGrade.map((g) => [g.grade ?? 'UNSCORED', g._count.id])),
       bySource: bySource.map((s) => ({
         sourceId: s.sourceId,

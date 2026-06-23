@@ -1,26 +1,55 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Button, Input, Screen } from '@/components/ui';
+import { Button, Card, Input, Screen } from '@/components/ui';
 import { useAuth } from '@/hooks';
+import { DSA_PRODUCT_OPTIONS, sortProductsForDsa } from '@/lib/product-catalog';
 import { getApiErrorMessage, normalizePhone } from '@/lib/utils';
 import type { LeadsStackParamList } from '@/navigation/types';
 import { leadsService, productsService } from '@/services';
-import { colors, spacing } from '@/theme';
+import { radius, spacing, typography } from '@/theme';
+import { useAppTheme } from '@/theme/ThemeProvider';
+
+const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
+
+function createStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    error: { color: colors.danger, marginBottom: spacing.md },
+    sectionLabel: { ...typography.label, color: colors.textMuted, marginBottom: spacing.sm, marginTop: spacing.sm },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
+    chip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    chipActive: { borderColor: colors.primary, backgroundColor: `${colors.primary}18` },
+    chipText: { ...typography.bodySm, color: colors.textSecondary },
+    chipTextActive: { color: colors.primary, fontWeight: '600' },
+    hint: { ...typography.caption, color: colors.textMuted, marginBottom: spacing.md },
+  });
+}
 
 export function CreateLeadScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<LeadsStackParamList>>();
   const queryClient = useQueryClient();
   const { partnerId } = useAuth();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [prospectName, setProspectName] = useState('');
   const [prospectPhone, setProspectPhone] = useState('');
   const [prospectEmail, setProspectEmail] = useState('');
   const [requestedAmount, setRequestedAmount] = useState('');
   const [productId, setProductId] = useState('');
   const [sourceId, setSourceId] = useState('');
+  const [priority, setPriority] = useState<(typeof PRIORITIES)[number]>('MEDIUM');
   const [error, setError] = useState('');
 
   const sources = useQuery({
@@ -29,28 +58,30 @@ export function CreateLeadScreen() {
   });
 
   const products = useQuery({
-    queryKey: ['products'],
-    queryFn: () => productsService.list({ limit: 50 }),
-    retry: false,
+    queryKey: ['dsa-products'],
+    queryFn: () => productsService.list({ limit: 50, isActive: true }),
   });
 
-  const existingLeads = useQuery({
-    queryKey: ['leads-products-fallback'],
-    queryFn: () => leadsService.list({ limit: 50 }),
-    enabled: products.isError,
-  });
-
-  const productOptions = products.data?.items.length
-    ? products.data.items
-    : [...new Map(
-        (existingLeads.data?.items ?? [])
-          .filter((l) => l.productId)
-          .map((l) => [String(l.productId), { id: l.productId, name: l.productName ?? 'Product' }]),
-      ).values()];
+  const productOptions = useMemo(
+    () => sortProductsForDsa(products.data?.items ?? []),
+    [products.data?.items],
+  );
 
   const sourceOptions = sources.data?.items ?? [];
   const defaultSource = sourceOptions.find((s) => s.code === 'DSA') ?? sourceOptions[0];
-  const defaultProduct = productOptions[0];
+
+  useEffect(() => {
+    if (!productId && productOptions.length > 0) {
+      const preferred =
+        productOptions.find((p) => String(p.code).toUpperCase() === 'PL-01') ?? productOptions[0];
+      setProductId(String(preferred?.id ?? ''));
+    }
+    if (!sourceId && defaultSource?.id) {
+      setSourceId(String(defaultSource.id));
+    }
+  }, [productId, productOptions, sourceId, defaultSource?.id]);
+
+  const selectedProduct = productOptions.find((p) => String(p.id) === productId);
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -58,14 +89,17 @@ export function CreateLeadScreen() {
         prospectName: prospectName.trim(),
         prospectPhone: normalizePhone(prospectPhone),
         prospectEmail: prospectEmail.trim() || undefined,
-        requestedAmount: requestedAmount ? Number(requestedAmount) : undefined,
-        productId: productId || defaultProduct?.id,
-        sourceId: sourceId || defaultSource?.id,
+        requestedAmount: requestedAmount ? Number(requestedAmount.replace(/,/g, '')) : undefined,
+        productId,
+        sourceId,
         partnerId,
-        priority: 'MEDIUM',
+        priority,
         assignImmediately: true,
         scoringProfile: requestedAmount
-          ? { loanAmount: Number(requestedAmount), monthlyIncome: Number(requestedAmount) / 20 }
+          ? {
+              loanAmount: Number(requestedAmount.replace(/,/g, '')),
+              monthlyIncome: Number(requestedAmount.replace(/,/g, '')) / 20,
+            }
           : undefined,
       }),
     onSuccess: async (lead) => {
@@ -76,16 +110,16 @@ export function CreateLeadScreen() {
   });
 
   const submit = () => {
-    if (!prospectName.trim() || prospectPhone.length < 10) {
-      setError('Name and valid mobile are required');
+    if (!prospectName.trim() || prospectPhone.replace(/\D/g, '').length < 10) {
+      setError('Name and valid 10-digit mobile are required');
       return;
     }
-    if (!productId && !defaultProduct?.id) {
-      setError('No product available. Create a lead from admin or contact support.');
+    if (!productId) {
+      setError('Select a loan product');
       return;
     }
-    if (!sourceId && !defaultSource?.id) {
-      setError('Lead source not configured');
+    if (!sourceId) {
+      setError('Lead source not configured — contact support');
       return;
     }
     setError('');
@@ -93,37 +127,91 @@ export function CreateLeadScreen() {
   };
 
   return (
-    <Screen title="Create Lead" subtitle="Submit a new prospect to your pipeline">
+    <Screen title="New Lead" subtitle="Add prospect to your DSA pipeline">
+      <Text style={styles.hint}>Lead will be linked to your partner account automatically.</Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Input label="Prospect Name" value={prospectName} onChangeText={setProspectName} />
-      <Input label="Mobile" keyboardType="phone-pad" maxLength={10} value={prospectPhone} onChangeText={setProspectPhone} />
-      <Input label="Email (optional)" keyboardType="email-address" autoCapitalize="none" value={prospectEmail} onChangeText={setProspectEmail} />
-      <Input label="Loan Amount (₹)" keyboardType="numeric" value={requestedAmount} onChangeText={setRequestedAmount} />
-
-      {productOptions.length > 0 && (
+      <Card title="Prospect Details" elevated>
+        <Input label="Full Name *" value={prospectName} onChangeText={setProspectName} placeholder="e.g. Rahul Sharma" />
         <Input
-          label={`Product (${String(defaultProduct?.name ?? 'select')})`}
-          placeholder="Product ID (auto-selected if blank)"
-          value={productId}
-          onChangeText={setProductId}
+          label="Mobile *"
+          keyboardType="phone-pad"
+          maxLength={10}
+          value={prospectPhone}
+          onChangeText={setProspectPhone}
+          placeholder="10-digit number"
         />
-      )}
-
-      {sourceOptions.length > 0 && (
         <Input
-          label={`Source (${String(defaultSource?.name ?? 'DSA')})`}
-          placeholder="Source ID (auto-selected if blank)"
-          value={sourceId}
-          onChangeText={setSourceId}
+          label="Email (optional)"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={prospectEmail}
+          onChangeText={setProspectEmail}
         />
-      )}
+        <Input
+          label="Expected Loan Amount (₹)"
+          keyboardType="numeric"
+          value={requestedAmount}
+          onChangeText={setRequestedAmount}
+          placeholder="e.g. 2500000"
+        />
+      </Card>
 
-      <Button title="Create Lead" fullWidth loading={createMutation.isPending} onPress={submit} />
+      <Card title="Product *" elevated>
+        {products.isLoading ? (
+          <Text style={styles.hint}>Loading products...</Text>
+        ) : productOptions.length === 0 ? (
+          <Text style={styles.error}>Products unavailable. Run seed or contact admin.</Text>
+        ) : (
+          <>
+            <Text style={styles.sectionLabel}>Select product</Text>
+            <View style={styles.chipRow}>
+              {productOptions.map((product) => {
+                const id = String(product.id);
+                const label =
+                  DSA_PRODUCT_OPTIONS.find((e) => e.code === String(product.code).toUpperCase())?.label ??
+                  String(product.name);
+                return (
+                  <Pressable
+                    key={id}
+                    style={[styles.chip, productId === id && styles.chipActive]}
+                    onPress={() => setProductId(id)}
+                  >
+                    <Text style={[styles.chipText, productId === id && styles.chipTextActive]}>{label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {selectedProduct ? (
+              <Text style={styles.hint}>
+                Selected: {String(selectedProduct.name)} ({String(selectedProduct.code)})
+              </Text>
+            ) : null}
+          </>
+        )}
+      </Card>
+
+      <Card title="Priority" elevated>
+        <View style={styles.chipRow}>
+          {PRIORITIES.map((p) => (
+            <Pressable
+              key={p}
+              style={[styles.chip, priority === p && styles.chipActive]}
+              onPress={() => setPriority(p)}
+            >
+              <Text style={[styles.chipText, priority === p && styles.chipTextActive]}>{p}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </Card>
+
+      <Button
+        title="Create Lead"
+        fullWidth
+        loading={createMutation.isPending}
+        onPress={submit}
+        icon={<Ionicons name="person-add" size={18} color={colors.onPrimary} />}
+      />
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  error: { color: colors.danger, marginBottom: spacing.md },
-});

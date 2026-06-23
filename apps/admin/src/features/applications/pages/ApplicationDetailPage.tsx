@@ -14,6 +14,7 @@ import {
   Tabs,
 } from '@/components/ui';
 import { CopilotApplicationPanel } from '@/features/copilot';
+import { ApplicationWorkflowPanel } from '@/features/applications/components/ApplicationWorkflowPanel';
 import { RecommendationsPanel } from '@/features/recommendations';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
 import { applicationsService } from '@/services/index';
@@ -35,11 +36,71 @@ function str(v: unknown): string {
   return String(v);
 }
 
+function customerDisplayName(data: Record<string, unknown>): string {
+  const nested = data.customer as Record<string, unknown> | undefined;
+  return str(data.customerName ?? nested?.fullName ?? data.customerId);
+}
+
+function productDisplayName(data: Record<string, unknown>): string {
+  const nested = data.product as Record<string, unknown> | undefined;
+  return str(data.productName ?? nested?.name ?? data.productId);
+}
+
+function partnerDisplayName(data: Record<string, unknown>): string {
+  const nested = data.partner as Record<string, unknown> | undefined;
+  return str(data.partnerName ?? nested?.businessName ?? '—');
+}
+
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <div className="info-item-label">{label}</div>
       <div className="info-item-value">{value}</div>
+    </div>
+  );
+}
+
+function WizardMetadataView({ metadata }: { metadata: Record<string, unknown> }) {
+  const personal = metadata.personal as Record<string, unknown> | undefined;
+  const employment = metadata.employment as Record<string, unknown> | undefined;
+  const income = metadata.income as Record<string, unknown> | undefined;
+  const collateral = metadata.collateral as Record<string, unknown> | null | undefined;
+  const business = metadata.business as Record<string, unknown> | null | undefined;
+  const insurance = metadata.insurance as Record<string, unknown> | null | undefined;
+  const creditCard = metadata.creditCard as Record<string, unknown> | null | undefined;
+  const address = personal?.address as Record<string, unknown> | undefined;
+
+  return (
+    <div className="info-grid">
+      <InfoItem
+        label="Applicant"
+        value={str([personal?.firstName, personal?.lastName].filter(Boolean).join(' '))}
+      />
+      <InfoItem label="Phone" value={str(personal?.phone)} />
+      <InfoItem label="Email" value={str(personal?.email)} />
+      <InfoItem
+        label="City"
+        value={str(address?.city ?? personal?.city)}
+      />
+      <InfoItem label="Employment" value={str(employment?.employmentType)} />
+      <InfoItem label="Employer" value={str(employment?.employerName)} />
+      <InfoItem label="Monthly Income" value={str(income?.monthlyIncome)} />
+      {collateral?.type === 'property' && (
+        <InfoItem label="Property" value={str(collateral.propertyType)} />
+      )}
+      {collateral?.type === 'vehicle' && (
+        <InfoItem
+          label="Vehicle"
+          value={str([collateral.vehicleMake, collateral.vehicleModel].filter(Boolean).join(' '))}
+        />
+      )}
+      {business && <InfoItem label="Turnover" value={str(business.turnover)} />}
+      {insurance && (
+        <InfoItem label="Insurance" value={`${str(insurance.policyType)} · ₹${str(insurance.sumAssured)}`} />
+      )}
+      {creditCard && (
+        <InfoItem label="Credit Card" value={`${str(creditCard.cardType)} · ${str(creditCard.preference)}`} />
+      )}
     </div>
   );
 }
@@ -109,7 +170,7 @@ export function ApplicationDetailPage() {
     <div className="page-container">
       <PageHeader
         title={`Application ${str(data.applicationNumber ?? data.id)}`}
-        subtitle={str(data.customerName ?? data.customerId)}
+        subtitle={customerDisplayName(data)}
         actions={
           <Button variant="ghost" onClick={() => navigate('/applications')}>
             <ArrowLeft size={16} />
@@ -124,6 +185,8 @@ export function ApplicationDetailPage() {
 
       <Tabs tabs={TABS} active={tab} onChange={setTab} />
 
+      {id ? <ApplicationWorkflowPanel applicationId={id} data={data} /> : null}
+
       {tab === 'recommendations' && id && <RecommendationsPanel entityType="APPLICATION" entityId={id} />}
 
       {tab === 'copilot' && id && <CopilotApplicationPanel applicationId={id} />}
@@ -132,13 +195,22 @@ export function ApplicationDetailPage() {
         <div className="detail-grid">
           <Card title="Application Details">
             <div className="info-grid">
-              <InfoItem label="Customer" value={str(data.customerName ?? data.customerId)} />
-              <InfoItem label="Product" value={str(data.productName ?? data.productId)} />
-              <InfoItem label="Loan Amount" value={formatCurrency(data.loanAmount as number)} />
+              <InfoItem label="Customer" value={customerDisplayName(data)} />
+              <InfoItem label="Product" value={productDisplayName(data)} />
+              <InfoItem label="DSA / Partner" value={partnerDisplayName(data)} />
+              <InfoItem label="Loan Amount" value={formatCurrency((data.loanAmount ?? data.requestedAmount) as number)} />
               <InfoItem label="Tenure" value={`${str(data.tenureMonths)} months`} />
               <InfoItem label="Interest Rate" value={data.interestRate ? `${data.interestRate}%` : '—'} />
               <InfoItem label="Lender" value={str(data.lenderName ?? data.lenderId)} />
               <InfoItem label="Branch" value={str(data.branchName ?? data.branchId)} />
+              <InfoItem label="Linked Lead" value={str(data.leadNumber ?? data.leadId)} />
+              {data.leadId ? (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <Button variant="secondary" size="sm" onClick={() => navigate(`/leads/${data.leadId}`)}>
+                    Open CRM Lead
+                  </Button>
+                </div>
+              ) : null}
               <InfoItem label="Submitted" value={formatDateTime(data.submittedAt as string)} />
               <InfoItem label="Created" value={formatDateTime(data.createdAt as string)} />
             </div>
@@ -152,6 +224,11 @@ export function ApplicationDetailPage() {
               <InfoItem label="Disbursement" value={str(data.disbursementStatus)} />
             </div>
           </Card>
+          {(data.wizardMetadata as Record<string, unknown> | null) && (
+            <Card title="Applicant Profile (Wizard)">
+              <WizardMetadataView metadata={data.wizardMetadata as Record<string, unknown>} />
+            </Card>
+          )}
         </div>
       )}
 

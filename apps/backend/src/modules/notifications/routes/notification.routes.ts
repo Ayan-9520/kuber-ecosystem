@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { RBAC_PERMISSIONS } from '../../../shared/constants/rbac.constants.js';
+import { asyncHandler } from '../../../shared/middleware/async-handler.middleware.js';
 import { authenticateWithSessionMiddleware } from '../../../shared/middleware/authenticate.middleware.js';
 import { requireAnyPermission } from '../../../shared/middleware/rbac.middleware.js';
 import { validateMiddleware } from '../../../shared/middleware/validate.middleware.js';
@@ -43,13 +44,13 @@ const configure = requireAnyPermission(RBAC_PERMISSIONS.NOTIFICATIONS_CONFIGURE,
 
 export const notificationRoutes = Router();
 notificationRoutes.use(authenticateWithSessionMiddleware);
-notificationRoutes.get('/', read, validateMiddleware(listNotificationsQuerySchema, 'query'), notificationController.list);
-notificationRoutes.post('/send', send, validateMiddleware(sendNotificationSchema), notificationController.send);
-notificationRoutes.post('/process-queue', configure, notificationController.processQueue);
-notificationRoutes.post('/users/:userId/read-all', write, validateMiddleware(userIdParamSchema, 'params'), notificationController.markAllRead);
-notificationRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), notificationController.getById);
-notificationRoutes.post('/:id/read', write, validateMiddleware(uuidParamSchema, 'params'), notificationController.markRead);
-notificationRoutes.delete('/:id', write, validateMiddleware(uuidParamSchema, 'params'), notificationController.remove);
+notificationRoutes.get('/', read, validateMiddleware(listNotificationsQuerySchema, 'query'), asyncHandler(notificationController.list));
+notificationRoutes.post('/send', send, validateMiddleware(sendNotificationSchema), asyncHandler(notificationController.send));
+notificationRoutes.post('/process-queue', configure, asyncHandler(notificationController.processQueue));
+notificationRoutes.post('/users/:userId/read-all', write, validateMiddleware(userIdParamSchema, 'params'), asyncHandler(notificationController.markAllRead));
+notificationRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(notificationController.getById));
+notificationRoutes.post('/:id/read', write, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(notificationController.markRead));
+notificationRoutes.delete('/:id', write, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(notificationController.remove));
 
 export const notificationTemplateRoutes = Router();
 notificationTemplateRoutes.use(authenticateWithSessionMiddleware);
@@ -105,6 +106,6 @@ pushRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), push
 
 export const communicationLogRoutes = Router();
 communicationLogRoutes.use(authenticateWithSessionMiddleware);
-communicationLogRoutes.get('/analytics', read, validateMiddleware(notificationAnalyticsQuerySchema, 'query'), communicationLogController.analytics);
-communicationLogRoutes.get('/', read, validateMiddleware(listCommunicationLogsQuerySchema, 'query'), communicationLogController.list);
-communicationLogRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), communicationLogController.getById);
+communicationLogRoutes.get('/analytics', read, validateMiddleware(notificationAnalyticsQuerySchema, 'query'), asyncHandler(communicationLogController.analytics));
+communicationLogRoutes.get('/', read, validateMiddleware(listCommunicationLogsQuerySchema, 'query'), asyncHandler(communicationLogController.list));
+communicationLogRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(communicationLogController.getById));

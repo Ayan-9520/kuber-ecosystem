@@ -7,6 +7,8 @@ import type {
 
 import { NotFoundError } from '../../../shared/errors/app-error.js';
 import { authAuditRepository } from '../../auth/repositories/audit.repository.js';
+import { commissionLedgerRepository } from '../../commissions/repositories/commission.repository.js';
+import { commissionLedgerService } from '../../commissions/services/commission-ledger.service.js';
 import { applicationRepository } from '../repositories/application.repository.js';
 import { disbursementRepository } from '../repositories/disbursement.repository.js';
 import type { RequestContext } from '../types/applications.types.js';
@@ -15,6 +17,38 @@ import { auditApplicationMutation, buildPaginationMeta } from '../utils/applicat
 import { applicationTimelineService } from './application-timeline.service.js';
 import { applicationWorkflowService } from './application-workflow.service.js';
 import { closureService } from './closure.service.js';
+
+async function tryCalculateDisbursementCommission(
+  applicationId: string,
+  disbursementAmount: number,
+  lenderId: string | null | undefined,
+  ctx: RequestContext,
+): Promise<void> {
+  const application = await applicationRepository.findById(applicationId);
+  if (!application?.partnerId) return;
+
+  const existing = await commissionLedgerRepository.count({
+    applicationId,
+    commissionType: 'DISBURSEMENT',
+    deletedAt: null,
+  });
+  if (existing > 0) return;
+
+  await commissionLedgerService.calculate(
+    {
+      partnerId: application.partnerId,
+      commissionType: 'DISBURSEMENT',
+      baseAmount: disbursementAmount,
+      leadId: application.leadId ?? undefined,
+      applicationId,
+      branchId: application.branchId ?? undefined,
+      productId: application.productId ?? undefined,
+      lenderId: lenderId ?? application.selectedLenderId ?? undefined,
+      notes: 'Auto-calculated on disbursement',
+    },
+    ctx,
+  );
+}
 
 export const disbursementService = {
   async list(query: ListDisbursementsQuery) {
@@ -73,6 +107,13 @@ export const disbursementService = {
         },
         ctx,
       );
+
+      await tryCalculateDisbursementCommission(
+        input.applicationId,
+        input.disbursementAmount,
+        input.lenderId,
+        ctx,
+      );
     }
 
     await applicationTimelineService.addEvent(
@@ -105,6 +146,12 @@ export const disbursementService = {
 
     if (input.status === 'COMPLETED' && existing.status !== 'COMPLETED') {
       await applicationWorkflowService.transition(existing.applicationId, 'DISBURSED', ctx, 'Disbursement completed');
+      await tryCalculateDisbursementCommission(
+        existing.applicationId,
+        input.disbursementAmount ?? Number(existing.disbursementAmount),
+        input.lenderId ?? existing.lenderId,
+        ctx,
+      );
     }
 
     await auditApplicationMutation(authAuditRepository.log, ctx, 'DISBURSEMENT_UPDATED', 'disbursement', id, input);

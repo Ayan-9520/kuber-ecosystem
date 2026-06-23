@@ -1,5 +1,7 @@
 import type { Request, Response } from 'express';
+import { UserType } from '@kuberone/shared-types';
 
+import { ForbiddenError } from '../../../shared/errors/app-error.js';
 import { paginatedResponse, successResponse } from '../../../shared/responses/success-response.js';
 import { communicationLogService, notificationAnalyticsService } from '../services/communication-log.service.js';
 import { emailService } from '../services/email.service.js';
@@ -20,9 +22,26 @@ function ctx(req: Request): RequestContext {
   };
 }
 
+function scopedUserId(req: Request, requestedUserId?: string): string | undefined {
+  if (req.user?.userType === UserType.CUSTOMER) {
+    return req.user.id;
+  }
+  return requestedUserId;
+}
+
+function assertSelfUserAccess(req: Request, targetUserId: string): void {
+  if (req.user?.userType === UserType.CUSTOMER && req.user.id !== targetUserId) {
+    throw new ForbiddenError('You can only access your own notifications');
+  }
+}
+
 export const notificationController = {
   list: async (req: Request, res: Response) => {
-    const result = await notificationService.list(req.query as never);
+    const query = {
+      ...(req.query as Record<string, unknown>),
+      userId: scopedUserId(req, req.query.userId as string | undefined),
+    };
+    const result = await notificationService.list(query as never);
     res.json(paginatedResponse(result.items, result.meta));
   },
   getById: async (req: Request, res: Response) => {
@@ -35,6 +54,7 @@ export const notificationController = {
     res.json(successResponse(await notificationService.markRead(req.params.id as string, ctx(req))));
   },
   markAllRead: async (req: Request, res: Response) => {
+    assertSelfUserAccess(req, req.params.userId as string);
     res.json(successResponse(await notificationService.markAllRead(req.params.userId as string, ctx(req))));
   },
   remove: async (req: Request, res: Response) => {
@@ -69,7 +89,11 @@ export const notificationTemplateController = {
 
 export const notificationPreferenceController = {
   list: async (req: Request, res: Response) => {
-    const result = await notificationPreferenceService.list(req.query as never);
+    const query = {
+      ...(req.query as Record<string, unknown>),
+      userId: scopedUserId(req, req.query.userId as string | undefined),
+    };
+    const result = await notificationPreferenceService.list(query as never);
     res.json(paginatedResponse(result.items, result.meta));
   },
   upsert: async (req: Request, res: Response) => {
@@ -137,7 +161,11 @@ export const pushController = {
 
 export const communicationLogController = {
   list: async (req: Request, res: Response) => {
-    const result = await communicationLogService.list(req.query as never);
+    const query = {
+      ...(req.query as Record<string, unknown>),
+      recipientUserId: scopedUserId(req, req.query.recipientUserId as string | undefined),
+    };
+    const result = await communicationLogService.list(query as never);
     res.json(paginatedResponse(result.items, result.meta));
   },
   getById: async (req: Request, res: Response) => {

@@ -7,7 +7,10 @@ import type {
   UpdateLeadInput,
 } from '@kuberone/shared-validation';
 
+import { UserType } from '@kuberone/shared-types';
+
 import { env } from '../../../config/env.js';
+import { prisma } from '../../../config/database.js';
 import { NotFoundError } from '../../../shared/errors/app-error.js';
 import { emitAutomationEvent } from '../../../shared/utils/automation-emitter.util.js';
 import { applyLeadScope, assertLeadAccess } from '../../../shared/utils/data-scope.js';
@@ -24,6 +27,7 @@ import {
   generateLeadNumber,
   leadsToCsv,
 } from '../utils/leads.utils.js';
+import { serializeLead } from '../utils/lead-serializer.js';
 
 import { leadAssignmentService } from './lead-assignment.service.js';
 import { leadFollowUpService } from './lead-followup.service.js';
@@ -63,11 +67,21 @@ function buildListWhere(query: ListLeadsQuery): Prisma.LeadWhereInput {
   };
 }
 
-function enrichLead<T extends { grade?: string | null }>(lead: T) {
+function enrichLead<T extends Parameters<typeof serializeLead>[0]>(lead: T) {
   return {
-    ...lead,
+    ...serializeLead(lead),
     gradeAlias: lead.grade ? (GRADE_ALIASES[lead.grade] ?? lead.grade) : null,
   };
+}
+
+function resolvePartnerIdForCreate(
+  actor: AuthenticatedUser,
+  inputPartnerId?: string,
+): string | undefined {
+  if (actor.userType === UserType.PARTNER && actor.partnerId) {
+    return actor.partnerId;
+  }
+  return inputPartnerId;
 }
 
 export const leadService = {
@@ -115,7 +129,7 @@ export const leadService = {
       productId: input.productId,
       variantId: input.variantId,
       sourceId: input.sourceId,
-      partnerId: input.partnerId,
+      partnerId: resolvePartnerIdForCreate(actor, input.partnerId),
       branchId: input.branchId,
       regionId: input.regionId,
       requestedAmount: input.requestedAmount,
@@ -194,7 +208,7 @@ export const leadService = {
       productId: input.productId,
       variantId: input.variantId,
       sourceId: input.sourceId,
-      partnerId: input.partnerId,
+      partnerId: resolvePartnerIdForCreate(actor, input.partnerId ?? existing.partnerId ?? undefined),
       branchId: input.branchId,
       regionId: input.regionId,
       status: input.status as never,
@@ -216,6 +230,12 @@ export const leadService = {
 
   async remove(actor: AuthenticatedUser, id: string, ctx: RequestContext) {
     await leadService.getById(actor, id);
+
+    await prisma.application.updateMany({
+      where: { leadId: id, deletedAt: null },
+      data: { deletedAt: new Date(), deletedById: ctx.actorId },
+    });
+
     await leadRepository.softDelete(id, ctx.actorId);
     await auditLeadMutation(authAuditRepository.log, ctx, 'LEAD_DELETED', 'lead', id);
   },

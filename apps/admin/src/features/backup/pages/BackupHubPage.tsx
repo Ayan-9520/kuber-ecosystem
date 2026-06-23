@@ -143,7 +143,7 @@ export function BackupHubPage() {
             <StatCard label="DR Readiness" value={`${fieldStr(drSummary, 'drReadinessPercent')}%`} />
             <StatCard label="Resilience Score" value={fieldStr(drSummary, 'productionResilienceScore')} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+          <div className="stat-grid mt-4">
             <StatCard label="Active Jobs" value={fieldStr(summary, 'activeJobs')} />
             <StatCard label="Executions (24h)" value={fieldStr(summary, 'executions')} />
             <StatCard label="Success Rate" value={`${fieldStr(summary, 'successRate')}%`} />

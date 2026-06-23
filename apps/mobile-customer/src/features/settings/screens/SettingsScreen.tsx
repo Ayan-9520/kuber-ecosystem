@@ -14,8 +14,10 @@ import { ThemeAppearanceCard } from '@/components/ThemeAppearanceCard';
 import { Card, Screen } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { getApiErrorMessage, str } from '@/lib/utils';
+import { notificationQueryKeys } from '@/lib/notification-queries';
 import { notificationsService } from '@/services';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { useAppTheme } from '@/theme/ThemeProvider';
 
 const CHANNEL_LABELS: Record<string, string> = {
   IN_APP: 'In-App',
@@ -46,11 +48,14 @@ function formatLabel(key: string, map: Record<string, string>): string {
 export function SettingsScreen() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const preferences = useQuery({
-    queryKey: ['notification-preferences', user?.id],
+    queryKey: notificationQueryKeys.preferences(user?.id),
     queryFn: () => notificationsService.preferences(user!.id),
     enabled: !!user?.id,
+    staleTime: 120_000,
   });
 
   const upsert = useMutation({
@@ -62,7 +67,7 @@ export function SettingsScreen() {
         enabled: data.enabled,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notification-preferences', user?.id] });
+      queryClient.invalidateQueries({ queryKey: notificationQueryKeys.preferences(user?.id) });
     },
   });
 
@@ -133,7 +138,7 @@ export function SettingsScreen() {
                       value={enabled}
                       onValueChange={(val) => togglePreference(pref, val)}
                       disabled={pending}
-                      trackColor={{ false: colors.border, true: 'rgba(34,211,166,0.35)' }}
+                      trackColor={{ false: colors.border, true: `${colors.primary}59` }}
                       thumbColor={enabled ? colors.primary : colors.textMuted}
                     />
                   </View>
@@ -151,16 +156,18 @@ export function SettingsScreen() {
       </Card>
 
       <Card title="App Information">
-        <InfoRow icon="phone-portrait-outline" label="App" value="KuberOne Customer" />
-        <InfoRow icon="git-branch-outline" label="Version" value={appVersion} />
-        <InfoRow icon="build-outline" label="Build" value={String(buildNumber)} />
+        <InfoRow styles={styles} icon="phone-portrait-outline" label="App" value="KuberOne Customer" colors={colors} />
+        <InfoRow styles={styles} icon="git-branch-outline" label="Version" value={appVersion} colors={colors} />
+        <InfoRow styles={styles} icon="build-outline" label="Build" value={String(buildNumber)} colors={colors} />
         <InfoRow
+          styles={styles}
           icon="server-outline"
           label="API"
           value={Constants.expoConfig?.extra?.apiBaseUrl as string ?? process.env.EXPO_PUBLIC_API_BASE_URL ?? '—'}
+          colors={colors}
         />
-        {user?.email && <InfoRow icon="mail-outline" label="Account" value={user.email} />}
-        {user?.phone && <InfoRow icon="call-outline" label="Phone" value={user.phone} />}
+        {user?.email && <InfoRow styles={styles} icon="mail-outline" label="Account" value={user.email} colors={colors} />}
+        {user?.phone && <InfoRow styles={styles} icon="call-outline" label="Phone" value={user.phone} colors={colors} />}
       </Card>
 
       <Card title="About">
@@ -178,10 +185,14 @@ function InfoRow({
   icon,
   label,
   value,
+  colors,
+  styles,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value: string;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+  styles: ReturnType<typeof createStyles>;
 }) {
   return (
     <View style={styles.infoRow}>
@@ -194,7 +205,8 @@ function InfoRow({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
   loadingRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -237,4 +249,5 @@ const styles = StyleSheet.create({
   copyright: { ...typography.bodySm, color: colors.textMuted, marginTop: spacing.md },
   muted: { ...typography.bodySm, color: colors.textMuted },
   error: { ...typography.bodySm, color: colors.danger, marginTop: spacing.sm },
-});
+  });
+}

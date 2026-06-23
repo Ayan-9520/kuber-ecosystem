@@ -6,7 +6,7 @@ const leadInclude = {
   source: true,
   product: { include: { family: true } },
   variant: true,
-  customer: true,
+  customer: { include: { user: { select: { id: true, phone: true, email: true } } } },
   partner: true,
   branch: true,
   region: true,

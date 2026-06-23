@@ -21,12 +21,20 @@ export type HomeStackParamList = {
 export type ApplicationsStackParamList = {
   ApplicationsList: undefined;
   ApplicationDetail: { id: string };
-  ApplicationWizard: { productSlug?: string; productName?: string; variant?: string };
+  ApplicationWizard: {
+    productSlug?: string;
+    productName?: string;
+    variant?: string;
+    familyCode?: string;
+    productCode?: string;
+    productId?: string;
+    variantId?: string;
+  };
 };
 
 export type ProductsStackParamList = {
   ProductsList: undefined;
-  ProductDetail: { slug?: string; id?: string; name?: string; variant?: string };
+  ProductDetail: { slug?: string; id?: string; name?: string; variant?: string; familyCode?: string };
 };
 
 export type SupportStackParamList = {

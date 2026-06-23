@@ -20,16 +20,29 @@ const STATUS_OPTIONS = [
   { value: '', label: 'All Statuses' },
   { value: 'DRAFT', label: 'Draft' },
   { value: 'SUBMITTED', label: 'Submitted' },
-  { value: 'IN_REVIEW', label: 'In Review' },
-  { value: 'APPROVED', label: 'Approved' },
+  { value: 'UNDER_REVIEW', label: 'Under Review' },
+  { value: 'DOCUMENT_PENDING', label: 'Document Pending' },
+  { value: 'BANK_LOGIN', label: 'Bank Login' },
+  { value: 'CREDIT_REVIEW', label: 'Credit Review' },
   { value: 'SANCTIONED', label: 'Sanctioned' },
   { value: 'DISBURSED', label: 'Disbursed' },
+  { value: 'CLOSED', label: 'Closed' },
   { value: 'REJECTED', label: 'Rejected' },
 ];
 
 function str(v: unknown): string {
   if (v === null || v === undefined) return '—';
   return String(v);
+}
+
+function customerDisplayName(r: Record<string, unknown>): string {
+  const nested = r.customer as Record<string, unknown> | undefined;
+  return str(r.customerName ?? nested?.fullName ?? r.customerId);
+}
+
+function productDisplayName(r: Record<string, unknown>): string {
+  const nested = r.product as Record<string, unknown> | undefined;
+  return str(r.productName ?? nested?.name ?? r.productId);
 }
 
 export function ApplicationsPage() {
@@ -66,7 +79,7 @@ export function ApplicationsPage() {
       </div>
 
       {isLoading ? (
-        <TableSkeleton rows={8} cols={6} />
+        <TableSkeleton rows={8} cols={7} />
       ) : isError ? (
         <EmptyState title="Failed to load applications" />
       ) : (data?.items.length ?? 0) === 0 ? (
@@ -79,9 +92,13 @@ export function ApplicationsPage() {
           <DataTable
             columns={[
               { key: 'applicationNumber', header: 'Application #', render: (r) => str(r.applicationNumber ?? r.id) },
-              { key: 'customerName', header: 'Customer', render: (r) => str(r.customerName ?? r.customerId) },
-              { key: 'productName', header: 'Product', render: (r) => str(r.productName ?? r.productId) },
-              { key: 'loanAmount', header: 'Amount', render: (r) => formatCurrency(r.loanAmount as number) },
+              { key: 'customerName', header: 'Customer', render: (r) => customerDisplayName(r) },
+              { key: 'productName', header: 'Product', render: (r) => productDisplayName(r) },
+              { key: 'partnerName', header: 'DSA / Partner', render: (r) => {
+                const nested = r.partner as Record<string, unknown> | undefined;
+                return str(r.partnerName ?? nested?.businessName ?? '—');
+              }},
+              { key: 'loanAmount', header: 'Amount', render: (r) => formatCurrency((r.loanAmount ?? r.requestedAmount) as number) },
               {
                 key: 'status',
                 header: 'Status',

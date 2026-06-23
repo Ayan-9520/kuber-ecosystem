@@ -1,9 +1,15 @@
 import { NavLink } from 'react-router-dom';
+import { X } from 'lucide-react';
 
 import { filterNavByPermissions, groupNavItems } from '@/config/navigation';
 import { usePermissions } from '@/hooks/usePermissions';
 
-export function Sidebar() {
+interface SidebarProps {
+  open?: boolean;
+  onNavigate?: () => void;
+}
+
+export function Sidebar({ open = false, onNavigate }: SidebarProps) {
   const { user } = usePermissions();
   const permissions = user?.permissions ?? [];
   const roles = user?.roles ?? [];
@@ -11,13 +17,21 @@ export function Sidebar() {
   const grouped = groupNavItems(navItems);
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${open ? ' sidebar--open' : ''}`}>
       <div className="sidebar-brand">
         <div className="brand-mark">K</div>
-        <div>
+        <div className="sidebar-brand-text">
           <div className="brand-name">KuberOne</div>
           <div className="brand-tagline">Kuber Finserve</div>
         </div>
+        <button
+          type="button"
+          className="sidebar-close-btn"
+          aria-label="Close menu"
+          onClick={onNavigate}
+        >
+          <X size={20} strokeWidth={2} />
+        </button>
       </div>
       <nav className="sidebar-nav">
         {Object.entries(grouped).map(([section, items]) => (
@@ -30,6 +44,7 @@ export function Sidebar() {
                   key={item.path}
                   to={item.path}
                   className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+                  onClick={onNavigate}
                 >
                   <Icon size={18} strokeWidth={2} />
                   {item.label}

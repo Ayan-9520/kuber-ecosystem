@@ -6,7 +6,7 @@ const applicationInclude = {
   customer: { select: { id: true, customerCode: true, fullName: true } },
   product: { include: { family: true } },
   variant: true,
-  lead: { select: { id: true, leadNumber: true } },
+  lead: { select: { id: true, leadNumber: true, deletedAt: true } },
   partner: { select: { id: true, partnerCode: true, businessName: true } },
   branch: true,
   region: true,

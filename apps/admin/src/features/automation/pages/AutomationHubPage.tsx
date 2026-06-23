@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 import { PaginatedListView } from '@/components/common/PaginatedListView';
 import { CanAccess } from '@/components/guards/CanAccess';
-import { Button, Card, LoadingSpinner, PageHeader, StatCard, Tabs } from '@/components/ui';
+import { Button, Card, ChartPanel, LoadingSpinner, PageHeader, StatCard, Tabs } from '@/components/ui';
 import { StatusBadge } from '@/components/ui/Badge';
 import { useDebounce, usePagination } from '@/hooks';
 import { fieldStr, formatDateTime } from '@/lib/utils';
@@ -227,15 +227,17 @@ export function AutomationHubPage() {
                 <StatCard label="ROI" value={`${summary.roi ?? 0}%`} />
               </div>
               <Card title="Channel Performance">
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={channelChart}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                    <XAxis dataKey="channel" stroke="var(--color-text-muted)" fontSize={12} />
-                    <YAxis stroke="var(--color-text-muted)" fontSize={12} />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <ChartPanel height={260}>
+                  {({ width, height }) => (
+                    <BarChart width={width} height={height} data={channelChart}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                      <XAxis dataKey="channel" stroke="var(--color-text-muted)" fontSize={12} />
+                      <YAxis stroke="var(--color-text-muted)" fontSize={12} />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  )}
+                </ChartPanel>
               </Card>
             </>
           )}

@@ -87,11 +87,11 @@ async function readPreference(): Promise<ThemePreference> {
   } catch {
     /* ignore */
   }
-  return 'system';
+  return 'dark';
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [preference, setPreferenceState] = useState<ThemePreference>('system');
+  const [preference, setPreferenceState] = useState<ThemePreference>('dark');
   const [systemDark, setSystemDark] = useState(() => Appearance.getColorScheme() === 'dark');
   const [ready, setReady] = useState(false);
 

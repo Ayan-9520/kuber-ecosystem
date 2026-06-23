@@ -46,6 +46,10 @@ function trackError(req: Request, err: Error, input: {
   });
 }
 
+function isPayloadTooLargeError(err: Error): boolean {
+  return 'type' in err && (err as { type?: string }).type === 'entity.too.large';
+}
+
 export function errorHandlerMiddleware(
   err: Error,
   req: Request,
@@ -53,6 +57,18 @@ export function errorHandlerMiddleware(
   _next: NextFunction,
 ): void {
   const requestId = req.requestId;
+
+  if (isPayloadTooLargeError(err)) {
+    res.status(413).json({
+      success: false,
+      error: {
+        code: 'PAYLOAD_TOO_LARGE',
+        message: 'Request body is too large. Maximum upload size is 10MB per document.',
+      },
+      requestId,
+    });
+    return;
+  }
 
   if (err instanceof ForbiddenError) {
     void centralAuditService.logSecurityEvent({

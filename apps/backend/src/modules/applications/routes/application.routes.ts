@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { RBAC_PERMISSIONS } from '../../../shared/constants/rbac.constants.js';
+import { asyncHandler } from '../../../shared/middleware/async-handler.middleware.js';
 import { authenticateWithSessionMiddleware } from '../../../shared/middleware/authenticate.middleware.js';
 import { requireAnyPermission } from '../../../shared/middleware/rbac.middleware.js';
 import { validateMiddleware } from '../../../shared/middleware/validate.middleware.js';
@@ -60,31 +61,31 @@ const appsDisburse = requireAnyPermission(
 
 export const applicationRoutes = Router();
 applicationRoutes.use(authenticateWithSessionMiddleware);
-applicationRoutes.get('/analytics/summary', appsRead, validateMiddleware(losAnalyticsQuerySchema, 'query'), applicationController.analytics);
-applicationRoutes.get('/', appsRead, validateMiddleware(listApplicationsQuerySchema, 'query'), applicationController.list);
-applicationRoutes.post('/', appsWrite, validateMiddleware(createApplicationSchema), applicationController.create);
-applicationRoutes.get('/:id', appsRead, validateMiddleware(uuidParamSchema, 'params'), applicationController.getById);
+applicationRoutes.get('/analytics/summary', appsRead, validateMiddleware(losAnalyticsQuerySchema, 'query'), asyncHandler(applicationController.analytics));
+applicationRoutes.get('/', appsRead, validateMiddleware(listApplicationsQuerySchema, 'query'), asyncHandler(applicationController.list));
+applicationRoutes.post('/', appsWrite, validateMiddleware(createApplicationSchema), asyncHandler(applicationController.create));
+applicationRoutes.get('/:id', appsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(applicationController.getById));
 applicationRoutes.patch(
   '/:id',
   appsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateApplicationSchema),
-  applicationController.update,
+  asyncHandler(applicationController.update),
 );
-applicationRoutes.delete('/:id', appsApprove, validateMiddleware(uuidParamSchema, 'params'), applicationController.remove);
+applicationRoutes.delete('/:id', appsApprove, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(applicationController.remove));
 applicationRoutes.post(
   '/:id/submit',
   appsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(submitApplicationSchema),
-  applicationController.submit,
+  asyncHandler(applicationController.submit),
 );
 applicationRoutes.post(
   '/:id/assign',
   appsAssign,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(assignApplicationSchema),
-  applicationController.assign,
+  asyncHandler(applicationController.assign),
 );
 
 export const applicationStatusRoutes = Router();
@@ -93,7 +94,7 @@ applicationStatusRoutes.get(
   '/',
   appsRead,
   validateMiddleware(listApplicationStatusQuerySchema, 'query'),
-  applicationStatusController.list,
+  asyncHandler(applicationStatusController.list),
 );
 
 export const applicationTimelineRoutes = Router();
@@ -102,7 +103,7 @@ applicationTimelineRoutes.get(
   '/',
   appsRead,
   validateMiddleware(applicationTimelineQuerySchema, 'query'),
-  applicationTimelineController.get,
+  asyncHandler(applicationTimelineController.get),
 );
 
 export const eligibilityResultRoutes = Router();
@@ -111,59 +112,59 @@ eligibilityResultRoutes.get(
   '/',
   appsRead,
   validateMiddleware(listEligibilityResultsQuerySchema, 'query'),
-  eligibilityResultController.list,
+  asyncHandler(eligibilityResultController.list),
 );
-eligibilityResultRoutes.post('/evaluate', appsWrite, validateMiddleware(evaluateEligibilityResultSchema), eligibilityResultController.evaluate);
-eligibilityResultRoutes.get('/:id', appsRead, validateMiddleware(uuidParamSchema, 'params'), eligibilityResultController.getById);
+eligibilityResultRoutes.post('/evaluate', appsWrite, validateMiddleware(evaluateEligibilityResultSchema), asyncHandler(eligibilityResultController.evaluate));
+eligibilityResultRoutes.get('/:id', appsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(eligibilityResultController.getById));
 
 export const bankLoginRoutes = Router();
 bankLoginRoutes.use(authenticateWithSessionMiddleware);
-bankLoginRoutes.get('/', appsRead, validateMiddleware(listBankLoginsQuerySchema, 'query'), bankLoginController.list);
-bankLoginRoutes.post('/', appsWrite, validateMiddleware(createBankLoginSchema), bankLoginController.create);
-bankLoginRoutes.get('/:id', appsRead, validateMiddleware(uuidParamSchema, 'params'), bankLoginController.getById);
+bankLoginRoutes.get('/', appsRead, validateMiddleware(listBankLoginsQuerySchema, 'query'), asyncHandler(bankLoginController.list));
+bankLoginRoutes.post('/', appsWrite, validateMiddleware(createBankLoginSchema), asyncHandler(bankLoginController.create));
+bankLoginRoutes.get('/:id', appsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(bankLoginController.getById));
 bankLoginRoutes.patch(
   '/:id',
   appsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateBankLoginSchema),
-  bankLoginController.update,
+  asyncHandler(bankLoginController.update),
 );
 
 export const creditReviewRoutes = Router();
 creditReviewRoutes.use(authenticateWithSessionMiddleware);
-creditReviewRoutes.get('/', appsRead, validateMiddleware(listCreditReviewsQuerySchema, 'query'), creditReviewController.list);
-creditReviewRoutes.post('/', appsApprove, validateMiddleware(createCreditReviewSchema), creditReviewController.create);
-creditReviewRoutes.get('/:id', appsRead, validateMiddleware(uuidParamSchema, 'params'), creditReviewController.getById);
+creditReviewRoutes.get('/', appsRead, validateMiddleware(listCreditReviewsQuerySchema, 'query'), asyncHandler(creditReviewController.list));
+creditReviewRoutes.post('/', appsApprove, validateMiddleware(createCreditReviewSchema), asyncHandler(creditReviewController.create));
+creditReviewRoutes.get('/:id', appsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(creditReviewController.getById));
 creditReviewRoutes.patch(
   '/:id',
   appsApprove,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateCreditReviewSchema),
-  creditReviewController.update,
+  asyncHandler(creditReviewController.update),
 );
 
 export const sanctionRoutes = Router();
 sanctionRoutes.use(authenticateWithSessionMiddleware);
-sanctionRoutes.get('/', appsRead, validateMiddleware(listSanctionsQuerySchema, 'query'), sanctionController.list);
-sanctionRoutes.post('/', appsApprove, validateMiddleware(createSanctionSchema), sanctionController.create);
-sanctionRoutes.get('/:id', appsRead, validateMiddleware(uuidParamSchema, 'params'), sanctionController.getById);
+sanctionRoutes.get('/', appsRead, validateMiddleware(listSanctionsQuerySchema, 'query'), asyncHandler(sanctionController.list));
+sanctionRoutes.post('/', appsApprove, validateMiddleware(createSanctionSchema), asyncHandler(sanctionController.create));
+sanctionRoutes.get('/:id', appsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(sanctionController.getById));
 sanctionRoutes.patch(
   '/:id',
   appsApprove,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateSanctionSchema),
-  sanctionController.update,
+  asyncHandler(sanctionController.update),
 );
 
 export const disbursementRoutes = Router();
 disbursementRoutes.use(authenticateWithSessionMiddleware);
-disbursementRoutes.get('/', appsRead, validateMiddleware(listDisbursementsQuerySchema, 'query'), disbursementController.list);
-disbursementRoutes.post('/', appsDisburse, validateMiddleware(createDisbursementSchema), disbursementController.create);
-disbursementRoutes.get('/:id', appsRead, validateMiddleware(uuidParamSchema, 'params'), disbursementController.getById);
+disbursementRoutes.get('/', appsRead, validateMiddleware(listDisbursementsQuerySchema, 'query'), asyncHandler(disbursementController.list));
+disbursementRoutes.post('/', appsDisburse, validateMiddleware(createDisbursementSchema), asyncHandler(disbursementController.create));
+disbursementRoutes.get('/:id', appsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(disbursementController.getById));
 disbursementRoutes.patch(
   '/:id',
   appsDisburse,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateDisbursementSchema),
-  disbursementController.update,
+  asyncHandler(disbursementController.update),
 );

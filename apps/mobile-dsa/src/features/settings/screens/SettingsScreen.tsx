@@ -1,13 +1,17 @@
 import Constants from 'expo-constants';
+import { useMemo } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { ThemeAppearanceCard } from '@/components/ThemeAppearanceCard';
 import { Button, Card, Screen } from '@/components/ui';
 import { useAuth } from '@/hooks';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { useAppTheme } from '@/theme/ThemeProvider';
 
 export function SettingsScreen() {
   const { logout, user, partnerId } = useAuth();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const apiUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? Constants.expoConfig?.extra?.apiBaseUrl ?? '—';
 
   return (
@@ -35,8 +39,10 @@ export function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  row: { ...typography.bodySm, color: colors.textSecondary, marginBottom: spacing.xs },
-  api: { ...typography.body, color: colors.primary, fontFamily: 'monospace' },
-  hint: { ...typography.caption, color: colors.textMuted, marginTop: spacing.sm },
-});
+function createStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    row: { ...typography.bodySm, color: colors.textSecondary, marginBottom: spacing.xs },
+    api: { ...typography.body, color: colors.primary, fontFamily: 'monospace' },
+    hint: { ...typography.caption, color: colors.textMuted, marginTop: spacing.sm },
+  });
+}

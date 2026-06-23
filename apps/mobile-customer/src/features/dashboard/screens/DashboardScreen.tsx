@@ -1,27 +1,43 @@
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useDispatch } from 'react-redux';
 
 import { Card, DashboardHeader, EmptyState, QuickAction, Screen, StatCard, StatusBadge } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { formatCurrency, formatDateTime, str } from '@/lib/utils';
+import {
+  fetchUnreadNotificationSummary,
+  notificationQueryKeys,
+} from '@/lib/notification-queries';
 import type { HomeStackParamList } from '@/navigation/types';
 import {
   applicationsService,
+  authService,
   documentsService,
-  notificationsService,
   referralsService,
 } from '@/services';
+import { patchUser } from '@/store/slices/authSlice';
 import { radius, spacing, typography } from '@/theme';
 import { useAppTheme } from '@/theme/ThemeProvider';
 
 export function DashboardScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
+  const dispatch = useDispatch();
   const { user, customerId } = useAuth();
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  useEffect(() => {
+    if (!user || customerId || user.userType !== 'CUSTOMER') return;
+    void authService.me().then((me) => {
+      if (me.customerId) {
+        dispatch(patchUser({ customerId: me.customerId }));
+      }
+    });
+  }, [user, customerId, dispatch]);
 
   const rawName = user?.email?.split('@')[0] ?? user?.phone?.slice(-4) ?? 'Guest';
   const name = rawName.charAt(0).toUpperCase() + rawName.slice(1);
@@ -33,9 +49,10 @@ export function DashboardScreen() {
   });
 
   const notifications = useQuery({
-    queryKey: ['dashboard', 'notifications', user?.id],
-    queryFn: () => notificationsService.list({ userId: user?.id, unreadOnly: true, limit: 5 }),
+    queryKey: notificationQueryKeys.unreadSummary(user?.id),
+    queryFn: () => fetchUnreadNotificationSummary(user!.id),
     enabled: !!user?.id,
+    staleTime: 120_000,
   });
 
   const referrals = useQuery({
@@ -66,24 +83,38 @@ export function DashboardScreen() {
     navigation.getParent()?.navigate('Profile');
   };
 
-  if (applications.isError || notifications.isError) {
+  const loadFailed = applications.isError || notifications.isError;
+  const initialLoading =
+    (!!customerId && applications.isLoading && !applications.data) ||
+    (!!user?.id && notifications.isLoading && !notifications.data);
+
+  if (initialLoading) {
     return (
       <Screen title="Dashboard" subtitle="Your premium fintech dashboard">
-        <EmptyState
-          title="Failed to load dashboard"
-          description="Check network and API URL in Settings."
-          action={
-            <Pressable onPress={() => { void applications.refetch(); void notifications.refetch(); }}>
-              <Text style={{ color: colors.primary, fontWeight: '600' }}>Retry</Text>
-            </Pressable>
-          }
-        />
+        <Text style={styles.muted}>Loading dashboard...</Text>
       </Screen>
     );
   }
 
   return (
     <Screen scroll padded={false}>
+      {loadFailed ? (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorBannerText}>
+            Some dashboard data could not be loaded. Check network and API URL in Settings, then retry.
+          </Text>
+          <Pressable
+            onPress={() => {
+              void applications.refetch();
+              void notifications.refetch();
+              void referrals.refetch();
+              void pendingDocs.refetch();
+            }}
+          >
+            <Text style={styles.errorBannerAction}>Retry</Text>
+          </Pressable>
+        </View>
+      ) : null}
       <DashboardHeader
         name={name}
         unreadCount={notifications.data?.meta.total ?? 0}
@@ -112,12 +143,28 @@ export function DashboardScreen() {
           <Text style={styles.sectionSub}>Your numbers at a glance</Text>
         </View>
         <View style={styles.statRow}>
-          <StatCard label="Active Apps" value={applications.data?.meta.total ?? 0} icon="document-text" accent />
+          <StatCard
+            label="Active Apps"
+            value={applications.data?.meta.total ?? 0}
+            icon="document-text"
+            accent
+            onPress={() => navigation.getParent()?.navigate('Applications')}
+          />
           <StatCard label="Referral ₹" value={formatCurrency(referralEarnings)} icon="wallet" />
         </View>
         <View style={styles.statRow}>
-          <StatCard label="Pending Docs" value={pendingDocs.data?.meta.total ?? 0} icon="folder-open" />
-          <StatCard label="Unread" value={notifications.data?.meta.total ?? 0} icon="mail-unread" />
+          <StatCard
+            label="Pending Docs"
+            value={pendingDocs.data?.meta.total ?? 0}
+            icon="folder-open"
+            onPress={() => navigation.getParent()?.navigate('Profile', { screen: 'Documents' })}
+          />
+          <StatCard
+            label="Unread"
+            value={notifications.data?.meta.total ?? 0}
+            icon="mail-unread"
+            onPress={() => navigation.navigate('Notifications')}
+          />
         </View>
       </View>
 
@@ -149,7 +196,12 @@ export function DashboardScreen() {
           )}
         </Card>
 
-        <Card title="Recent Notifications" subtitle="Stay updated on your applications" elevated>
+        <Card
+          title="Recent Notifications"
+          subtitle="Stay updated on your applications"
+          elevated
+          onPress={() => navigation.navigate('Notifications')}
+        >
           {(notifications.data?.items.length ?? 0) === 0 ? (
             <Text style={styles.muted}>No new notifications</Text>
           ) : (
@@ -176,6 +228,18 @@ export function DashboardScreen() {
 
 function createStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
   return StyleSheet.create({
+    errorBanner: {
+      marginHorizontal: spacing.md,
+      marginTop: spacing.sm,
+      marginBottom: spacing.sm,
+      padding: spacing.md,
+      borderRadius: radius.md,
+      backgroundColor: `${colors.danger}18`,
+      borderWidth: 1,
+      borderColor: `${colors.danger}44`,
+    },
+    errorBannerText: { ...typography.bodySm, color: colors.textSecondary, lineHeight: 20 },
+    errorBannerAction: { ...typography.label, color: colors.primary, marginTop: spacing.sm },
     section: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
     sectionHead: { paddingHorizontal: spacing.md, marginBottom: spacing.sm },
     sectionTitle: { ...typography.h3, color: colors.text, fontSize: 17 },

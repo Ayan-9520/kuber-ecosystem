@@ -8,7 +8,7 @@ import type { RequestContext } from '../types/applications.types.js';
 import { auditApplicationMutation } from '../utils/applications.utils.js';
 
 import { applicationTimelineService } from './application-timeline.service.js';
-import { applicationService } from './application.service.js';
+import { applicationWorkflowService } from './application-workflow.service.js';
 
 export const closureService = {
   async getByApplicationId(applicationId: string) {
@@ -35,18 +35,12 @@ export const closureService = {
     });
 
     if (application.status !== 'CLOSED') {
-      await applicationService.recordStatus(
+      await applicationWorkflowService.transition(
         input.applicationId,
-        application.status,
         'CLOSED',
         ctx,
         input.closureReason,
       );
-      await applicationRepository.update(input.applicationId, {
-        status: 'CLOSED',
-        closedAt: new Date(),
-        updatedById: ctx.actorId,
-      });
     }
 
     await applicationTimelineService.addEvent(

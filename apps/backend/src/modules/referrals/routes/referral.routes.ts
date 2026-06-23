@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { RBAC_PERMISSIONS } from '../../../shared/constants/rbac.constants.js';
+import { asyncHandler } from '../../../shared/middleware/async-handler.middleware.js';
 import { authenticateWithSessionMiddleware } from '../../../shared/middleware/authenticate.middleware.js';
 import { requireAnyPermission } from '../../../shared/middleware/rbac.middleware.js';
 import { validateMiddleware } from '../../../shared/middleware/validate.middleware.js';
@@ -28,46 +29,46 @@ const referralsApprove = requireAnyPermission(
 
 export const referralRoutes = Router();
 referralRoutes.use(authenticateWithSessionMiddleware);
-referralRoutes.get('/', referralsRead, validateMiddleware(listReferralsQuerySchema, 'query'), referralController.list);
-referralRoutes.post('/', referralsWrite, validateMiddleware(createReferralSchema), referralController.create);
-referralRoutes.post('/validate-code', referralsRead, validateMiddleware(validateReferralCodeSchema), referralController.validateCode);
-referralRoutes.get('/:id', referralsRead, validateMiddleware(uuidParamSchema, 'params'), referralController.getById);
+referralRoutes.get('/', referralsRead, validateMiddleware(listReferralsQuerySchema, 'query'), asyncHandler(referralController.list));
+referralRoutes.post('/', referralsWrite, validateMiddleware(createReferralSchema), asyncHandler(referralController.create));
+referralRoutes.post('/validate-code', referralsRead, validateMiddleware(validateReferralCodeSchema), asyncHandler(referralController.validateCode));
+referralRoutes.get('/:id', referralsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(referralController.getById));
 referralRoutes.patch(
   '/:id',
   referralsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateReferralSchema),
-  referralController.update,
+  asyncHandler(referralController.update),
 );
 referralRoutes.post(
   '/:id/convert',
   referralsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(convertReferralSchema),
-  referralController.convert,
+  asyncHandler(referralController.convert),
 );
-referralRoutes.post('/:id/approve-reward', referralsApprove, validateMiddleware(uuidParamSchema, 'params'), referralController.approveReward);
-referralRoutes.post('/:id/mark-paid', referralsApprove, validateMiddleware(uuidParamSchema, 'params'), referralController.markRewardPaid);
+referralRoutes.post('/:id/approve-reward', referralsApprove, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(referralController.approveReward));
+referralRoutes.post('/:id/mark-paid', referralsApprove, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(referralController.markRewardPaid));
 referralRoutes.post(
   '/:id/reject',
   referralsApprove,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(rejectReferralSchema),
-  referralController.reject,
+  asyncHandler(referralController.reject),
 );
-referralRoutes.post('/:id/cancel', referralsWrite, validateMiddleware(uuidParamSchema, 'params'), referralController.cancel);
-referralRoutes.delete('/:id', referralsWrite, validateMiddleware(uuidParamSchema, 'params'), referralController.remove);
+referralRoutes.post('/:id/cancel', referralsWrite, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(referralController.cancel));
+referralRoutes.delete('/:id', referralsWrite, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(referralController.remove));
 
 export const referralTypeRoutes = Router();
 referralTypeRoutes.use(authenticateWithSessionMiddleware);
-referralTypeRoutes.get('/', referralsRead, validateMiddleware(listReferralTypesQuerySchema, 'query'), referralTypeController.list);
-referralTypeRoutes.post('/', referralsWrite, validateMiddleware(createReferralTypeSchema), referralTypeController.create);
-referralTypeRoutes.get('/:id', referralsRead, validateMiddleware(uuidParamSchema, 'params'), referralTypeController.getById);
+referralTypeRoutes.get('/', referralsRead, validateMiddleware(listReferralTypesQuerySchema, 'query'), asyncHandler(referralTypeController.list));
+referralTypeRoutes.post('/', referralsWrite, validateMiddleware(createReferralTypeSchema), asyncHandler(referralTypeController.create));
+referralTypeRoutes.get('/:id', referralsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(referralTypeController.getById));
 referralTypeRoutes.patch(
   '/:id',
   referralsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateReferralTypeSchema),
-  referralTypeController.update,
+  asyncHandler(referralTypeController.update),
 );
-referralTypeRoutes.post('/:id/deactivate', referralsWrite, validateMiddleware(uuidParamSchema, 'params'), referralTypeController.deactivate);
+referralTypeRoutes.post('/:id/deactivate', referralsWrite, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(referralTypeController.deactivate));

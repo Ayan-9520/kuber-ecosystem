@@ -93,7 +93,7 @@ export function StagingHubPage() {
 
       {tab === 'environment' && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+          <div className="stat-grid mt-4">
             <StatCard label="Status" value={fieldStr(status.env, 'status')} />
             <StatCard label="Branch" value={fieldStr(status.env, 'branch')} />
             <StatCard label="Version" value={fieldStr(status.env, 'version')} />

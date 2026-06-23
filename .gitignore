@@ -36,6 +36,7 @@ Thumbs.db
 # Testing
 coverage/
 apps/backend/tests/integration/.artifacts/
+apps/backend/storage/
 .nyc_output/
 
 # Expo / React Native

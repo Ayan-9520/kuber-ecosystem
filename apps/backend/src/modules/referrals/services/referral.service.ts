@@ -19,6 +19,7 @@ import {
   isReferralExpired,
 } from '../utils/referrals.utils.js';
 
+import { referralLeadBridgeService } from './referral-lead-bridge.service.js';
 import { referralTypeService } from './referral-type.service.js';
 
 function buildListWhere(query: ListReferralsQuery): Prisma.ReferralWhereInput {
@@ -173,6 +174,11 @@ export const referralService = {
       referralType: referralType.code,
       referralCode: item.referralCode,
     });
+
+    const leadId = await referralLeadBridgeService.ensureLeadForReferral(input, ctx);
+    if (leadId) {
+      return referralRepository.update(item.id, { lead: { connect: { id: leadId } } });
+    }
 
     return item;
   },

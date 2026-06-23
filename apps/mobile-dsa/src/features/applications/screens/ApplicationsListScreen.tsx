@@ -49,7 +49,7 @@ export function ApplicationsListScreen() {
             <ListRow
               key={String(app.id)}
               title={str(app.applicationNumber ?? app.id)}
-              subtitle={`${str(app.productName)} · ${formatCurrency(app.requestedAmount as number)} · ${formatDateTime(app.updatedAt as string)}`}
+              subtitle={`${str(app.customerName ?? (app.customer as Record<string, unknown> | undefined)?.fullName)} · ${str(app.productName)} · ${formatCurrency((app.loanAmount ?? app.requestedAmount) as number)} · ${formatDateTime(app.updatedAt as string)}`}
               status={str(app.status)}
               icon="document-text"
               onPress={() => navigation.navigate('ApplicationDetail', { id: String(app.id) })}

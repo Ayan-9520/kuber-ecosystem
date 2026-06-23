@@ -112,7 +112,7 @@ export function ErrorTrackingHubPage() {
 
       {tab === 'dashboard' && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+          <div className="stat-grid mt-4">
             <StatCard label="Error Coverage" value={`${fieldStr(summary, 'errorCoveragePercent')}%`} />
             <StatCard label="Tracked Types" value={fieldStr(summary, 'trackedErrorTypes')} />
             <StatCard label="MTTD Readiness" value={`${fieldStr(summary, 'mttdReadiness')}%`} />

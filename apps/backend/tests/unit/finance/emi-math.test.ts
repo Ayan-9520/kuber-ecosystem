@@ -1,14 +1,12 @@
-import {
-  buildAmortizationSummary,
-  buildEmiBreakdown,
-  calculateEmi,
-} from '../../../src/modules/finance-engine/utils/emi-math.utils.js';
+import { buildAmiBreakdown, buildAmortizationYearSummary, calculateEmi } from '@kuberone/shared-utils';
 
 describe('emi math utils', () => {
   it('calculates EMI for standard loan', () => {
-    const emi = calculateEmi(1_000_000, 12, 60);
-    expect(emi).toBeGreaterThan(20_000);
-    expect(emi).toBeLessThan(25_000);
+    expect(calculateEmi(1_000_000, 12, 60)).toBe(22_244);
+  });
+
+  it('calculates home loan benchmark (25L @ 9.5% for 20 years)', () => {
+    expect(calculateEmi(2_500_000, 9.5, 240)).toBe(23_303);
   });
 
   it('handles zero interest', () => {
@@ -27,7 +25,7 @@ describe('emi math utils', () => {
   });
 
   it('builds amortization summary by year', () => {
-    const summary = buildAmortizationSummary(600_000, 9, 24);
+    const summary = buildAmortizationYearSummary(600_000, 9, 24);
     expect(summary).toHaveLength(2);
     expect(summary[0]!.year).toBe(1);
     expect(summary[1]!.outstandingBalance).toBe(0);

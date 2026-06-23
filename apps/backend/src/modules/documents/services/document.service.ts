@@ -10,6 +10,7 @@ import type {
 } from '@kuberone/shared-validation';
 
 import { AppError, NotFoundError } from '../../../shared/errors/app-error.js';
+import { appLogger } from '../../../shared/observability/logger.js';
 import { applyDocumentScope, assertDocumentAccess } from '../../../shared/utils/data-scope.js';
 import { authAuditRepository } from '../../auth/repositories/audit.repository.js';
 import { documentTypeRepository } from '../repositories/document-type.repository.js';
@@ -23,9 +24,11 @@ import {
   buildS3Key,
   decodeBase64Content,
   generateDocumentCode,
+  normalizeDocumentMimeType,
   resolveOwnerId,
   sha256Checksum,
 } from '../utils/documents.utils.js';
+import { shouldUseLocalDocumentStorage } from '../utils/document-storage.util.js';
 
 import { ocrResultService } from './ocr-result.service.js';
 import { s3StorageService } from './s3-storage.service.js';
@@ -75,8 +78,9 @@ async function validateDocumentType(documentTypeId: string, mimeType: string, fi
   const docType = await documentTypeRepository.findById(documentTypeId);
   if (!docType || !docType.isActive) throw new NotFoundError('DocumentType', documentTypeId);
 
-  const allowed = docType.allowedMimeTypes as string[];
-  if (!allowed.includes(mimeType)) {
+  const normalizedMime = normalizeDocumentMimeType(mimeType);
+  const allowed = (docType.allowedMimeTypes as string[]).map((m) => normalizeDocumentMimeType(m));
+  if (!allowed.includes(normalizedMime)) {
     throw new AppError(400, 'INVALID_MIME_TYPE', `Mime type ${mimeType} not allowed for ${docType.name}`);
   }
 
@@ -110,22 +114,30 @@ export const documentService = {
 
   async upload(input: UploadDocumentInput, ctx: RequestContext) {
     const buffer = decodeBase64Content(input.contentBase64);
-    const docType = await validateDocumentType(input.documentTypeId, input.mimeType, buffer.length);
+    const mimeType = normalizeDocumentMimeType(input.mimeType);
+    const docType = await validateDocumentType(input.documentTypeId, mimeType, buffer.length);
     const ownerId = resolveOwnerId(input);
     const s3Key = buildS3Key(input.ownerType, ownerId, docType.code, input.fileName);
     const checksum = sha256Checksum(buffer);
 
     try {
-      await s3StorageService.uploadObject(s3Key, buffer, input.mimeType, {
+      await s3StorageService.uploadObject(s3Key, buffer, mimeType, {
         documentType: docType.code,
         ownerType: input.ownerType,
         ownerId,
       });
-    } catch {
+    } catch (err) {
+      appLogger.error('Document storage upload failed', err instanceof Error ? err : undefined, {
+        module: 'documents',
+        action: 'upload',
+        metadata: { localFallback: shouldUseLocalDocumentStorage() },
+      });
       throw new AppError(
         503,
         'STORAGE_UNAVAILABLE',
-        'Document storage is not available. Configure AWS S3 bucket and credentials.',
+        shouldUseLocalDocumentStorage()
+          ? 'Local document storage failed. Check disk permissions for storage/documents.'
+          : 'Document storage is not available. Configure AWS S3 bucket and credentials.',
       );
     }
 
@@ -136,7 +148,7 @@ export const documentService = {
       documentTypeId: input.documentTypeId,
       s3Key,
       fileName: input.fileName,
-      mimeType: input.mimeType,
+      mimeType,
       fileSizeBytes: BigInt(buffer.length),
       checksum,
       currentVersion: 1,
@@ -151,7 +163,7 @@ export const documentService = {
       versionNumber: 1,
       s3Key,
       fileName: input.fileName,
-      mimeType: input.mimeType,
+      mimeType,
       fileSizeBytes: BigInt(buffer.length),
       checksum,
       uploadReason: 'INITIAL',
@@ -159,13 +171,24 @@ export const documentService = {
     });
 
     if (input.runOcr) {
-      await ocrResultService.run(
-        { documentId: document.id, documentVersionId: version.id, provider: 'INTERNAL' },
-        ctx,
-        buffer,
-        docType.code,
-      );
-      await documentRepository.update(document.id, { status: 'PENDING_VERIFICATION' });
+      try {
+        await ocrResultService.run(
+          { documentId: document.id, documentVersionId: version.id, provider: 'INTERNAL' },
+          ctx,
+          buffer,
+          docType.code,
+        );
+        await documentRepository.update(document.id, { status: 'PENDING_VERIFICATION' });
+      } catch (err) {
+        appLogger.warn('OCR skipped after document upload', {
+          module: 'documents',
+          action: 'upload.ocr',
+          metadata: {
+            documentId: document.id,
+            message: err instanceof Error ? err.message : String(err),
+          },
+        });
+      }
     }
 
     if (input.autoVerify) {
@@ -345,6 +368,19 @@ export const documentService = {
     const result = await s3StorageService.getPresignedDownloadUrl(doc.s3Key, doc.fileName);
     await auditDocumentMutation(authAuditRepository.log, ctx, 'DOCUMENT_DOWNLOAD_URL', 'document', id);
     return result;
+  },
+
+  async streamLocalDownload(actor: AuthenticatedUser, storageKey: string) {
+    if (!shouldUseLocalDocumentStorage()) {
+      throw new AppError(404, 'NOT_FOUND', 'Local document download is only available in development');
+    }
+
+    const doc = await documentRepository.findByS3Key(storageKey);
+    if (!doc) throw new NotFoundError('Document', storageKey);
+    assertDocumentAccess(actor, doc);
+
+    const buffer = await s3StorageService.readObject(storageKey);
+    return { buffer, fileName: doc.fileName, mimeType: doc.mimeType };
   },
 
   async verify(actor: AuthenticatedUser, id: string, input: VerifyDocumentInput, ctx: RequestContext) {

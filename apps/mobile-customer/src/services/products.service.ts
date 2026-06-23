@@ -6,11 +6,12 @@ export const productsService = {
   getById: (id: string) => apiGet<Record<string, unknown>>(`/products/${id}`),
   recommend: (data: Record<string, unknown>) =>
     apiPost<Record<string, unknown>[]>('/products/recommend', data),
-  variants: (productId?: string) =>
+  variants: (productId?: string, params?: Record<string, unknown>) =>
     apiGetPaginated<Record<string, unknown>>('/product-variants', {
       limit: 50,
       isActive: true,
       ...(productId ? { productId } : {}),
+      ...params,
     }),
   documentTypes: () => apiGetPaginated<Record<string, unknown>>('/document-types', { limit: 100 }),
 };

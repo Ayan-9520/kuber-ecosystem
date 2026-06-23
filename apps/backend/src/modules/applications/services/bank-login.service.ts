@@ -5,7 +5,6 @@ import type {
   UpdateBankLoginInput,
 } from '@kuberone/shared-validation';
 
-import { prisma } from '../../../config/database.js';
 import { NotFoundError } from '../../../shared/errors/app-error.js';
 import { authAuditRepository } from '../../auth/repositories/audit.repository.js';
 import { applicationRepository } from '../repositories/application.repository.js';
@@ -13,14 +12,10 @@ import { bankLoginRepository } from '../repositories/bank-login.repository.js';
 import type { RequestContext } from '../types/applications.types.js';
 import { auditApplicationMutation, buildPaginationMeta } from '../utils/applications.utils.js';
 
+import { resolveEmployeeIdForActor } from '../utils/employee-resolver.util.js';
+
 import { applicationTimelineService } from './application-timeline.service.js';
 import { applicationService } from './application.service.js';
-
-async function resolveEmployeeId(userId: string): Promise<string> {
-  const employee = await prisma.employee.findFirst({ where: { userId }, select: { id: true } });
-  if (!employee) throw new NotFoundError('Employee', userId);
-  return employee.id;
-}
 
 export const bankLoginService = {
   async list(query: ListBankLoginsQuery) {
@@ -49,7 +44,7 @@ export const bankLoginService = {
   async create(input: CreateBankLoginInput, ctx: RequestContext) {
     const application = await applicationRepository.findById(input.applicationId);
     if (!application) throw new NotFoundError('Application', input.applicationId);
-    const employeeId = await resolveEmployeeId(ctx.actorId);
+    const employeeId = await resolveEmployeeIdForActor(ctx.actorId);
 
     const login = await bankLoginRepository.create({
       applicationId: input.applicationId,

@@ -58,9 +58,8 @@ export function generateApplicationNumber(lastNumber?: string | null): string {
   return `KFA-${String(Date.now()).slice(-6)}${String(appSequence).padStart(2, '0')}`;
 }
 
+import { calculateEmi as calculateSharedEmi } from '@kuberone/shared-utils';
+
 export function calculateEmi(principal: number, annualRate: number, tenureMonths: number): number {
-  if (tenureMonths <= 0 || principal <= 0) return 0;
-  const r = annualRate / 12 / 100;
-  if (r === 0) return principal / tenureMonths;
-  return (principal * r * Math.pow(1 + r, tenureMonths)) / (Math.pow(1 + r, tenureMonths) - 1);
+  return calculateSharedEmi(principal, annualRate, tenureMonths);
 }

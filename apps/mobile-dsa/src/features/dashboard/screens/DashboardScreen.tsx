@@ -6,7 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Card, DashboardHeader, EmptyState, QuickAction, Screen, StatCard, StatusBadge } from '@/components/ui';
 import { useAuth } from '@/hooks';
-import { formatCurrency, formatDateTime, str } from '@/lib/utils';
+import { formatCurrency, str } from '@/lib/utils';
 import type { HomeStackParamList } from '@/navigation/types';
 import {
   applicationsService,
@@ -14,6 +14,7 @@ import {
   documentsService,
   leadsService,
   notificationsService,
+  partnersService,
   referralsService,
 } from '@/services';
 import { radius, spacing, typography } from '@/theme';
@@ -25,10 +26,16 @@ export function DashboardScreen() {
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const rawName = user?.email?.split('@')[0] ?? user?.phone?.slice(-4) ?? 'Partner';
-  const name = rawName.startsWith('Partner')
-    ? rawName
-    : `Partner ${rawName.charAt(0).toUpperCase()}${rawName.slice(1)}`;
+  const partner = useQuery({
+    queryKey: ['partner-profile', partnerId],
+    queryFn: () => partnersService.getById(partnerId!),
+    enabled: !!partnerId,
+    retry: false,
+  });
+
+  const name = String(
+    partner.data?.contactName ?? partner.data?.businessName ?? user?.phone ?? 'Partner',
+  );
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -235,8 +242,10 @@ export function DashboardScreen() {
                   <Text style={styles.rowIconText}>₹</Text>
                 </View>
                 <View style={styles.rowBody}>
-                  <Text style={styles.rowTitle}>{str(app.applicationNumber ?? app.id)}</Text>
-                  <Text style={styles.rowSub}>{formatDateTime(app.updatedAt as string)}</Text>
+                  <Text style={styles.rowTitle}>{str(app.customerName ?? app.applicationNumber ?? app.id)}</Text>
+                  <Text style={styles.rowSub}>
+                    {str(app.productName)} · {formatCurrency((app.loanAmount ?? app.requestedAmount) as number)}
+                  </Text>
                 </View>
                 <StatusBadge status={str(app.status)} />
               </Pressable>

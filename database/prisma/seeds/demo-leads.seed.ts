@@ -69,6 +69,7 @@ export async function seedDemoLeads(prisma: PrismaClient): Promise<void> {
   }
 
   const admin = await prisma.user.findUnique({ where: { email: 'admin@kuberone.com' } });
+  const demoPartner = await prisma.partner.findUnique({ where: { partnerCode: 'DSA-DEMO-001' } });
 
   for (const lead of DEMO_LEADS) {
     await prisma.lead.upsert({
@@ -85,6 +86,7 @@ export async function seedDemoLeads(prisma: PrismaClient): Promise<void> {
         lostReason: 'lostReason' in lead ? lead.lostReason : null,
         branchId: branch?.id ?? null,
         regionId: branch?.regionId ?? null,
+        partnerId: demoPartner?.id ?? null,
       },
       create: {
         leadNumber: lead.leadNumber,
@@ -93,6 +95,7 @@ export async function seedDemoLeads(prisma: PrismaClient): Promise<void> {
         prospectEmail: lead.prospectEmail ?? null,
         productId: product.id,
         sourceId: source.id,
+        partnerId: demoPartner?.id ?? null,
         status: lead.status,
         grade: lead.grade,
         score: lead.score,

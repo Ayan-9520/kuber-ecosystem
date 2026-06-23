@@ -38,6 +38,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@kuberone/shared-theme': path.resolve(__dirname, '../../packages/shared-theme/src/index.ts'),
+      '@kuberone/shared-utils': path.resolve(repoRoot, 'packages/shared-utils/src/index.ts'),
     },
   },
   // esbuild 0.28+ cannot downlevel destructuring in redoc/swagger pre-bundles to es2020 targets.
@@ -45,6 +46,7 @@ export default defineConfig({
     target: 'esnext',
   },
   optimizeDeps: {
+    include: ['@kuberone/shared-utils'],
     exclude: [...API_DOC_VENDOR_DEPS],
     esbuildOptions: {
       target: 'esnext',

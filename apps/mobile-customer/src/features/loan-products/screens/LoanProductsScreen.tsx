@@ -2,19 +2,115 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Card, EmptyState, Screen } from '@/components/ui';
+import { Button, Card, EmptyState, Screen } from '@/components/ui';
 import { useAuth } from '@/hooks';
-import { flattenProductsWithVariants } from '@/lib/product-mapper';
+import { navigateToApplicationWizard } from '@/lib/application-navigation';
+import { fetchCustomerCatalog } from '@/lib/product-mapper';
 import { formatCurrency } from '@/lib/utils';
 import type { ProductsStackParamList } from '@/navigation/types';
-import { productsService, recommendationsService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { recommendationsService } from '@/services';
+import { radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+
+function formatRate(min: number, max: number, familyCode: string): string {
+  if (familyCode === 'INS') return 'Premium plans from ₹10K/year';
+  if (familyCode === 'CC') return 'Joining fee waived on select cards';
+  if (min === max) return `${min}% p.a.`;
+  return `${min}% – ${max}% p.a.`;
+}
+
+function formatRecommendationReason(reason: string): string {
+  const cleaned = reason
+    .replace(/MATCHES\s+/gi, '')
+    .replace(/WITH CONFIGURED LIMITS/gi, '')
+    .replace(/₹[\d,]+(\s*-\s*₹[\d,]+)?/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleaned || cleaned.length > 80) {
+    return 'Strong match based on your profile and eligibility';
+  }
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase();
+}
+
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
+    hero: {
+      backgroundColor: colors.card,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+      padding: spacing.lg,
+      marginBottom: spacing.md,
+    },
+    heroTitle: { ...typography.h3, color: colors.text },
+    heroSub: { ...typography.bodySm, color: colors.textMuted, marginTop: 4, lineHeight: 20 },
+    recCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    recTitle: { ...typography.h3, color: colors.text, marginBottom: spacing.sm },
+    recName: { ...typography.label, color: colors.text },
+    recSub: { ...typography.bodySm, color: colors.textMuted, marginTop: 4, lineHeight: 18 },
+    recBadge: {
+      alignSelf: 'flex-start',
+      marginTop: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radius.full,
+      backgroundColor: `${colors.primary}22`,
+    },
+    recBadgeText: { ...typography.caption, color: colors.primary, fontSize: 10 },
+    productRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    iconWrap: {
+      width: 52,
+      height: 52,
+      borderRadius: radius.lg,
+      backgroundColor: `${colors.primary}18`,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: `${colors.primary}33`,
+    },
+    productInfo: { flex: 1 },
+    productName: { ...typography.h3, color: colors.text, fontSize: 17 },
+    productDesc: { ...typography.bodySm, color: colors.textMuted, marginTop: 4, lineHeight: 18 },
+    metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginTop: spacing.sm, gap: 6 },
+    ratePill: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radius.full,
+      backgroundColor: `${colors.primary}15`,
+    },
+    rateText: { ...typography.caption, color: colors.primary, fontSize: 10, textTransform: 'none' },
+    amountText: { ...typography.bodySm, color: colors.textSecondary, fontSize: 12 },
+    countBadge: {
+      marginTop: spacing.xs,
+      alignSelf: 'flex-start',
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radius.full,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    countText: { ...typography.caption, color: colors.textMuted, fontSize: 10 },
+    cardActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+    applyBtn: { flex: 1 },
+  });
+}
 
 export function LoanProductsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ProductsStackParamList>>();
-  const { customerId } = useAuth();
+  const { customerId, isAuthenticated } = useAuth();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const recommendations = useQuery({
     queryKey: ['customer-recommendations', customerId],
@@ -23,14 +119,10 @@ export function LoanProductsScreen() {
   });
 
   const productsQuery = useQuery({
-    queryKey: ['loan-products'],
-    queryFn: async () => {
-      const [products, variants] = await Promise.all([
-        productsService.list({ limit: 50, isActive: true }),
-        productsService.variants(),
-      ]);
-      return flattenProductsWithVariants(products.items, variants.items);
-    },
+    queryKey: ['loan-products', isAuthenticated],
+    queryFn: () => fetchCustomerCatalog(),
+    retry: 2,
+    staleTime: 60_000,
   });
 
   const recData = recommendations.data as {
@@ -41,37 +133,49 @@ export function LoanProductsScreen() {
 
   return (
     <Screen title="Loan Products" subtitle="Explore premium financing options" loading={productsQuery.isLoading}>
-      {productsQuery.isError ? (
-        <EmptyState title="Unable to load products" description="Please try again later" />
+      <View style={styles.hero}>
+        <Text style={styles.heroTitle}>India's complete finance suite</Text>
+        <Text style={styles.heroSub}>
+          Home loans, business credit, insurance & cards — apply digitally in minutes.
+        </Text>
+        {products.length > 0 ? (
+          <View style={styles.countBadge}>
+            <Text style={styles.countText}>{products.length} products available</Text>
+          </View>
+        ) : null}
+      </View>
+
+      {products.length === 0 && !productsQuery.isLoading ? (
+        <EmptyState
+          title="No products available"
+          description="Pull to refresh or try again shortly"
+          action={<Button title="Refresh" onPress={() => productsQuery.refetch()} />}
+        />
       ) : null}
 
       {recData?.products && recData.products.length > 0 && (
-        <Card>
-          <Text style={styles.recTitle}>Recommended For You</Text>
+        <Card title="Recommended For You" elevated>
           {recData.products.slice(0, 2).map((p) => (
-            <View key={p.productName} style={styles.recItem}>
+            <View key={p.productName} style={styles.recCard}>
               <Text style={styles.recName}>{p.productName}</Text>
-              <Text style={styles.recSub}>{p.reason}</Text>
+              <Text style={styles.recSub}>{formatRecommendationReason(p.reason)}</Text>
+              {p.approvalProbability > 0 ? (
+                <View style={styles.recBadge}>
+                  <Text style={styles.recBadgeText}>
+                    {Math.round(p.approvalProbability)}% approval likelihood
+                  </Text>
+                </View>
+              ) : null}
             </View>
           ))}
         </Card>
       )}
 
       {products.map((product) => (
-        <Card
-          key={`${product.productId}-${product.variant}`}
-          onPress={() =>
-            navigation.navigate('ProductDetail', {
-              slug: product.slug,
-              name: product.name,
-              variant: product.variant,
-              id: product.productId,
-            })
-          }
-        >
+        <Card key={`${product.productId}-${product.variant}`} elevated>
           <View style={styles.productRow}>
             <View style={styles.iconWrap}>
-              <Ionicons name={product.icon} size={24} color={colors.primary} />
+              <Ionicons name={product.icon} size={26} color={colors.primary} />
             </View>
             <View style={styles.productInfo}>
               <Text style={styles.productName}>{product.name}</Text>
@@ -79,39 +183,38 @@ export function LoanProductsScreen() {
                 {product.description}
               </Text>
               <View style={styles.metaRow}>
-                <Text style={styles.meta}>
-                  {product.interestMin}% – {product.interestMax}% p.a.
-                </Text>
-                <Text style={styles.metaDot}>·</Text>
-                <Text style={styles.meta}>Up to {formatCurrency(product.maxAmount)}</Text>
+                <View style={styles.ratePill}>
+                  <Text style={styles.rateText}>
+                    {formatRate(product.interestMin, product.interestMax, product.familyCode)}
+                  </Text>
+                </View>
+                <Text style={styles.amountText}>Up to {formatCurrency(product.maxAmount)}</Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </View>
+          <View style={styles.cardActions}>
+            <Button
+              title="Details"
+              variant="secondary"
+              style={styles.applyBtn}
+              onPress={() =>
+                navigation.navigate('ProductDetail', {
+                  slug: product.slug,
+                  name: product.name,
+                  variant: product.variant,
+                  id: /^[0-9a-f-]{36}$/i.test(product.productId) ? product.productId : undefined,
+                  familyCode: product.familyCode,
+                })
+              }
+            />
+            <Button
+              title="Apply Now"
+              style={styles.applyBtn}
+              onPress={() => navigateToApplicationWizard(navigation, product)}
+            />
           </View>
         </Card>
       ))}
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  productRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  iconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: 'rgba(34,211,166,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  productInfo: { flex: 1 },
-  productName: { ...typography.h3, color: colors.text },
-  productDesc: { ...typography.bodySm, color: colors.textMuted, marginTop: 4 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginTop: spacing.sm, gap: 4 },
-  meta: { ...typography.bodySm, color: colors.primary, fontSize: 12 },
-  metaDot: { color: colors.textMuted, fontSize: 12 },
-  recTitle: { ...typography.h3, color: colors.text, marginBottom: spacing.sm },
-  recItem: { paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.border },
-  recName: { ...typography.bodySm, color: colors.text, fontWeight: '600' },
-  recSub: { ...typography.caption, color: colors.textMuted },
-});

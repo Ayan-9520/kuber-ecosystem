@@ -756,16 +756,20 @@ export async function mockMutate<T>(url: string, body?: unknown): Promise<T> {
   if (path === '/emi/calculate') {
     const input = (body ?? {}) as Record<string, unknown>;
     const principal = Number(input.loanAmount ?? 0);
-    const rate = Number(input.interestRate ?? 0) / 12 / 100;
+    const annualRate = Number(input.interestRate ?? 0);
     const tenure = Number(input.tenureMonths ?? 1);
-    const emi = rate > 0 ? (principal * rate * (1 + rate) ** tenure) / ((1 + rate) ** tenure - 1) : principal / tenure;
-    const totalRepayment = emi * tenure;
+    const processingFee = Number(input.processingFee ?? 0);
+    const { buildEmiBreakdown, buildAmortizationYearSummary } = await import('@kuberone/shared-utils');
+    const breakdown = buildEmiBreakdown(principal, annualRate, tenure, processingFee);
+    const includeAmortization = input.includeAmortization !== false;
     return {
-      emi: Math.round(emi),
-      principal,
-      interestPayable: Math.round(totalRepayment - principal),
-      totalRepayment: Math.round(totalRepayment),
-      amortizationSummary: [{ year: 1, principalPaid: Math.round(principal * 0.08), interestPaid: Math.round(totalRepayment * 0.12), outstandingBalance: Math.round(principal * 0.92) }],
+      ...breakdown,
+      loanAmount: principal,
+      interestRate: annualRate,
+      tenureMonths: tenure,
+      amortizationSummary: includeAmortization
+        ? buildAmortizationYearSummary(principal, annualRate, tenure)
+        : [],
     } as T;
   }
 

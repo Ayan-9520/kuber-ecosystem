@@ -17,7 +17,14 @@ function resolveDevMachineHost(): string | null {
 }
 
 function resolveApiBaseUrl(): string {
-  const configured = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:4000/api/v1';
+  const extraUrl = Constants.expoConfig?.extra?.apiBaseUrl as string | undefined;
+  const configured =
+    extraUrl ?? process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:4000/api/v1';
+
+  // Release builds must use configured production URL, not LAN/dev hosts.
+  if (!__DEV__) {
+    return configured;
+  }
 
   if (getWebHostname() === 'localhost') {
     return 'http://localhost:4000/api/v1';

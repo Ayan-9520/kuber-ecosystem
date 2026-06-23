@@ -68,6 +68,77 @@ export const customerRepository = {
       include: customerInclude,
     }),
 
+  /** Mobile self-registration: user + CUSTOMER role + customer row. */
+  registerByPhone: (phone: string) =>
+    prisma.$transaction(async (tx) => {
+      const role = await tx.role.findUnique({ where: { code: 'CUSTOMER' } });
+      if (!role) throw new Error('CUSTOMER role not found');
+
+      let user = await tx.user.findFirst({ where: { phone, deletedAt: null } });
+      if (!user) {
+        user = await tx.user.create({
+          data: {
+            phone,
+            userType: 'CUSTOMER',
+            status: 'ACTIVE',
+            phoneVerified: true,
+          },
+        });
+        await tx.userRole.create({
+          data: { userId: user.id, roleId: role.id, isPrimary: true },
+        });
+      } else if (user.userType !== 'CUSTOMER') {
+        throw new Error('PHONE_REGISTERED_OTHER_TYPE');
+      } else {
+        const hasRole = await tx.userRole.findFirst({ where: { userId: user.id, roleId: role.id } });
+        if (!hasRole) {
+          await tx.userRole.create({
+            data: { userId: user.id, roleId: role.id, isPrimary: true },
+          });
+        }
+        await tx.user.update({
+          where: { id: user.id },
+          data: { phoneVerified: true, status: 'ACTIVE' },
+        });
+      }
+
+      let customer = await tx.customer.findFirst({ where: { userId: user.id, deletedAt: null } });
+      if (!customer) {
+        const suffix = phone.slice(-4);
+        customer = await tx.customer.create({
+          data: {
+            userId: user.id,
+            customerCode: generateCustomerCode(),
+            firstName: 'Customer',
+            lastName: suffix,
+            fullName: `Customer ${suffix}`,
+            source: 'DIRECT',
+          },
+        });
+      }
+
+      return { user, customer };
+    }),
+
+  ensureByUserId: (userId: string, phone: string) =>
+    prisma.$transaction(async (tx) => {
+      const existing = await tx.customer.findFirst({ where: { userId, deletedAt: null } });
+      if (existing) return existing;
+
+      const suffix = phone.slice(-4);
+      return tx.customer.create({
+        data: {
+          userId,
+          customerCode: generateCustomerCode(),
+          firstName: 'Customer',
+          lastName: suffix,
+          fullName: `Customer ${suffix}`,
+          source: 'DIRECT',
+        },
+        include: customerInclude,
+      });
+    }),
+
   update: (id: string, input: UpdateCustomerInput & { fullName?: string; updatedById: string }) =>
     prisma.customer.update({
       where: { id },

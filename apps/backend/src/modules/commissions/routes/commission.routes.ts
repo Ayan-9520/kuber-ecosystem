@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { RBAC_PERMISSIONS } from '../../../shared/constants/rbac.constants.js';
+import { asyncHandler } from '../../../shared/middleware/async-handler.middleware.js';
 import { authenticateWithSessionMiddleware } from '../../../shared/middleware/authenticate.middleware.js';
 import { requireAnyPermission } from '../../../shared/middleware/rbac.middleware.js';
 import { validateMiddleware } from '../../../shared/middleware/validate.middleware.js';
@@ -56,80 +57,80 @@ const recover = requireAnyPermission(
 
 export const commissionRuleRoutes = Router();
 commissionRuleRoutes.use(authenticateWithSessionMiddleware);
-commissionRuleRoutes.get('/', read, validateMiddleware(listCommissionRulesQuerySchema, 'query'), commissionRuleController.list);
-commissionRuleRoutes.post('/', write, validateMiddleware(createCommissionRuleSchema), commissionRuleController.create);
-commissionRuleRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), commissionRuleController.getById);
+commissionRuleRoutes.get('/', read, validateMiddleware(listCommissionRulesQuerySchema, 'query'), asyncHandler(commissionRuleController.list));
+commissionRuleRoutes.post('/', write, validateMiddleware(createCommissionRuleSchema), asyncHandler(commissionRuleController.create));
+commissionRuleRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionRuleController.getById));
 commissionRuleRoutes.patch(
   '/:id',
   write,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateCommissionRuleSchema),
-  commissionRuleController.update,
+  asyncHandler(commissionRuleController.update),
 );
-commissionRuleRoutes.delete('/:id', write, validateMiddleware(uuidParamSchema, 'params'), commissionRuleController.remove);
+commissionRuleRoutes.delete('/:id', write, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionRuleController.remove));
 
 export const commissionLedgerRoutes = Router();
 commissionLedgerRoutes.use(authenticateWithSessionMiddleware);
-commissionLedgerRoutes.get('/', read, validateMiddleware(listCommissionLedgerQuerySchema, 'query'), commissionLedgerController.list);
-commissionLedgerRoutes.get('/export', read, validateMiddleware(exportCommissionLedgerQuerySchema, 'query'), commissionLedgerController.export);
-commissionLedgerRoutes.post('/calculate', write, validateMiddleware(calculateCommissionSchema), commissionLedgerController.calculate);
-commissionLedgerRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), commissionLedgerController.getById);
-commissionLedgerRoutes.delete('/:id', write, validateMiddleware(uuidParamSchema, 'params'), commissionLedgerController.remove);
+commissionLedgerRoutes.get('/', read, validateMiddleware(listCommissionLedgerQuerySchema, 'query'), asyncHandler(commissionLedgerController.list));
+commissionLedgerRoutes.get('/export', read, validateMiddleware(exportCommissionLedgerQuerySchema, 'query'), asyncHandler(commissionLedgerController.export));
+commissionLedgerRoutes.post('/calculate', write, validateMiddleware(calculateCommissionSchema), asyncHandler(commissionLedgerController.calculate));
+commissionLedgerRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionLedgerController.getById));
+commissionLedgerRoutes.delete('/:id', write, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionLedgerController.remove));
 
 export const commissionApprovalRoutes = Router();
 commissionApprovalRoutes.use(authenticateWithSessionMiddleware);
-commissionApprovalRoutes.get('/', read, validateMiddleware(listCommissionApprovalsQuerySchema, 'query'), commissionApprovalController.list);
-commissionApprovalRoutes.post('/', write, validateMiddleware(createCommissionApprovalSchema), commissionApprovalController.request);
-commissionApprovalRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), commissionApprovalController.getById);
+commissionApprovalRoutes.get('/', read, validateMiddleware(listCommissionApprovalsQuerySchema, 'query'), asyncHandler(commissionApprovalController.list));
+commissionApprovalRoutes.post('/', write, validateMiddleware(createCommissionApprovalSchema), asyncHandler(commissionApprovalController.request));
+commissionApprovalRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionApprovalController.getById));
 commissionApprovalRoutes.post(
   '/:id/approve',
   approve,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(decideCommissionApprovalSchema),
-  commissionApprovalController.approve,
+  asyncHandler(commissionApprovalController.approve),
 );
 commissionApprovalRoutes.post(
   '/:id/reject',
   approve,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(rejectApprovalSchema),
-  commissionApprovalController.reject,
+  asyncHandler(commissionApprovalController.reject),
 );
 
 export const commissionPaymentRoutes = Router();
 commissionPaymentRoutes.use(authenticateWithSessionMiddleware);
-commissionPaymentRoutes.get('/', read, validateMiddleware(listCommissionPaymentsQuerySchema, 'query'), commissionPaymentController.list);
-commissionPaymentRoutes.get('/report', read, validateMiddleware(payoutReportQuerySchema, 'query'), commissionPaymentController.report);
-commissionPaymentRoutes.post('/', pay, validateMiddleware(createCommissionPaymentSchema), commissionPaymentController.create);
-commissionPaymentRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), commissionPaymentController.getById);
-commissionPaymentRoutes.post('/:id/approve', approve, validateMiddleware(uuidParamSchema, 'params'), commissionPaymentController.approve);
+commissionPaymentRoutes.get('/', read, validateMiddleware(listCommissionPaymentsQuerySchema, 'query'), asyncHandler(commissionPaymentController.list));
+commissionPaymentRoutes.get('/report', read, validateMiddleware(payoutReportQuerySchema, 'query'), asyncHandler(commissionPaymentController.report));
+commissionPaymentRoutes.post('/', pay, validateMiddleware(createCommissionPaymentSchema), asyncHandler(commissionPaymentController.create));
+commissionPaymentRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionPaymentController.getById));
+commissionPaymentRoutes.post('/:id/approve', approve, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionPaymentController.approve));
 commissionPaymentRoutes.post(
   '/:id/release',
   pay,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(releaseCommissionPaymentSchema),
-  commissionPaymentController.release,
+  asyncHandler(commissionPaymentController.release),
 );
-commissionPaymentRoutes.delete('/:id', write, validateMiddleware(uuidParamSchema, 'params'), commissionPaymentController.remove);
+commissionPaymentRoutes.delete('/:id', write, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionPaymentController.remove));
 
 export const commissionAdjustmentRoutes = Router();
 commissionAdjustmentRoutes.use(authenticateWithSessionMiddleware);
-commissionAdjustmentRoutes.get('/', read, validateMiddleware(listCommissionAdjustmentsQuerySchema, 'query'), commissionAdjustmentController.list);
-commissionAdjustmentRoutes.post('/', write, validateMiddleware(createCommissionAdjustmentSchema), commissionAdjustmentController.create);
-commissionAdjustmentRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), commissionAdjustmentController.getById);
-commissionAdjustmentRoutes.post('/:id/approve', approve, validateMiddleware(uuidParamSchema, 'params'), commissionAdjustmentController.approve);
-commissionAdjustmentRoutes.post('/:id/reject', approve, validateMiddleware(uuidParamSchema, 'params'), commissionAdjustmentController.reject);
-commissionAdjustmentRoutes.delete('/:id', write, validateMiddleware(uuidParamSchema, 'params'), commissionAdjustmentController.remove);
+commissionAdjustmentRoutes.get('/', read, validateMiddleware(listCommissionAdjustmentsQuerySchema, 'query'), asyncHandler(commissionAdjustmentController.list));
+commissionAdjustmentRoutes.post('/', write, validateMiddleware(createCommissionAdjustmentSchema), asyncHandler(commissionAdjustmentController.create));
+commissionAdjustmentRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionAdjustmentController.getById));
+commissionAdjustmentRoutes.post('/:id/approve', approve, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionAdjustmentController.approve));
+commissionAdjustmentRoutes.post('/:id/reject', approve, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionAdjustmentController.reject));
+commissionAdjustmentRoutes.delete('/:id', write, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionAdjustmentController.remove));
 
 export const commissionRecoveryRoutes = Router();
 commissionRecoveryRoutes.use(authenticateWithSessionMiddleware);
-commissionRecoveryRoutes.get('/', read, validateMiddleware(listCommissionRecoveriesQuerySchema, 'query'), commissionRecoveryController.list);
-commissionRecoveryRoutes.post('/', recover, validateMiddleware(createCommissionRecoverySchema), commissionRecoveryController.create);
-commissionRecoveryRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), commissionRecoveryController.getById);
-commissionRecoveryRoutes.post('/:id/approve', recover, validateMiddleware(uuidParamSchema, 'params'), commissionRecoveryController.approve);
-commissionRecoveryRoutes.post('/:id/reject', recover, validateMiddleware(uuidParamSchema, 'params'), commissionRecoveryController.reject);
-commissionRecoveryRoutes.delete('/:id', write, validateMiddleware(uuidParamSchema, 'params'), commissionRecoveryController.remove);
+commissionRecoveryRoutes.get('/', read, validateMiddleware(listCommissionRecoveriesQuerySchema, 'query'), asyncHandler(commissionRecoveryController.list));
+commissionRecoveryRoutes.post('/', recover, validateMiddleware(createCommissionRecoverySchema), asyncHandler(commissionRecoveryController.create));
+commissionRecoveryRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionRecoveryController.getById));
+commissionRecoveryRoutes.post('/:id/approve', recover, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionRecoveryController.approve));
+commissionRecoveryRoutes.post('/:id/reject', recover, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionRecoveryController.reject));
+commissionRecoveryRoutes.delete('/:id', write, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionRecoveryController.remove));
 
 export const commissionAnalyticsRoutes = Router();
 commissionAnalyticsRoutes.use(authenticateWithSessionMiddleware);
-commissionAnalyticsRoutes.get('/', read, validateMiddleware(commissionAnalyticsQuerySchema, 'query'), commissionAnalyticsController.summary);
+commissionAnalyticsRoutes.get('/', read, validateMiddleware(commissionAnalyticsQuerySchema, 'query'), asyncHandler(commissionAnalyticsController.summary));

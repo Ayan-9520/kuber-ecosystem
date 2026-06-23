@@ -111,5 +111,18 @@ describe('LOS integration flows', () => {
     expect(disbursement.status).toBe(201);
     markFlow('los.disbursement');
     markFlow('los.closure');
+
+    const appDetail = await agent
+      .get(`${API}/applications/${applicationId}`)
+      .set('Authorization', admin.authorization);
+    expect(appDetail.status).toBe(200);
+    expect(['DISBURSED', 'CLOSED']).toContain(appDetail.body.data.status);
+
+    const leadId = appDetail.body.data.leadId as string | null;
+    if (leadId) {
+      const leadRes = await agent.get(`${API}/leads/${leadId}`).set('Authorization', admin.authorization);
+      expect(leadRes.status).toBe(200);
+      expect(leadRes.body.data.status).toBe('DISBURSED');
+    }
   });
 });

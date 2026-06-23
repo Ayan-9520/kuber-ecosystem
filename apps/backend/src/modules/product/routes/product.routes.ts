@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { Router } from 'express';
 
 import { RBAC_PERMISSIONS } from '../../../shared/constants/rbac.constants.js';
+import { asyncHandler } from '../../../shared/middleware/async-handler.middleware.js';
 import { authenticateWithSessionMiddleware } from '../../../shared/middleware/authenticate.middleware.js';
 import { requireAnyPermission } from '../../../shared/middleware/rbac.middleware.js';
 import { validateMiddleware } from '../../../shared/middleware/validate.middleware.js';
@@ -80,52 +81,52 @@ function crudRoutes(
   createSchema: unknown,
   updateSchema: unknown,
 ) {
-  router.get('/', readPerm, validateMiddleware(listSchema, 'query'), controller.list);
-  router.post('/', writePerm, validateMiddleware(createSchema as never), controller.create);
-  router.get('/:id', readPerm, validateMiddleware(uuidParamSchema, 'params'), controller.getById);
+  router.get('/', readPerm, validateMiddleware(listSchema, 'query'), asyncHandler(controller.list));
+  router.post('/', writePerm, validateMiddleware(createSchema as never), asyncHandler(controller.create));
+  router.get('/:id', readPerm, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(controller.getById));
   router.patch(
     '/:id',
     writePerm,
     validateMiddleware(uuidParamSchema, 'params'),
     validateMiddleware(updateSchema as never),
-    controller.update,
+    asyncHandler(controller.update),
   );
 }
 
 export const productFamilyRoutes = Router();
 productFamilyRoutes.use(authenticateWithSessionMiddleware);
 crudRoutes(productFamilyRoutes, productsRead, productsConfigure, productFamilyController, listQuerySchema, createProductFamilySchema, updateProductFamilySchema);
-productFamilyRoutes.post('/:id/deactivate', productsConfigure, validateMiddleware(uuidParamSchema, 'params'), productFamilyController.deactivate);
+productFamilyRoutes.post('/:id/deactivate', productsConfigure, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(productFamilyController.deactivate));
 
 export const productRoutes = Router();
 productRoutes.use(authenticateWithSessionMiddleware);
-productRoutes.post('/recommend', productsRead, validateMiddleware(productRecommendationSchema), productController.recommend);
+productRoutes.post('/recommend', productsRead, validateMiddleware(productRecommendationSchema), asyncHandler(productController.recommend));
 crudRoutes(productRoutes, productsRead, productsWrite, productController, listProductsQuerySchema, createProductSchema, updateProductSchema);
-productRoutes.post('/:id/deactivate', productsWrite, validateMiddleware(uuidParamSchema, 'params'), productController.deactivate);
-productRoutes.delete('/:id', productsConfigure, validateMiddleware(uuidParamSchema, 'params'), productController.remove);
+productRoutes.post('/:id/deactivate', productsWrite, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(productController.deactivate));
+productRoutes.delete('/:id', productsConfigure, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(productController.remove));
 
 export const productVariantRoutes = Router();
 productVariantRoutes.use(authenticateWithSessionMiddleware);
 crudRoutes(productVariantRoutes, productsRead, productsWrite, productVariantController, listProductVariantsQuerySchema, createProductVariantSchema, updateProductVariantSchema);
-productVariantRoutes.post('/:id/activate', productsWrite, validateMiddleware(uuidParamSchema, 'params'), productVariantController.activate);
-productVariantRoutes.post('/:id/deactivate', productsWrite, validateMiddleware(uuidParamSchema, 'params'), productVariantController.deactivate);
+productVariantRoutes.post('/:id/activate', productsWrite, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(productVariantController.activate));
+productVariantRoutes.post('/:id/deactivate', productsWrite, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(productVariantController.deactivate));
 
 export const eligibilityRuleRoutes = Router();
 eligibilityRuleRoutes.use(authenticateWithSessionMiddleware);
-eligibilityRuleRoutes.post('/evaluate', eligibilityRead, validateMiddleware(evaluateEligibilitySchema), eligibilityRuleController.evaluate);
+eligibilityRuleRoutes.post('/evaluate', eligibilityRead, validateMiddleware(evaluateEligibilitySchema), asyncHandler(eligibilityRuleController.evaluate));
 crudRoutes(eligibilityRuleRoutes, eligibilityRead, eligibilityWrite, eligibilityRuleController, listEligibilityRulesQuerySchema, createEligibilityRuleSchema, updateEligibilityRuleSchema);
-eligibilityRuleRoutes.delete('/:id', eligibilityWrite, validateMiddleware(uuidParamSchema, 'params'), eligibilityRuleController.remove);
+eligibilityRuleRoutes.delete('/:id', eligibilityWrite, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(eligibilityRuleController.remove));
 
 export const documentRuleRoutes = Router();
 documentRuleRoutes.use(authenticateWithSessionMiddleware);
-documentRuleRoutes.post('/resolve', eligibilityRead, validateMiddleware(resolveDocumentsSchema), documentRuleController.resolve);
+documentRuleRoutes.post('/resolve', eligibilityRead, validateMiddleware(resolveDocumentsSchema), asyncHandler(documentRuleController.resolve));
 crudRoutes(documentRuleRoutes, eligibilityRead, eligibilityWrite, documentRuleController, listDocumentRulesQuerySchema, createDocumentRuleSchema, updateDocumentRuleSchema);
-documentRuleRoutes.delete('/:id', eligibilityWrite, validateMiddleware(uuidParamSchema, 'params'), documentRuleController.remove);
+documentRuleRoutes.delete('/:id', eligibilityWrite, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(documentRuleController.remove));
 
 export const lenderRoutes = Router();
 lenderRoutes.use(authenticateWithSessionMiddleware);
 crudRoutes(lenderRoutes, lendersRead, lendersWrite, lenderController, listLendersQuerySchema, createLenderSchema, updateLenderSchema);
-lenderRoutes.post('/:id/deactivate', lendersWrite, validateMiddleware(uuidParamSchema, 'params'), lenderController.deactivate);
+lenderRoutes.post('/:id/deactivate', lendersWrite, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(lenderController.deactivate));
 
 export const lenderPolicyRoutes = Router();
 lenderPolicyRoutes.use(authenticateWithSessionMiddleware);
@@ -134,4 +135,4 @@ crudRoutes(lenderPolicyRoutes, lendersRead, lendersWrite, lenderPolicyController
 export const productLenderMappingRoutes = Router();
 productLenderMappingRoutes.use(authenticateWithSessionMiddleware);
 crudRoutes(productLenderMappingRoutes, productsRead, productsConfigure, productLenderMappingController, listProductLenderMappingsQuerySchema, createProductLenderMappingSchema, updateProductLenderMappingSchema);
-productLenderMappingRoutes.delete('/:id', productsConfigure, validateMiddleware(uuidParamSchema, 'params'), productLenderMappingController.remove);
+productLenderMappingRoutes.delete('/:id', productsConfigure, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(productLenderMappingController.remove));

@@ -73,7 +73,8 @@ export function createApp(): express.Application {
         req.path.startsWith('/health/') ||
         req.path === '/metrics' ||
         process.env.NODE_ENV === 'test' ||
-        env.APP_ENV === 'testing',
+        env.APP_ENV === 'testing' ||
+        env.APP_ENV === 'development',
     }),
   );
 
@@ -81,8 +82,8 @@ export function createApp(): express.Application {
     typeof value === 'bigint' ? value.toString() : value,
   );
 
-  app.use(express.json({ limit: '2mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+  app.use(express.json({ limit: '15mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
   app.get('/health', (_req, res) => {
     const live = monitoringHealthService.liveness();

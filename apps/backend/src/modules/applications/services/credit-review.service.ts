@@ -11,6 +11,7 @@ import { applicationRepository } from '../repositories/application.repository.js
 import { creditReviewRepository } from '../repositories/credit-review.repository.js';
 import type { RequestContext } from '../types/applications.types.js';
 import { auditApplicationMutation, buildPaginationMeta } from '../utils/applications.utils.js';
+import { resolveEmployeeIdForActor } from '../utils/employee-resolver.util.js';
 
 import { applicationTimelineService } from './application-timeline.service.js';
 import { applicationWorkflowService } from './application-workflow.service.js';
@@ -43,9 +44,11 @@ export const creditReviewService = {
     const application = await applicationRepository.findById(input.applicationId);
     if (!application) throw new NotFoundError('Application', input.applicationId);
 
+    const reviewerId = input.reviewerId ?? (await resolveEmployeeIdForActor(ctx.actorId));
+
     const review = await creditReviewRepository.create({
       applicationId: input.applicationId,
-      reviewerId: input.reviewerId,
+      reviewerId,
       reviewType: input.reviewType as never,
       decision: input.decision as never,
       reviewNotes: input.reviewNotes,

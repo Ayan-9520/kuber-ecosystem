@@ -145,7 +145,7 @@ export function ObservabilityHubPage() {
             <StatCard label="Observability Coverage" value={`${fieldStr(summary, 'observabilityCoveragePercent')}%`} />
             <StatCard label="Visibility Score" value={fieldStr(summary, 'operationalVisibilityScore')} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+          <div className="stat-grid mt-4">
             <StatCard label="Logs (24h)" value={fieldStr(summary, 'logs')} />
             <StatCard label="Traces (24h)" value={fieldStr(summary, 'traces')} />
             <StatCard label="Errors (24h)" value={fieldStr(summary, 'errors')} />
@@ -215,7 +215,7 @@ export function ObservabilityHubPage() {
       )}
 
       {tab === 'ai' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="stat-grid">
           <StatCard label="AI Requests" value={fieldStr(aiData, 'requests')} />
           <StatCard label="Failures" value={fieldStr(aiData, 'failures')} />
           <StatCard label="Fallback Usage" value={fieldStr(aiData, 'fallbackUsage')} />

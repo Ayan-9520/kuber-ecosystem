@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Bell, ChevronDown, LogOut, Search, User } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Menu, Search, User } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,7 +10,11 @@ import { notificationsService } from '@/services';
 import { authService } from '@/services/auth.service';
 import { ThemeSwitcher } from '@/theme/ThemeSwitcher';
 
-export function Topbar() {
+interface TopbarProps {
+  onMenuToggle?: () => void;
+}
+
+export function Topbar({ onMenuToggle }: TopbarProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -60,11 +64,19 @@ export function Topbar() {
   return (
     <header className="topbar">
       <div className="topbar-left">
+        <button
+          type="button"
+          className="btn btn-ghost btn-icon topbar-menu-btn"
+          aria-label="Open navigation menu"
+          onClick={onMenuToggle}
+        >
+          <Menu size={22} strokeWidth={2} />
+        </button>
         <form className="topbar-search" onSubmit={handleSearch}>
           <Search size={16} strokeWidth={2} />
           <input
             type="search"
-            placeholder="Search leads, customers, applications..."
+            placeholder="Search leads, customers..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

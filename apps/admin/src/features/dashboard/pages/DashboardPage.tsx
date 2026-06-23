@@ -16,7 +16,6 @@ import {
   Legend,
   Pie,
   PieChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -24,6 +23,7 @@ import {
 
 import {
   Card,
+  ChartPanel,
   DataTable,
   EmptyState,
   LoadingSpinner,
@@ -38,7 +38,28 @@ import { dashboardService } from '@/services/index';
 
 function str(v: unknown): string {
   if (v === null || v === undefined) return '—';
+  if (typeof v === 'object') {
+    const obj = v as Record<string, unknown>;
+    return str(obj.name ?? obj.code ?? obj.label ?? obj.title);
+  }
   return String(v);
+}
+
+function documentTypeLabel(row: Record<string, unknown>): string {
+  const dt = row.documentType;
+  if (dt && typeof dt === 'object') {
+    const typed = dt as Record<string, unknown>;
+    return str(typed.name ?? typed.code);
+  }
+  return str(row.documentTypeName ?? row.type);
+}
+
+function customerLabel(row: Record<string, unknown>): string {
+  const customer = row.customer;
+  if (customer && typeof customer === 'object') {
+    return str((customer as Record<string, unknown>).fullName ?? (customer as Record<string, unknown>).customerCode);
+  }
+  return str(row.customerName ?? row.customerId);
 }
 
 export function DashboardPage() {
@@ -47,26 +68,31 @@ export function DashboardPage() {
   const leadAnalytics = useQuery({
     queryKey: ['dashboard', 'leadAnalytics'],
     queryFn: () => dashboardService.leadAnalytics(),
+    refetchOnMount: 'always',
   });
 
   const commissionAnalytics = useQuery({
     queryKey: ['dashboard', 'commissionAnalytics'],
     queryFn: () => dashboardService.commissionAnalytics(),
+    refetchOnMount: 'always',
   });
 
   const recentLeads = useQuery({
     queryKey: ['dashboard', 'recentLeads'],
     queryFn: () => dashboardService.recentLeads(),
+    refetchOnMount: 'always',
   });
 
   const recentApplications = useQuery({
     queryKey: ['dashboard', 'recentApplications'],
     queryFn: () => dashboardService.recentApplications(),
+    refetchOnMount: 'always',
   });
 
   const pendingDocuments = useQuery({
     queryKey: ['dashboard', 'pendingDocuments'],
     queryFn: () => dashboardService.pendingDocuments(),
+    refetchOnMount: 'always',
   });
 
   const recommendationAnalytics = useQuery({
@@ -81,12 +107,20 @@ export function DashboardPage() {
   const hasCriticalError = leadAnalytics.isError || commissionAnalytics.isError;
 
   if (hasCriticalError) {
+    const errorDetail =
+      leadAnalytics.error instanceof Error
+        ? leadAnalytics.error.message
+        : commissionAnalytics.error instanceof Error
+          ? commissionAnalytics.error.message
+          : 'Some metrics could not be loaded. Check API connection.';
     return (
       <div className="page-container">
         <PageHeader title="Dashboard" subtitle="Real-time overview of leads, applications, and commissions" />
         <EmptyState
           title="Failed to load dashboard"
-          description="Some metrics could not be loaded. Check API connection."
+          description={errorDetail.includes('Network') || errorDetail.includes('ECONNREFUSED')
+            ? 'Backend API is not reachable. Start it with: pnpm dev:backend'
+            : errorDetail}
           action={
             <button
               type="button"
@@ -136,24 +170,37 @@ export function DashboardPage() {
     converted: e.converted,
   }));
 
+  const recentApplicationItems = (recentApplications.data?.items ?? []).filter(
+    (item) => !item.deletedAt && !item.leadIsDeleted,
+  );
+  const recentLeadItems = (recentLeads.data?.items ?? []).filter((item) => !item.deletedAt);
+  const linkedLeadIds = new Set(
+    recentApplicationItems.map((item) => item.leadId).filter(Boolean).map(String),
+  );
+
   const activities = [
-    ...(recentLeads.data?.items ?? []).map((item) => ({
-      id: `lead-${item.id}`,
-      type: 'Lead',
-      title: str(item.fullName ?? item.name ?? item.leadNumber),
-      status: str(item.status),
-      time: str(item.createdAt),
-      path: `/leads/${item.id}`,
-    })),
-    ...(recentApplications.data?.items ?? []).map((item) => ({
+    ...recentLeadItems
+      .filter((item) => !linkedLeadIds.has(String(item.id)))
+      .map((item) => ({
+        id: `lead-${item.id}`,
+        type: 'Lead',
+        title: `${str(item.fullName ?? item.prospectName ?? item.name)} · ${str(item.leadNumber)}`,
+        status: str(item.status),
+        time: str(item.updatedAt ?? item.createdAt),
+        path: `/leads/${item.id}`,
+      })),
+    ...recentApplicationItems.map((item) => ({
       id: `app-${item.id}`,
       type: 'Application',
-      title: str(item.applicationNumber ?? item.id),
+      title: `${str(item.customerName ?? (item.customer as Record<string, unknown> | undefined)?.fullName)} · ${str(item.applicationNumber ?? item.id)}`,
       status: str(item.status),
-      time: str(item.createdAt),
+      time: str(item.updatedAt ?? item.submittedAt ?? item.createdAt),
       path: `/applications/${item.id}`,
     })),
-  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+  ]
+    .filter((item) => item.time && item.time !== '—')
+    .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+    .slice(0, 8);
 
   return (
     <div className="page-container">
@@ -167,37 +214,44 @@ export function DashboardPage() {
           label="Today's Leads"
           value={leads.todayLeads}
           icon={<Target size={20} />}
+          onClick={() => navigate('/leads?preset=today')}
         />
         <StatCard
           label="Qualified Leads"
           value={leads.qualifiedLeads}
           icon={<Users size={20} />}
+          onClick={() => navigate('/leads?status=QUALIFIED')}
         />
         <StatCard
           label="Hot Leads"
           value={leads.hotLeads}
           icon={<TrendingUp size={20} />}
           change="Grade A / A+"
+          onClick={() => navigate('/leads/scoring-analytics')}
         />
         <StatCard
           label="Converted"
           value={leads.convertedLeads}
           icon={<ClipboardList size={20} />}
+          onClick={() => navigate('/leads?status=APPLICATION_CREATED')}
         />
         <StatCard
           label="Commission Outstanding"
           value={formatCurrency(commissions.commissionOutstanding)}
           icon={<Wallet size={20} />}
+          onClick={() => navigate('/commissions')}
         />
         <StatCard
           label="Pending Documents"
           value={pendingDocuments.data?.meta.total ?? 0}
           icon={<FileText size={20} />}
+          onClick={() => navigate('/documents?status=PENDING_VERIFICATION')}
         />
         <StatCard
           label="Rec. Acceptance"
           value={`${(recommendationAnalytics.data as { acceptanceRate?: number } | undefined)?.acceptanceRate ?? 0}%`}
           icon={<TrendingUp size={20} />}
+          onClick={() => navigate('/recommendations/analytics')}
         />
       </div>
 
@@ -206,9 +260,9 @@ export function DashboardPage() {
           {branchData.length === 0 ? (
             <EmptyState title="No branch data" description="Lead performance by branch will appear here." />
           ) : (
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={branchData}>
+            <ChartPanel>
+              {({ width, height }) => (
+                <BarChart width={width} height={height} data={branchData}>
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
                   <XAxis dataKey="name" tick={{ fill: CHART_TICK, fontSize: 12 }} />
                   <YAxis tick={{ fill: CHART_TICK, fontSize: 12 }} />
@@ -217,8 +271,8 @@ export function DashboardPage() {
                   <Bar dataKey="total" name="Total Leads" fill={CHART_COLORS[0]} radius={[4, 4, 0, 0]} />
                   <Bar dataKey="converted" name="Converted" fill={CHART_COLORS[1]} radius={[4, 4, 0, 0]} />
                 </BarChart>
-              </ResponsiveContainer>
-            </div>
+              )}
+            </ChartPanel>
           )}
         </Card>
 
@@ -226,9 +280,9 @@ export function DashboardPage() {
           {executiveData.length === 0 ? (
             <EmptyState title="No executive data" description="Assigned executive metrics will appear here." />
           ) : (
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={executiveData}>
+            <ChartPanel>
+              {({ width, height }) => (
+                <BarChart width={width} height={height} data={executiveData}>
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
                   <XAxis dataKey="name" tick={{ fill: CHART_TICK, fontSize: 12 }} />
                   <YAxis tick={{ fill: CHART_TICK, fontSize: 12 }} />
@@ -237,8 +291,8 @@ export function DashboardPage() {
                   <Bar dataKey="total" name="Assigned" fill={CHART_COLORS[2]} radius={[4, 4, 0, 0]} />
                   <Bar dataKey="converted" name="Converted" fill={CHART_COLORS[0]} radius={[4, 4, 0, 0]} />
                 </BarChart>
-              </ResponsiveContainer>
-            </div>
+              )}
+            </ChartPanel>
           )}
         </Card>
       </div>
@@ -248,16 +302,16 @@ export function DashboardPage() {
           {statusData.length === 0 ? (
             <EmptyState title="No status breakdown" />
           ) : (
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
+            <ChartPanel>
+              {({ width, height }) => (
+                <PieChart width={width} height={height}>
                   <Pie
                     data={statusData}
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    outerRadius={100}
+                    outerRadius="65%"
                     label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                   >
                     {statusData.map((_, i) => (
@@ -266,8 +320,8 @@ export function DashboardPage() {
                   </Pie>
                   <Tooltip contentStyle={CHART_TOOLTIP} />
                 </PieChart>
-              </ResponsiveContainer>
-            </div>
+              )}
+            </ChartPanel>
           )}
         </Card>
 
@@ -279,8 +333,8 @@ export function DashboardPage() {
           ) : (
             <DataTable
               columns={[
-                { key: 'documentType', header: 'Type', render: (r) => str(r.documentType ?? r.type) },
-                { key: 'customerId', header: 'Customer', render: (r) => str(r.customerId).slice(0, 8) },
+                { key: 'documentType', header: 'Type', render: (r) => documentTypeLabel(r) },
+                { key: 'customer', header: 'Customer', render: (r) => customerLabel(r) },
                 {
                   key: 'status',
                   header: 'Status',

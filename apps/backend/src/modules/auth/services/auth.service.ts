@@ -1,4 +1,5 @@
 import { NotFoundError } from '../../../shared/errors/app-error.js';
+import { customerRepository } from '../../customers/repositories/customer.repository.js';
 import { authAuditRepository } from '../repositories/audit.repository.js';
 import { refreshTokenRepository } from '../repositories/refresh-token.repository.js';
 import { userRepository } from '../repositories/user.repository.js';
@@ -77,6 +78,13 @@ export const authService = {
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new NotFoundError('User', userId);
+    }
+
+    if (user.userType === 'CUSTOMER' && user.phone) {
+      const linked = await userRepository.findCustomerByUserId(userId);
+      if (!linked) {
+        await customerRepository.ensureByUserId(userId, user.phone);
+      }
     }
 
     const authContext = await rbacService.resolveAuthContext(userId);

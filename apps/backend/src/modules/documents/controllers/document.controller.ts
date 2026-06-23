@@ -45,6 +45,17 @@ export const documentController = {
   downloadUrl: async (req: Request, res: Response) => {
     res.json(successResponse(await documentService.getDownloadUrl(req.user!, req.params.id as string, ctx(req))));
   },
+  localDownload: async (req: Request, res: Response) => {
+    const key = String(req.query.key ?? '');
+    if (!key) {
+      res.status(400).json({ success: false, error: { code: 'MISSING_KEY', message: 'Storage key is required' } });
+      return;
+    }
+    const file = await documentService.streamLocalDownload(req.user!, key);
+    res.setHeader('Content-Type', file.mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${file.fileName}"`);
+    res.send(file.buffer);
+  },
   verify: async (req: Request, res: Response) => {
     res.json(successResponse(await documentService.verify(req.user!, req.params.id as string, req.body, ctx(req))));
   },

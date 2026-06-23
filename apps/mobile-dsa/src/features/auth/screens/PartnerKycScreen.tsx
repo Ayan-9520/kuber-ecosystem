@@ -67,12 +67,9 @@ export function PartnerKycScreen() {
           onPress={() => dispatch(setRequiresPartnerKyc(false))}
         />
       ) : (
-        <Button
-          title="Continue to App"
-          variant="secondary"
-          fullWidth
-          onPress={() => dispatch(setRequiresPartnerKyc(false))}
-        />
+        <Text style={styles.note}>
+          Upload required documents via Profile → Documents. Access unlocks after KYC verification.
+        </Text>
       )}
     </Screen>
   );

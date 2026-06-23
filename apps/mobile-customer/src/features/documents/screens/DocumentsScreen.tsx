@@ -1,7 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,23 +13,11 @@ import {
 
 import { Button, Card, EmptyState, Screen, StatusBadge } from '@/components/ui';
 import { useAuth } from '@/hooks';
+import { guessMimeType } from '@/lib/document-checklist';
+import { pickDocumentBase64 } from '@/lib/read-file-base64';
 import { formatDate, formatDateTime, getApiErrorMessage, str } from '@/lib/utils';
 import { documentsService, productsService } from '@/services';
 import { colors, radius, spacing, typography } from '@/theme';
-
-const MIME_MAP: Record<string, string> = {
-  pdf: 'application/pdf',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  png: 'image/png',
-  heic: 'image/heic',
-};
-
-function guessMimeType(fileName: string, fallback?: string): string {
-  if (fallback) return fallback;
-  const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
-  return MIME_MAP[ext] ?? 'application/octet-stream';
-}
 
 export function DocumentsScreen() {
   const { customerId } = useAuth();
@@ -79,28 +65,18 @@ export function DocumentsScreen() {
     mutationFn: async (documentTypeId: string) => {
       if (!customerId) throw new Error('Customer not linked');
 
-      const result = await DocumentPicker.getDocumentAsync({
-        copyToCacheDirectory: true,
-        multiple: false,
-        type: ['application/pdf', 'image/*'],
-      });
-
-      if (result.canceled || !result.assets[0]) {
+      const picked = await pickDocumentBase64(['application/pdf', 'image/*']);
+      if (!picked) {
         throw new Error('Upload cancelled');
       }
-
-      const asset = result.assets[0];
-      const contentBase64 = await FileSystem.readAsStringAsync(asset.uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
 
       return documentsService.upload({
         ownerType: 'CUSTOMER',
         customerId,
         documentTypeId,
-        fileName: asset.name,
-        mimeType: guessMimeType(asset.name, asset.mimeType ?? undefined),
-        contentBase64,
+        fileName: picked.name,
+        mimeType: guessMimeType(picked.name, picked.mimeType),
+        contentBase64: picked.contentBase64,
         runOcr: true,
         autoVerify: false,
       });

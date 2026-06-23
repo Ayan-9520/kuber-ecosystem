@@ -84,8 +84,14 @@ function ApplicationsStackNavigator() {
   return (
     <AppsStack.Navigator screenOptions={screenOptions}>
       <AppsStack.Screen name="ApplicationsList" component={ApplicationsScreen} options={{ title: 'Applications' }} />
-      <AppsStack.Screen name="ApplicationDetail" component={ApplicationDetailScreen} options={{ title: 'Track Application' }} />
-      <AppsStack.Screen name="ApplicationWizard" component={ApplicationWizardScreen} options={{ title: 'Apply for Loan' }} />
+      <AppsStack.Screen name="ApplicationDetail" component={ApplicationDetailScreen} options={{ headerShown: false }} />
+      <AppsStack.Screen
+        name="ApplicationWizard"
+        component={ApplicationWizardScreen}
+        options={({ route }) => ({
+          title: route.params?.productName ? `Apply · ${route.params.productName}` : 'Application',
+        })}
+      />
     </AppsStack.Navigator>
   );
 }

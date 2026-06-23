@@ -244,6 +244,7 @@ export const leadAnalyticsQuerySchema = z.object({
   branchId: z.string().uuid().optional(),
   regionId: z.string().uuid().optional(),
   assignedToId: z.string().uuid().optional(),
+  partnerId: z.string().uuid().optional(),
   fromDate: z.coerce.date().optional(),
   toDate: z.coerce.date().optional(),
 });

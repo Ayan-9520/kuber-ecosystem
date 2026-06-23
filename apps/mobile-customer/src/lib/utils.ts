@@ -37,6 +37,9 @@ export function getApiErrorMessage(error: unknown): string {
   if (error instanceof AxiosError) {
     const msg = error.response?.data?.error?.message;
     if (typeof msg === 'string') return msg;
+    if (error.response?.status === 429) {
+      return 'Too many requests. Please wait a moment and try again.';
+    }
     if (error.code === 'ERR_NETWORK') return 'Cannot reach server. Check your connection.';
   }
   if (error instanceof Error) return error.message;

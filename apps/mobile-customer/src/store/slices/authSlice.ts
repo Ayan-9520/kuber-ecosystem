@@ -37,8 +37,14 @@ export const authSlice = createSlice({
     setRequiresProfileCompletion: (state, action: PayloadAction<boolean>) => {
       state.requiresProfileCompletion = action.payload;
     },
+    patchUser: (state, action: PayloadAction<Partial<AuthenticatedUser>>) => {
+      if (state.user) {
+        state.user = { ...state.user, ...action.payload };
+      }
+    },
   },
 });
 
-export const { setCredentials, clearCredentials, setRequiresProfileCompletion } = authSlice.actions;
+export const { setCredentials, clearCredentials, setRequiresProfileCompletion, patchUser } =
+  authSlice.actions;
 export const authReducer = authSlice.reducer;

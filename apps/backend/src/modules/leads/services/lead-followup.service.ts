@@ -12,6 +12,7 @@ import { leadFollowUpRepository } from '../repositories/lead-followup.repository
 import { leadRepository } from '../repositories/lead.repository.js';
 import type { RequestContext } from '../types/leads.types.js';
 import { auditLeadMutation, buildPaginationMeta } from '../utils/leads.utils.js';
+import { serializeLeadFollowUp } from '../utils/lead-subresource-serializer.js';
 
 import { followUpEngineService } from './follow-up-engine.service.js';
 
@@ -42,7 +43,10 @@ export const leadFollowUpService = {
       leadFollowUpRepository.count(where),
     ]);
 
-    return { items, meta: buildPaginationMeta(query.page, query.limit, total) };
+    return {
+      items: items.map(serializeLeadFollowUp),
+      meta: buildPaginationMeta(query.page, query.limit, total),
+    };
   },
 
   async getById(id: string) {

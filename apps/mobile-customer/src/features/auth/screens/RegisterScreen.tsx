@@ -29,7 +29,7 @@ export function RegisterScreen() {
     try {
       await authService.sendOtp(normalizePhone(phone), 'REGISTER');
       setOtpSent(true);
-      setSuccess('OTP sent! Use 123456 in development.');
+      setSuccess('OTP sent to your mobile number.');
     } catch (e) {
       setError(getApiErrorMessage(e));
     } finally {

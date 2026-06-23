@@ -14,8 +14,8 @@ import { authService, partnersService } from '@/services';
 import { setRequiresPartnerKyc } from '@/store/slices/authSlice';
 import { colors, spacing, typography } from '@/theme';
 
-/** Seeded demo DSA partner — see database/prisma/seeds/demo-dsa-partner.seed.ts */
-const DEMO_PARTNER_PHONE = '8888777766';
+const DEMO_DSA_PHONE = '8888777766';
+const DEV_OTP = '123456';
 
 type OtpLoginRoute = RouteProp<AuthStackParamList, 'OtpLogin'>;
 
@@ -55,6 +55,43 @@ export function OtpLoginScreen() {
     }
   };
 
+  const completeLogin = async (normalizedPhone: string, otpCode: string) => {
+    const tokens = await authService.partnerLogin(normalizedPhone, otpCode);
+    await login(tokens.accessToken, tokens.refreshToken);
+
+    const me = await authService.me();
+    if (me.partnerId) {
+      const partner = await partnersService.getById(me.partnerId);
+      if (String(partner.kycStatus) !== 'VERIFIED') {
+        dispatch(setRequiresPartnerKyc(true));
+        return;
+      }
+    }
+
+    dispatch(setRequiresPartnerKyc(false));
+  };
+
+  const demoLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const normalized = normalizePhone(DEMO_DSA_PHONE);
+      setPhone(DEMO_DSA_PHONE);
+      setOtp(DEV_OTP);
+      setOtpSent(true);
+      try {
+        await authService.sendOtp(normalized, 'LOGIN');
+      } catch {
+        /* dev bypass accepts 123456 without a prior send */
+      }
+      await completeLogin(normalized, DEV_OTP);
+    } catch (e) {
+      setError(getApiErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const verify = async () => {
     const otpErr = validateOtp(otp);
     if (otpErr) {
@@ -64,19 +101,7 @@ export function OtpLoginScreen() {
     setError('');
     setLoading(true);
     try {
-      const tokens = await authService.partnerLogin(normalizePhone(phone), otp);
-      await login(tokens.accessToken, tokens.refreshToken);
-
-      const me = await authService.me();
-      if (me.partnerId) {
-        const partner = await partnersService.getById(me.partnerId);
-        if (String(partner.kycStatus) !== 'VERIFIED') {
-          dispatch(setRequiresPartnerKyc(true));
-          return;
-        }
-      }
-
-      dispatch(setRequiresPartnerKyc(false));
+      await completeLogin(normalizePhone(phone), otp);
     } catch (e) {
       setError(getApiErrorMessage(e));
     } finally {
@@ -97,9 +122,23 @@ export function OtpLoginScreen() {
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
+        {__DEV__ ? (
+          <>
+            <Text style={styles.hint}>Dev: OTP {DEV_OTP} · Demo {DEMO_DSA_PHONE}</Text>
+            <Button
+              title="Quick Demo Login"
+              variant="secondary"
+              fullWidth
+              style={{ marginBottom: spacing.md }}
+              loading={loading}
+              onPress={() => void demoLogin()}
+            />
+          </>
+        ) : null}
+
         <Input
           label="Mobile Number"
-          placeholder={DEMO_PARTNER_PHONE}
+          placeholder="10-digit mobile number"
           keyboardType="phone-pad"
           maxLength={10}
           value={phone}
@@ -141,9 +180,7 @@ export function OtpLoginScreen() {
           <Text style={styles.link} onPress={() => navigation.navigate('PartnerRegister')}>
             New DSA partner? Register
           </Text>
-          <Text style={styles.hint}>
-            Dev: {DEMO_PARTNER_PHONE} · OTP 123456
-          </Text>
+          <Text style={styles.hint}>Registered partner mobile se OTP login karein</Text>
         </View>
       </KeyboardAvoidingView>
     </LinearGradient>

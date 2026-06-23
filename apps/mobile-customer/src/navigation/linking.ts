@@ -37,6 +37,7 @@ export const linking: LinkingOptions<RootStackParamList> = {
           Applications: {
             screens: {
               ApplicationDetail: 'applications/:id',
+              ApplicationWizard: 'apply',
             },
           },
           Products: {

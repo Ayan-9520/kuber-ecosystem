@@ -2,7 +2,7 @@ import { type RouteProp, useRoute } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 
 import { Card, EmptyState, ListRow, Screen } from '@/components/ui';
-import { formatDate, getApiErrorMessage, str } from '@/lib/utils';
+import { formatCurrency, formatDate, getApiErrorMessage, str } from '@/lib/utils';
 import type { ProfileStackParamList } from '@/navigation/types';
 import { customersService } from '@/services';
 
@@ -49,7 +49,7 @@ export function CustomerDetailScreen() {
             <ListRow
               key={String(app.id)}
               title={str(app.applicationNumber)}
-              subtitle={`${str(app.productName)} · ${formatDate(app.createdAt as string)}`}
+              subtitle={`${str(app.productName)} · ${formatCurrency((app.loanAmount ?? app.requestedAmount) as number)} · ${formatDate(app.createdAt as string)} · ${str(app.status)}`}
               status={str(app.status)}
               icon="document-text"
             />

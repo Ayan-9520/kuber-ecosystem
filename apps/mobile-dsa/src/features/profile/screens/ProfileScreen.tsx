@@ -2,14 +2,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ThemeAppearanceCard } from '@/components/ThemeAppearanceCard';
 import { Button, Card, Screen, StatusBadge } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { maskPhone, str } from '@/lib/utils';
 import type { ProfileStackParamList } from '@/navigation/types';
 import { partnersService } from '@/services';
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { useAppTheme } from '@/theme/ThemeProvider';
 
 const MENU: { label: string; screen: keyof ProfileStackParamList; icon: keyof typeof Ionicons.glyphMap }[] = [
   { label: 'Bank Account', screen: 'BankAccount', icon: 'card' },
@@ -26,6 +29,8 @@ const MENU: { label: string; screen: keyof ProfileStackParamList; icon: keyof ty
 export function ProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const { user, partnerId, logout } = useAuth();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const partner = useQuery({
     queryKey: ['partner-profile', partnerId],
@@ -55,44 +60,14 @@ export function ProfileScreen() {
         ) : null}
       </Card>
 
+      <ThemeAppearanceCard />
+
       <Card title="Account">
         {MENU.map((item) => (
           <Pressable
             key={item.screen}
             style={styles.menuRow}
-            onPress={() => {
-              switch (item.screen) {
-                case 'BankAccount':
-                  navigation.navigate('BankAccount');
-                  break;
-                case 'PartnerKycStatus':
-                  navigation.navigate('PartnerKycStatus');
-                  break;
-                case 'Documents':
-                  navigation.navigate('Documents');
-                  break;
-                case 'DocumentDeficiencies':
-                  navigation.navigate('DocumentDeficiencies');
-                  break;
-                case 'CustomersList':
-                  navigation.navigate('CustomersList');
-                  break;
-                case 'Referrals':
-                  navigation.navigate('Referrals');
-                  break;
-                case 'ReferralAnalytics':
-                  navigation.navigate('ReferralAnalytics');
-                  break;
-                case 'Support':
-                  navigation.navigate('Support');
-                  break;
-                case 'Settings':
-                  navigation.navigate('Settings');
-                  break;
-                default:
-                  break;
-              }
-            }}
+            onPress={() => navigation.navigate(item.screen)}
           >
             <Ionicons name={item.icon} size={20} color={colors.primary} />
             <Text style={styles.menuLabel}>{item.label}</Text>
@@ -106,29 +81,31 @@ export function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    marginBottom: spacing.md,
-  },
-  avatarText: { fontSize: 28, fontWeight: '800', color: colors.background },
-  name: { ...typography.h3, color: colors.text, textAlign: 'center' },
-  sub: { ...typography.bodySm, color: colors.textMuted, textAlign: 'center', marginTop: 4 },
-  badgeRow: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm, marginTop: spacing.md },
-  code: { ...typography.caption, color: colors.primary, textAlign: 'center', marginTop: spacing.sm },
-  menuRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  menuLabel: { ...typography.body, color: colors.text, flex: 1 },
-});
+function createStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    avatar: {
+      width: 64,
+      height: 64,
+      borderRadius: 16,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'center',
+      marginBottom: spacing.md,
+    },
+    avatarText: { fontSize: 28, fontWeight: '800', color: colors.onPrimary },
+    name: { ...typography.h3, color: colors.text, textAlign: 'center' },
+    sub: { ...typography.bodySm, color: colors.textMuted, textAlign: 'center', marginTop: 4 },
+    badgeRow: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm, marginTop: spacing.md },
+    code: { ...typography.caption, color: colors.primary, textAlign: 'center', marginTop: spacing.sm },
+    menuRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    menuLabel: { ...typography.body, color: colors.text, flex: 1 },
+  });
+}
