@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import {
   Pressable,
   RefreshControl,
@@ -18,7 +18,8 @@ import {
 } from '@/lib/notification-queries';
 import { formatDateTime, getApiErrorMessage, str } from '@/lib/utils';
 import { notificationsService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { radius, spacing, typography } from '@/theme';
 
 function isUnread(notification: Record<string, unknown>): boolean {
   if (notification.readAt) return false;
@@ -27,6 +28,8 @@ function isUnread(notification: Record<string, unknown>): boolean {
 }
 
 export function NotificationsScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
@@ -192,7 +195,8 @@ export function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   actions: { marginBottom: spacing.md },
   notificationRow: {
     flexDirection: 'row',
@@ -232,3 +236,4 @@ const styles = StyleSheet.create({
   muted: { ...typography.bodySm, color: colors.textMuted },
   error: { ...typography.bodySm, color: colors.danger, marginTop: spacing.sm },
 });
+}

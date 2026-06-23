@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { type RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -18,11 +18,14 @@ import { Screen, StatusBadge } from '@/components/ui';
 import { formatDateTime, getApiErrorMessage, str } from '@/lib/utils';
 import type { ProfileStackParamList } from '@/navigation/types';
 import { supportService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { radius, spacing, typography } from '@/theme';
 
 type Tab = 'messages' | 'timeline';
 
 export function TicketDetailScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const route = useRoute<RouteProp<ProfileStackParamList, 'TicketDetail'>>();
   const { id } = route.params;
@@ -144,7 +147,8 @@ export function TicketDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   flex: { flex: 1 },
   header: { padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.card },
   subject: { ...typography.h3, color: colors.text },
@@ -183,3 +187,4 @@ const styles = StyleSheet.create({
   timelineTitle: { ...typography.label, color: colors.text },
   timelineTime: { ...typography.caption, color: colors.textMuted, marginTop: 4 },
 });
+}

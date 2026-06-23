@@ -1,9 +1,13 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { typography } from '@/theme';
 
 export function SplashScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <LinearGradient colors={[colors.background, colors.card, colors.background]} style={styles.container}>
       <View style={styles.logo}>
@@ -15,7 +19,8 @@ export function SplashScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   logo: {
     width: 72,
@@ -30,3 +35,4 @@ const styles = StyleSheet.create({
   brand: { ...typography.h1, color: colors.text },
   tagline: { ...typography.caption, color: colors.textMuted, marginTop: 8 },
 });
+}

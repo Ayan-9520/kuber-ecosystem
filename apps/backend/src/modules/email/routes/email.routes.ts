@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { asyncHandler } from '../../../shared/middleware/async-handler.middleware.js';
 import { RBAC_PERMISSIONS } from '../../../shared/constants/rbac.constants.js';
 import { authenticateWithSessionMiddleware } from '../../../shared/middleware/authenticate.middleware.js';
 import { requireAnyPermission } from '../../../shared/middleware/rbac.middleware.js';
@@ -38,27 +39,27 @@ const configure = requireAnyPermission(RBAC_PERMISSIONS.EMAILS_CONFIGURE, RBAC_P
 export const emailRoutes = Router();
 emailRoutes.use(authenticateWithSessionMiddleware);
 
-emailRoutes.post('/send', send, validateMiddleware(sendEnterpriseEmailSchema), emailSendController.send);
-emailRoutes.post('/process-queue', configure, emailSendController.processQueue);
+emailRoutes.post('/send', send, validateMiddleware(sendEnterpriseEmailSchema), asyncHandler(emailSendController.send));
+emailRoutes.post('/process-queue', configure, asyncHandler(emailSendController.processQueue));
 
-emailRoutes.get('/templates', read, validateMiddleware(listEmailTemplatesQuerySchema, 'query'), emailTemplateController.list);
-emailRoutes.post('/templates', configure, validateMiddleware(createEmailTemplateSchema), emailTemplateController.create);
-emailRoutes.post('/templates/preview', read, validateMiddleware(previewEmailTemplateSchema), emailTemplateController.preview);
-emailRoutes.get('/templates/:id', read, validateMiddleware(uuidParamSchema, 'params'), emailTemplateController.getById);
-emailRoutes.patch('/templates/:id', configure, validateMiddleware(uuidParamSchema, 'params'), validateMiddleware(updateEmailTemplateSchema), emailTemplateController.update);
-emailRoutes.post('/templates/:id/version', configure, validateMiddleware(uuidParamSchema, 'params'), validateMiddleware(createEmailTemplateVersionSchema), emailTemplateController.createVersion);
+emailRoutes.get('/templates', read, validateMiddleware(listEmailTemplatesQuerySchema, 'query'), asyncHandler(emailTemplateController.list));
+emailRoutes.post('/templates', configure, validateMiddleware(createEmailTemplateSchema), asyncHandler(emailTemplateController.create));
+emailRoutes.post('/templates/preview', read, validateMiddleware(previewEmailTemplateSchema), asyncHandler(emailTemplateController.preview));
+emailRoutes.get('/templates/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(emailTemplateController.getById));
+emailRoutes.patch('/templates/:id', configure, validateMiddleware(uuidParamSchema, 'params'), validateMiddleware(updateEmailTemplateSchema), asyncHandler(emailTemplateController.update));
+emailRoutes.post('/templates/:id/version', configure, validateMiddleware(uuidParamSchema, 'params'), validateMiddleware(createEmailTemplateVersionSchema), asyncHandler(emailTemplateController.createVersion));
 
-emailRoutes.get('/logs', read, validateMiddleware(listEmailLogsQuerySchema, 'query'), emailLogController.list);
-emailRoutes.get('/logs/:id', read, validateMiddleware(uuidParamSchema, 'params'), emailLogController.getById);
+emailRoutes.get('/logs', read, validateMiddleware(listEmailLogsQuerySchema, 'query'), asyncHandler(emailLogController.list));
+emailRoutes.get('/logs/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(emailLogController.getById));
 
-emailRoutes.get('/analytics', read, validateMiddleware(emailAnalyticsQuerySchema, 'query'), emailAnalyticsController.summary);
+emailRoutes.get('/analytics', read, validateMiddleware(emailAnalyticsQuerySchema, 'query'), asyncHandler(emailAnalyticsController.summary));
 
-emailRoutes.get('/providers', read, validateMiddleware(listEmailProvidersQuerySchema, 'query'), emailProviderController.list);
-emailRoutes.post('/providers', configure, validateMiddleware(createEmailProviderSchema), emailProviderController.create);
-emailRoutes.get('/providers/:id', read, validateMiddleware(uuidParamSchema, 'params'), emailProviderController.getById);
-emailRoutes.patch('/providers/:id', configure, validateMiddleware(uuidParamSchema, 'params'), validateMiddleware(updateEmailProviderSchema), emailProviderController.update);
+emailRoutes.get('/providers', read, validateMiddleware(listEmailProvidersQuerySchema, 'query'), asyncHandler(emailProviderController.list));
+emailRoutes.post('/providers', configure, validateMiddleware(createEmailProviderSchema), asyncHandler(emailProviderController.create));
+emailRoutes.get('/providers/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(emailProviderController.getById));
+emailRoutes.patch('/providers/:id', configure, validateMiddleware(uuidParamSchema, 'params'), validateMiddleware(updateEmailProviderSchema), asyncHandler(emailProviderController.update));
 
-emailRoutes.get('/preferences', read, validateMiddleware(listEmailPreferencesQuerySchema, 'query'), emailPreferenceController.list);
-emailRoutes.put('/preferences', configure, validateMiddleware(upsertEmailPreferenceSchema), emailPreferenceController.upsert);
+emailRoutes.get('/preferences', read, validateMiddleware(listEmailPreferencesQuerySchema, 'query'), asyncHandler(emailPreferenceController.list));
+emailRoutes.put('/preferences', configure, validateMiddleware(upsertEmailPreferenceSchema), asyncHandler(emailPreferenceController.upsert));
 
-emailRoutes.get('/queue', read, validateMiddleware(listEmailQueueQuerySchema, 'query'), emailQueueController.list);
+emailRoutes.get('/queue', read, validateMiddleware(listEmailQueueQuerySchema, 'query'), asyncHandler(emailQueueController.list));

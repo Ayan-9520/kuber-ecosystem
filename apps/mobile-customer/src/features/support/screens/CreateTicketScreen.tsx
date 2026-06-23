@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Alert,
   Pressable,
@@ -16,11 +16,14 @@ import { useAuth } from '@/hooks';
 import { getApiErrorMessage, str } from '@/lib/utils';
 import type { SupportStackParamList } from '@/navigation/types';
 import { supportService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { radius, spacing, typography } from '@/theme';
 
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
 
 export function CreateTicketScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const navigation = useNavigation<NativeStackNavigationProp<SupportStackParamList>>();
   const queryClient = useQueryClient();
   const { customerId } = useAuth();
@@ -162,7 +165,8 @@ export function CreateTicketScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   content: {
     padding: spacing.md,
     paddingBottom: spacing.xxl,
@@ -190,3 +194,4 @@ const styles = StyleSheet.create({
   muted: { ...typography.bodySm, color: colors.textMuted },
   error: { ...typography.bodySm, color: colors.danger, marginTop: spacing.xs },
 });
+}

@@ -1,16 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Card, EmptyState, Screen } from '@/components/ui';
 import { formatCurrency, formatPercent, getApiErrorMessage } from '@/lib/utils';
 import { recommendationsService } from '@/services/recommendations.service';
-import { colors, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { spacing, typography } from '@/theme';
 
 interface RecommendationsScreenProps {
   customerId: string;
 }
 
 export function RecommendationsScreen({ customerId }: RecommendationsScreenProps) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const recs = useQuery({
     queryKey: ['recommendations', customerId],
     queryFn: () => recommendationsService.forCustomer(customerId),
@@ -71,7 +75,8 @@ export function RecommendationsScreen({ customerId }: RecommendationsScreenProps
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   stats: { flexDirection: 'row', gap: spacing.md },
   stat: { ...typography.bodySm, color: colors.primary, fontWeight: '600' },
   emi: { ...typography.bodySm, color: colors.textMuted, marginTop: spacing.sm },
@@ -79,3 +84,4 @@ const styles = StyleSheet.create({
   sub: { ...typography.bodySm, color: colors.textMuted, marginTop: 4 },
   badge: { ...typography.bodySm, color: colors.primary, marginTop: spacing.sm },
 });
+}

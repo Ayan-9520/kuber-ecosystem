@@ -1,18 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Card, EmptyState, ListRow, Screen } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { formatDateTime, str } from '@/lib/utils';
 import { notificationsService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { radius, spacing, typography } from '@/theme';
 
 type Channel = 'all' | 'sms' | 'whatsapp' | 'logs';
 
 type CommItem = Record<string, unknown> & { channel: string };
 
 export function CommunicationHistoryScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { user, partnerId } = useAuth();
   const [channel, setChannel] = useState<Channel>('all');
 
@@ -82,10 +85,12 @@ export function CommunicationHistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
   chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { ...typography.caption, color: colors.textMuted },
   chipTextActive: { color: colors.background, fontWeight: '700' },
 });
+}

@@ -1,6 +1,6 @@
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -17,30 +17,43 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { setSessionExpiredHandler } from '@/lib/api';
 import type { RootState } from '@/store';
 import { clearCredentials } from '@/store/slices/authSlice';
-import { colors } from '@/theme';
-
+import { useAppTheme } from '@/theme/ThemeProvider';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-const navTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    primary: colors.primary,
-    background: colors.background,
-    card: colors.card,
-    text: colors.text,
-    border: colors.border,
-  },
-};
-
 export function RootNavigator() {
   const dispatch = useDispatch();
+  const { colors, resolved } = useAppTheme();
   const isAuthenticated = useSelector((s: RootState) => s.auth.isAuthenticated);
   const requiresPartnerKyc = useSelector((s: RootState) => s.auth.requiresPartnerKyc);
   const { ready, showOnboarding: initialOnboarding } = useAuthBootstrap();
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const showOnboarding = initialOnboarding && !onboardingComplete;
+
+  const navTheme = useMemo(() => {
+    const base = resolved === 'dark' ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      dark: resolved === 'dark',
+      colors: {
+        ...base.colors,
+        primary: colors.primary,
+        background: colors.background,
+        card: colors.card,
+        text: colors.text,
+        border: colors.border,
+      },
+    };
+  }, [colors, resolved]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        boot: { flex: 1, backgroundColor: colors.background },
+        loader: { position: 'absolute', bottom: 80, alignSelf: 'center' },
+      }),
+    [colors.background],
+  );
 
   useEffect(() => {
     setSessionExpiredHandler(() => {
@@ -82,8 +95,3 @@ export function RootNavigator() {
     </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  boot: { flex: 1, backgroundColor: colors.background },
-  loader: { position: 'absolute', bottom: 80, alignSelf: 'center' },
-});

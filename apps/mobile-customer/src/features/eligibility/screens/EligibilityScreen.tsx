@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, Input, Screen, StatusBadge } from '@/components/ui';
@@ -12,7 +12,8 @@ import {
 } from '@/lib/product-mapper';
 import { formatCurrency, formatPercent, getApiErrorMessage } from '@/lib/utils';
 import { eligibilityService, productsService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { radius, spacing, typography } from '@/theme';
 
 const EMPLOYMENT_TYPES = [
   { value: 'SALARIED', label: 'Salaried' },
@@ -33,6 +34,8 @@ interface EligibilityResult {
 }
 
 export function EligibilityScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { customerId } = useAuth();
   const [income, setIncome] = useState('');
   const [occupation, setOccupation] = useState<string>('SALARIED');
@@ -222,7 +225,8 @@ export function EligibilityScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   fieldLabel: { ...typography.label, color: colors.textSecondary, marginBottom: spacing.sm },
   chipRow: { gap: spacing.sm, marginBottom: spacing.md, paddingRight: spacing.md },
   chip: {
@@ -255,3 +259,4 @@ const styles = StyleSheet.create({
   riskRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, paddingVertical: spacing.xs },
   riskText: { ...typography.bodySm, color: colors.textSecondary, flex: 1 },
 });
+}

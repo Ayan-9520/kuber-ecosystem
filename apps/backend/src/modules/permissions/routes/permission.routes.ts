@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { asyncHandler } from '../../../shared/middleware/async-handler.middleware.js';
 import { RBAC_PERMISSIONS } from '../../../shared/constants/rbac.constants.js';
 import { authenticateWithSessionMiddleware } from '../../../shared/middleware/authenticate.middleware.js';
 import { requireAnyPermission } from '../../../shared/middleware/rbac.middleware.js';
@@ -24,7 +25,7 @@ permissionRoutes.get(
     'rbac.read:all',
   ),
   validateMiddleware(listPermissionsQuerySchema, 'query'),
-  permissionController.list,
+  asyncHandler(permissionController.list),
 );
 
 permissionRoutes.post(
@@ -35,7 +36,7 @@ permissionRoutes.post(
     'rbac.configure:all',
   ),
   validateMiddleware(createPermissionSchema),
-  permissionController.create,
+  asyncHandler(permissionController.create),
 );
 
 permissionRoutes.get(
@@ -46,7 +47,7 @@ permissionRoutes.get(
     'rbac.read:all',
   ),
   validateMiddleware(uuidParamSchema, 'params'),
-  permissionController.getById,
+  asyncHandler(permissionController.getById),
 );
 
 permissionRoutes.patch(
@@ -58,7 +59,7 @@ permissionRoutes.patch(
   ),
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updatePermissionSchema),
-  permissionController.update,
+  asyncHandler(permissionController.update),
 );
 
 permissionRoutes.delete(
@@ -69,5 +70,5 @@ permissionRoutes.delete(
     'rbac.configure:all',
   ),
   validateMiddleware(uuidParamSchema, 'params'),
-  permissionController.remove,
+  asyncHandler(permissionController.remove),
 );

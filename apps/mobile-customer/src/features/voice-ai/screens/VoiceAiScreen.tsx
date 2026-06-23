@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -19,7 +19,8 @@ import { sendAdvisorChat } from '@/lib/ai-chat';
 import { type ChatMessage } from '@/lib/ai-orchestrator';
 import { getApiErrorMessage } from '@/lib/utils';
 import { voiceService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { radius, spacing, typography } from '@/theme';
 
 const WELCOME: ChatMessage = {
   id: 'welcome',
@@ -29,6 +30,8 @@ const WELCOME: ChatMessage = {
 };
 
 function VoiceBubble({ message }: { message: ChatMessage }) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const isUser = message.role === 'user';
   return (
     <View style={[styles.bubbleRow, isUser && styles.bubbleRowRight]}>
@@ -40,6 +43,8 @@ function VoiceBubble({ message }: { message: ChatMessage }) {
 }
 
 export function VoiceAiScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { customerId } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState('');
@@ -242,7 +247,8 @@ export function VoiceAiScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   flex: { flex: 1 },
   statusBar: {
     flexDirection: 'row',
@@ -344,3 +350,4 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xs,
   },
 });
+}

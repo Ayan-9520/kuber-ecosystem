@@ -1,14 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { Button, Input, Screen } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { getApiErrorMessage } from '@/lib/utils';
 import { customerService } from '@/services';
-import { colors, spacing } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { spacing } from '@/theme';
 
 export function EditProfileScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const queryClient = useQueryClient();
   const { customerId, user } = useAuth();
   const [firstName, setFirstName] = useState('');
@@ -103,7 +106,9 @@ export function EditProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   error: { color: colors.danger, marginBottom: spacing.md },
   success: { color: colors.success, marginBottom: spacing.md },
 });
+}

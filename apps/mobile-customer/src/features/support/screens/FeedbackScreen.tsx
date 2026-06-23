@@ -1,17 +1,20 @@
 import { type RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Button, Card, Screen } from '@/components/ui';
 import { getApiErrorMessage } from '@/lib/utils';
 import type { SupportStackParamList } from '@/navigation/types';
 import { supportService } from '@/services';
-import { colors, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { spacing, typography } from '@/theme';
 
 const RATINGS = [1, 2, 3, 4, 5] as const;
 
 export function FeedbackScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const route = useRoute<RouteProp<SupportStackParamList, 'TicketFeedback'>>();
   const navigation = useNavigation();
   const [rating, setRating] = useState<number>(5);
@@ -55,7 +58,8 @@ export function FeedbackScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   stars: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   label: { ...typography.label, color: colors.textSecondary, marginBottom: spacing.sm },
   commentInput: {
@@ -71,3 +75,4 @@ const styles = StyleSheet.create({
   },
   error: { color: colors.danger, marginBottom: spacing.md },
 });
+}

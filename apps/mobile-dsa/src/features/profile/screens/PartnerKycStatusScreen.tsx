@@ -1,13 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Card, EmptyState, Screen, StatusBadge } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { formatDate, str } from '@/lib/utils';
 import { documentsService, partnersService } from '@/services';
-import { colors, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { spacing, typography } from '@/theme';
 
 export function PartnerKycStatusScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { partnerId } = useAuth();
 
   const partner = useQuery({
@@ -53,7 +57,8 @@ export function PartnerKycStatusScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   date: { ...typography.caption, color: colors.textMuted },
   note: { ...typography.bodySm, color: colors.textSecondary, marginTop: spacing.md },
@@ -67,3 +72,4 @@ const styles = StyleSheet.create({
   },
   docName: { ...typography.bodySm, color: colors.text, flex: 1 },
 });
+}

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 
@@ -7,9 +8,12 @@ import { useAuth } from '@/hooks';
 import { formatDate, str } from '@/lib/utils';
 import { documentsService, partnersService } from '@/services';
 import { setRequiresPartnerKyc } from '@/store/slices/authSlice';
-import { colors, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { spacing, typography } from '@/theme';
 
 export function PartnerKycScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const dispatch = useDispatch();
   const { partnerId } = useAuth();
 
@@ -75,7 +79,8 @@ export function PartnerKycScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   muted: { ...typography.caption, color: colors.textMuted },
   docRow: {
@@ -89,3 +94,4 @@ const styles = StyleSheet.create({
   docName: { ...typography.bodySm, color: colors.text, flex: 1 },
   note: { ...typography.caption, color: colors.textMuted, marginTop: spacing.md },
 });
+}

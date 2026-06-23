@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { useDispatch } from 'react-redux';
 
@@ -10,9 +10,12 @@ import { getApiErrorMessage, normalizePhone } from '@/lib/utils';
 import type { AuthStackParamList } from '@/navigation/types';
 import { authService } from '@/services';
 import { setRequiresProfileCompletion } from '@/store/slices/authSlice';
-import { colors, spacing } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { spacing } from '@/theme';
 
 export function RegisterScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const dispatch = useDispatch();
   const { login } = useAuth();
@@ -64,7 +67,9 @@ export function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   error: { color: colors.danger, marginBottom: spacing.md },
   success: { color: colors.success, marginBottom: spacing.md },
 });
+}

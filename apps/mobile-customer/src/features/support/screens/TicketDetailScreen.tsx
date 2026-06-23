@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { type RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -18,11 +18,14 @@ import { Screen, StatusBadge } from '@/components/ui';
 import { formatDateTime, getApiErrorMessage, str } from '@/lib/utils';
 import type { SupportStackParamList } from '@/navigation/types';
 import { supportService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { radius, spacing, typography } from '@/theme';
 
 type Tab = 'messages' | 'timeline';
 
 function MessageBubble({ message }: { message: Record<string, unknown> }) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const isCustomer = String(message.messageType) === 'CUSTOMER';
   const isSystem = String(message.messageType) === 'SYSTEM';
 
@@ -49,6 +52,8 @@ function MessageBubble({ message }: { message: Record<string, unknown> }) {
 }
 
 function TimelineItem({ event }: { event: Record<string, unknown> }) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
     MESSAGE: 'chatbubble',
     ASSIGNMENT: 'person-add',
@@ -77,6 +82,8 @@ function TimelineItem({ event }: { event: Record<string, unknown> }) {
 }
 
 export function TicketDetailScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const navigation = useNavigation<NativeStackNavigationProp<SupportStackParamList>>();
   const route = useRoute<RouteProp<SupportStackParamList, 'TicketDetail'>>();
   const { id } = route.params;
@@ -238,7 +245,8 @@ export function TicketDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   flex: { flex: 1 },
   header: {
     paddingHorizontal: spacing.md,
@@ -363,3 +371,4 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxl,
   },
 });
+}

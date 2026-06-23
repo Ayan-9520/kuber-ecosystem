@@ -1,7 +1,7 @@
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 
@@ -12,7 +12,8 @@ import { validateIndianMobile, validateOtp } from '@/lib/validation';
 import type { AuthStackParamList } from '@/navigation/types';
 import { authService, partnersService } from '@/services';
 import { setRequiresPartnerKyc } from '@/store/slices/authSlice';
-import { colors, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { spacing, typography } from '@/theme';
 
 const DEMO_DSA_PHONE = '8888777766';
 const DEV_OTP = '123456';
@@ -20,6 +21,8 @@ const DEV_OTP = '123456';
 type OtpLoginRoute = RouteProp<AuthStackParamList, 'OtpLogin'>;
 
 export function OtpLoginScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const route = useRoute<OtpLoginRoute>();
   const dispatch = useDispatch();
@@ -187,7 +190,8 @@ export function OtpLoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, justifyContent: 'center', padding: spacing.lg },
   brand: { alignItems: 'center', marginBottom: spacing.xl },
@@ -208,3 +212,4 @@ const styles = StyleSheet.create({
   link: { ...typography.bodySm, color: colors.primary },
   hint: { ...typography.caption, color: colors.textMuted },
 });
+}

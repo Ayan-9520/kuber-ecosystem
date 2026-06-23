@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -17,9 +17,12 @@ import { guessMimeType } from '@/lib/document-checklist';
 import { pickDocumentBase64 } from '@/lib/read-file-base64';
 import { formatDate, formatDateTime, getApiErrorMessage, str } from '@/lib/utils';
 import { documentsService, productsService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { radius, spacing, typography } from '@/theme';
 
 export function DocumentsScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { customerId } = useAuth();
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -232,7 +235,8 @@ export function DocumentsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   error: { color: colors.danger, marginBottom: spacing.md },
   typeRow: { gap: spacing.sm, paddingBottom: spacing.md },
   typeChip: {
@@ -305,3 +309,4 @@ const styles = StyleSheet.create({
   },
   deficiencyType: { ...typography.bodySm, color: colors.warning },
 });
+}

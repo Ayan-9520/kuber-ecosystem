@@ -9,11 +9,12 @@ import { useAuth } from '@/hooks';
 import { formatCurrency, formatDateTime, getApiErrorMessage, str } from '@/lib/utils';
 import type { ApplicationsStackParamList } from '@/navigation/types';
 import { applicationsService } from '@/services';
-import { colors } from '@/theme';
+import { useAppTheme } from '@/theme/ThemeProvider';
 
 export function ApplicationsListScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ApplicationsStackParamList>>();
   const { partnerId } = useAuth();
+  const { colors } = useAppTheme();
   const [refreshing, setRefreshing] = useState(false);
 
   const applications = useQuery({

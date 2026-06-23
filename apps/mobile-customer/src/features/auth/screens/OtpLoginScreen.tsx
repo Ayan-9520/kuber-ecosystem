@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 
@@ -13,12 +13,15 @@ import { validateIndianMobile, validateOtp } from '@/lib/validation';
 import type { AuthStackParamList } from '@/navigation/types';
 import { authService, customerService } from '@/services';
 import { setRequiresProfileCompletion } from '@/store/slices/authSlice';
-import { colors, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { spacing, typography } from '@/theme';
 
 const DEMO_CUSTOMER_PHONE = '9876543210';
 const DEV_OTP = '123456';
 
 export function OtpLoginScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const dispatch = useDispatch();
   const { login } = useAuth();
@@ -165,7 +168,8 @@ export function OtpLoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, justifyContent: 'center', padding: spacing.lg },
   brand: { alignItems: 'center', marginBottom: spacing.xl },
@@ -179,3 +183,4 @@ const styles = StyleSheet.create({
   links: { marginTop: spacing.lg, alignItems: 'center', gap: spacing.sm },
   link: { ...typography.bodySm, color: colors.primary },
 });
+}

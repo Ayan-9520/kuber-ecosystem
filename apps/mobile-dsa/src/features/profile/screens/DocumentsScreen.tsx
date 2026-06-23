@@ -3,7 +3,7 @@ import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { Button, Card, EmptyState, ListRow, Screen } from '@/components/ui';
@@ -11,7 +11,8 @@ import { useAuth } from '@/hooks';
 import { formatDate, getApiErrorMessage, str } from '@/lib/utils';
 import type { ProfileStackParamList } from '@/navigation/types';
 import { documentsService } from '@/services';
-import { colors, spacing } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { spacing } from '@/theme';
 
 const MIME_MAP: Record<string, string> = {
   pdf: 'application/pdf',
@@ -27,6 +28,8 @@ function guessMime(fileName: string, fallback?: string): string {
 }
 
 export function DocumentsScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const { partnerId } = useAuth();
   const queryClient = useQueryClient();
@@ -122,6 +125,8 @@ export function DocumentsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   error: { color: colors.danger, marginBottom: spacing.md },
 });
+}

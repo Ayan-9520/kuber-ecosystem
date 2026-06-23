@@ -1,16 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { Button, Input, Screen } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { getApiErrorMessage } from '@/lib/utils';
 import { documentsService } from '@/services';
-import { colors, spacing } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { spacing } from '@/theme';
 
 export function UploadDocumentScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { partnerId } = useAuth();
   const queryClient = useQueryClient();
   const [documentTypeId, setDocumentTypeId] = useState('');
@@ -69,6 +72,8 @@ export function UploadDocumentScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   error: { color: colors.danger, marginBottom: spacing.md },
 });
+}

@@ -1,6 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { Button, Card, EmptyState, ListRow, Screen } from '@/components/ui';
@@ -8,9 +9,12 @@ import { useAuth } from '@/hooks';
 import { formatDateTime, str } from '@/lib/utils';
 import type { HomeStackParamList } from '@/navigation/types';
 import { notificationsService } from '@/services';
-import { colors, spacing } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { spacing } from '@/theme';
 
 export function NotificationsScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -53,6 +57,8 @@ export function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   link: { color: colors.primary, marginBottom: spacing.md, fontWeight: '600' },
 });
+}

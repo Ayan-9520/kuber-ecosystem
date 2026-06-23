@@ -6,7 +6,7 @@ import { ForgotPasswordScreen } from '@/features/auth/screens/ForgotPasswordScre
 import { OtpLoginScreen } from '@/features/auth/screens/OtpLoginScreen';
 import { ProfileCompletionScreen } from '@/features/auth/screens/ProfileCompletionScreen';
 import { RegisterScreen } from '@/features/auth/screens/RegisterScreen';
-
+import { useAppTheme } from '@/theme/ThemeProvider';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
@@ -15,12 +15,15 @@ type AuthNavigatorProps = {
 };
 
 export function AuthNavigator({ initialRouteName = 'OtpLogin' }: AuthNavigatorProps) {
+  const { colors } = useAppTheme();
+
   return (
     <Stack.Navigator
       initialRouteName={initialRouteName}
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
       <Stack.Screen name="OtpLogin" component={OtpLoginScreen} />

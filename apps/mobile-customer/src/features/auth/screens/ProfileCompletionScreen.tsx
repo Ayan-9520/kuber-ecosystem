@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { useDispatch } from 'react-redux';
 
@@ -7,9 +7,12 @@ import { useAuth } from '@/hooks';
 import { getApiErrorMessage } from '@/lib/utils';
 import { customerService } from '@/services';
 import { setRequiresProfileCompletion } from '@/store/slices/authSlice';
-import { colors, spacing } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { spacing } from '@/theme';
 
 export function ProfileCompletionScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const dispatch = useDispatch();
   const { customerId, user } = useAuth();
   const [firstName, setFirstName] = useState('');
@@ -62,7 +65,9 @@ export function ProfileCompletionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   error: { color: colors.danger, marginBottom: spacing.md },
   ok: { color: colors.success },
 });
+}

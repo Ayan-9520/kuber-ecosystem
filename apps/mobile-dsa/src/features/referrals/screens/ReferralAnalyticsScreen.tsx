@@ -1,13 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Card, EmptyState, Screen, StatCard } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { formatCurrency, getApiErrorMessage, str } from '@/lib/utils';
 import { referralsService } from '@/services';
-import { colors, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { spacing, typography } from '@/theme';
 
 export function ReferralAnalyticsScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { partnerId } = useAuth();
 
   const analytics = useQuery({
@@ -39,8 +43,10 @@ export function ReferralAnalyticsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   row: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
   big: { ...typography.h2, color: colors.primary },
   sub: { ...typography.bodySm, color: colors.textMuted, marginTop: spacing.sm },
 });
+}

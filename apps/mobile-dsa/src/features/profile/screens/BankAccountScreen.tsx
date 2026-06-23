@@ -1,13 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { Card, EmptyState, Screen } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { str } from '@/lib/utils';
 import { partnersService } from '@/services';
-import { colors, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { typography } from '@/theme';
 
 export function BankAccountScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { partnerId } = useAuth();
 
   const partner = useQuery({
@@ -46,7 +50,9 @@ export function BankAccountScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   label: { ...typography.caption, color: colors.textMuted, marginTop: 12 },
   value: { ...typography.body, color: colors.text, fontWeight: '600' },
 });
+}

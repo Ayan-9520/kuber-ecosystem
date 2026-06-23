@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, EmptyState, ListRow, Screen } from '@/components/ui';
@@ -10,9 +10,12 @@ import { useAuth } from '@/hooks';
 import { formatCurrency, getApiErrorMessage, str } from '@/lib/utils';
 import type { LeadsStackParamList } from '@/navigation/types';
 import { leadsService } from '@/services';
-import { colors, spacing } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { spacing } from '@/theme';
 
 export function LeadsListScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const navigation = useNavigation<NativeStackNavigationProp<LeadsStackParamList>>();
   const { partnerId } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
@@ -95,7 +98,8 @@ export function LeadsListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   toolbar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
   filters: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   chip: {
@@ -109,3 +113,4 @@ const styles = StyleSheet.create({
   chipText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   chipTextActive: { color: colors.background },
 });
+}

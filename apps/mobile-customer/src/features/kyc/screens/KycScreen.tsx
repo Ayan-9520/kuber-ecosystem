@@ -1,17 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, Input, Screen, StatusBadge } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { getApiErrorMessage, str } from '@/lib/utils';
 import { kycService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { radius, spacing, typography } from '@/theme';
 
 type AadhaarStep = 'input' | 'otp' | 'done';
 
 export function KycScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const queryClient = useQueryClient();
   const { customerId } = useAuth();
 
@@ -236,7 +239,8 @@ export function KycScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' },
   statusHint: { ...typography.bodySm, color: colors.textMuted, flex: 1 },
   verifiedBox: {
@@ -254,3 +258,4 @@ const styles = StyleSheet.create({
   success: { color: colors.success, marginBottom: spacing.sm },
   otpHint: { ...typography.bodySm, color: colors.textMuted, marginBottom: spacing.md },
 });
+}

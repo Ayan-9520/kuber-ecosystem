@@ -3,7 +3,7 @@ import { type RouteProp, useNavigation, useRoute } from '@react-navigation/nativ
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, Input, Screen } from '@/components/ui';
 import { useAuth } from '@/hooks';
@@ -21,7 +21,8 @@ import {
 import { formatCurrency, getApiErrorMessage, str } from '@/lib/utils';
 import type { ApplicationsStackParamList } from '@/navigation/types';
 import { applicationsService, authService, customerService, documentsService, productsService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { radius, spacing, typography } from '@/theme';
 
 type Route = RouteProp<ApplicationsStackParamList, 'ApplicationWizard'>;
 type Nav = NativeStackNavigationProp<ApplicationsStackParamList, 'ApplicationWizard'>;
@@ -177,6 +178,8 @@ function matchVariant(items: Record<string, unknown>[], variant?: string) {
 }
 
 function ReviewRow({ label, value }: { label: string; value: string }) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.reviewRow}>
       <Text style={styles.reviewLabel}>{label}</Text>
@@ -194,6 +197,8 @@ function ChipSelect({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.chipRow}>
       {options.map((opt) => (
@@ -212,6 +217,8 @@ function ChipSelect({
 }
 
 export function ApplicationWizardScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const { customerId, user } = useAuth();
@@ -735,6 +742,7 @@ export function ApplicationWizardScreen() {
             value={form.vehicleMake}
             onChangeText={(v) => patch({ vehicleMake: v })}
           />
+          <Input
             label="Model *"
             placeholder="e.g. Swift, i20, Nexon (model name — not year)"
             value={form.vehicleModel}
@@ -891,7 +899,8 @@ export function ApplicationWizardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   progressRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.lg, paddingHorizontal: spacing.xs },
   progressItem: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   progressDot: {
@@ -949,3 +958,4 @@ const styles = StyleSheet.create({
   successTitle: { ...typography.h2, color: colors.success },
   successSub: { ...typography.bodySm, color: colors.textMuted },
 });
+}

@@ -1,9 +1,10 @@
 import NetInfo from '@react-native-community/netinfo';
 import { onlineManager } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, typography } from '@/theme';
+import { typography } from '@/theme';
+import { useAppTheme } from '@/theme/ThemeProvider';
 
 onlineManager.setEventListener((setOnline) =>
   NetInfo.addEventListener((state) => {
@@ -12,7 +13,21 @@ onlineManager.setEventListener((setOnline) =>
 );
 
 export function OfflineBanner() {
+  const { colors } = useAppTheme();
   const [offline, setOffline] = useState(false);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        banner: {
+          backgroundColor: colors.warning,
+          paddingVertical: 8,
+          paddingHorizontal: 16,
+        },
+        text: { ...typography.bodySm, color: colors.background, textAlign: 'center', fontWeight: '600' },
+      }),
+    [colors.background, colors.warning],
+  );
 
   useEffect(() => {
     const unsub = NetInfo.addEventListener((state) => {
@@ -29,12 +44,3 @@ export function OfflineBanner() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  banner: {
-    backgroundColor: colors.warning,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  text: { ...typography.bodySm, color: colors.background, textAlign: 'center', fontWeight: '600' },
-});

@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { StatusBadge } from './StatusBadge';
 
-import { colors, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
 
 interface ListRowProps {
   title: string;
@@ -14,7 +16,34 @@ interface ListRowProps {
   right?: React.ReactNode;
 }
 
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      gap: spacing.sm,
+    },
+    iconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    content: { flex: 1 },
+    title: { ...typography.body, color: colors.text, fontWeight: '600' },
+    subtitle: { ...typography.bodySm, color: colors.textMuted, marginTop: 2 },
+  });
+}
+
 export function ListRow({ title, subtitle, status, icon, onPress, right }: ListRowProps) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <Pressable style={styles.row} onPress={onPress} disabled={!onPress}>
       {icon ? (
@@ -32,25 +61,3 @@ export function ListRow({ title, subtitle, status, icon, onPress, right }: ListR
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.sm,
-  },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  content: { flex: 1 },
-  title: { ...typography.body, color: colors.text, fontWeight: '600' },
-  subtitle: { ...typography.bodySm, color: colors.textMuted, marginTop: 2 },
-});

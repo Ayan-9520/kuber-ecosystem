@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRef, useState } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -12,7 +12,8 @@ import {
 
 import { Button } from '@/components/ui';
 import { setOnboardingDone } from '@/lib/storage';
-import { colors, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { spacing, typography } from '@/theme';
 
 const SLIDES = [
   {
@@ -42,6 +43,8 @@ interface Props {
 }
 
 export function OnboardingScreen({ onDone }: Props) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [index, setIndex] = useState(0);
   const listRef = useRef<FlatList>(null);
   const width = Dimensions.get('window').width;
@@ -97,7 +100,8 @@ export function OnboardingScreen({ onDone }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   container: { flex: 1 },
   slide: { flex: 1, justifyContent: 'center', paddingHorizontal: spacing.xl, paddingTop: 80 },
   emoji: { fontSize: 64, marginBottom: spacing.lg },
@@ -108,3 +112,4 @@ const styles = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border },
   dotActive: { backgroundColor: colors.primary, width: 24 },
 });
+}

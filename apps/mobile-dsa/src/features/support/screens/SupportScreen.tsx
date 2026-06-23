@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, EmptyState, ListRow, Screen } from '@/components/ui';
@@ -10,9 +10,12 @@ import { useAuth } from '@/hooks';
 import { formatDateTime, getApiErrorMessage, str } from '@/lib/utils';
 import type { ProfileStackParamList } from '@/navigation/types';
 import { supportService } from '@/services';
-import { colors, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { typography } from '@/theme';
 
 export function SupportScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const { partnerId } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
@@ -78,10 +81,12 @@ export function SupportScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   statsRow: { flexDirection: 'row', justifyContent: 'space-around' },
   stat: { alignItems: 'center' },
   statValue: { ...typography.h2, color: colors.primary },
   statLabel: { ...typography.caption, color: colors.textMuted },
   muted: { color: colors.textMuted },
 });
+}

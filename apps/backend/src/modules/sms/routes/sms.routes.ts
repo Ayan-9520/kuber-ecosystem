@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { asyncHandler } from '../../../shared/middleware/async-handler.middleware.js';
 import { RBAC_PERMISSIONS } from '../../../shared/constants/rbac.constants.js';
 import { authenticateWithSessionMiddleware } from '../../../shared/middleware/authenticate.middleware.js';
 import { requireAnyPermission } from '../../../shared/middleware/rbac.middleware.js';
@@ -40,32 +41,32 @@ const configure = requireAnyPermission(RBAC_PERMISSIONS.SMS_CONFIGURE, RBAC_PERM
 
 export const smsRoutes = Router();
 
-smsRoutes.post('/otp/send', validateMiddleware(sendSmsOtpSchema), smsOtpController.send);
-smsRoutes.post('/otp/verify', validateMiddleware(verifySmsOtpSchema), smsOtpController.verify);
+smsRoutes.post('/otp/send', validateMiddleware(sendSmsOtpSchema), asyncHandler(smsOtpController.send));
+smsRoutes.post('/otp/verify', validateMiddleware(verifySmsOtpSchema), asyncHandler(smsOtpController.verify));
 
 smsRoutes.use(authenticateWithSessionMiddleware);
 
-smsRoutes.post('/send', send, validateMiddleware(sendEnterpriseSmsSchema), smsSendController.send);
-smsRoutes.post('/process-queue', configure, smsSendController.processQueue);
+smsRoutes.post('/send', send, validateMiddleware(sendEnterpriseSmsSchema), asyncHandler(smsSendController.send));
+smsRoutes.post('/process-queue', configure, asyncHandler(smsSendController.processQueue));
 
-smsRoutes.get('/templates', read, validateMiddleware(listSmsTemplatesQuerySchema, 'query'), smsTemplateController.list);
-smsRoutes.post('/templates', configure, validateMiddleware(createSmsTemplateSchema), smsTemplateController.create);
-smsRoutes.post('/templates/preview', read, validateMiddleware(previewSmsTemplateSchema), smsTemplateController.preview);
-smsRoutes.get('/templates/:id', read, validateMiddleware(uuidParamSchema, 'params'), smsTemplateController.getById);
-smsRoutes.patch('/templates/:id', configure, validateMiddleware(uuidParamSchema, 'params'), validateMiddleware(updateSmsTemplateSchema), smsTemplateController.update);
-smsRoutes.post('/templates/:id/version', configure, validateMiddleware(uuidParamSchema, 'params'), validateMiddleware(createSmsTemplateVersionSchema), smsTemplateController.createVersion);
+smsRoutes.get('/templates', read, validateMiddleware(listSmsTemplatesQuerySchema, 'query'), asyncHandler(smsTemplateController.list));
+smsRoutes.post('/templates', configure, validateMiddleware(createSmsTemplateSchema), asyncHandler(smsTemplateController.create));
+smsRoutes.post('/templates/preview', read, validateMiddleware(previewSmsTemplateSchema), asyncHandler(smsTemplateController.preview));
+smsRoutes.get('/templates/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(smsTemplateController.getById));
+smsRoutes.patch('/templates/:id', configure, validateMiddleware(uuidParamSchema, 'params'), validateMiddleware(updateSmsTemplateSchema), asyncHandler(smsTemplateController.update));
+smsRoutes.post('/templates/:id/version', configure, validateMiddleware(uuidParamSchema, 'params'), validateMiddleware(createSmsTemplateVersionSchema), asyncHandler(smsTemplateController.createVersion));
 
-smsRoutes.get('/logs', read, validateMiddleware(listSmsLogsQuerySchema, 'query'), smsLogController.list);
-smsRoutes.get('/logs/:id', read, validateMiddleware(uuidParamSchema, 'params'), smsLogController.getById);
+smsRoutes.get('/logs', read, validateMiddleware(listSmsLogsQuerySchema, 'query'), asyncHandler(smsLogController.list));
+smsRoutes.get('/logs/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(smsLogController.getById));
 
-smsRoutes.get('/analytics', read, validateMiddleware(smsAnalyticsQuerySchema, 'query'), smsAnalyticsController.summary);
+smsRoutes.get('/analytics', read, validateMiddleware(smsAnalyticsQuerySchema, 'query'), asyncHandler(smsAnalyticsController.summary));
 
-smsRoutes.get('/providers', read, validateMiddleware(listSmsProvidersQuerySchema, 'query'), smsProviderController.list);
-smsRoutes.post('/providers', configure, validateMiddleware(createSmsProviderSchema), smsProviderController.create);
-smsRoutes.get('/providers/:id', read, validateMiddleware(uuidParamSchema, 'params'), smsProviderController.getById);
-smsRoutes.patch('/providers/:id', configure, validateMiddleware(uuidParamSchema, 'params'), validateMiddleware(updateSmsProviderSchema), smsProviderController.update);
+smsRoutes.get('/providers', read, validateMiddleware(listSmsProvidersQuerySchema, 'query'), asyncHandler(smsProviderController.list));
+smsRoutes.post('/providers', configure, validateMiddleware(createSmsProviderSchema), asyncHandler(smsProviderController.create));
+smsRoutes.get('/providers/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(smsProviderController.getById));
+smsRoutes.patch('/providers/:id', configure, validateMiddleware(uuidParamSchema, 'params'), validateMiddleware(updateSmsProviderSchema), asyncHandler(smsProviderController.update));
 
-smsRoutes.get('/preferences', read, validateMiddleware(listSmsPreferencesQuerySchema, 'query'), smsPreferenceController.list);
-smsRoutes.put('/preferences', configure, validateMiddleware(upsertSmsPreferenceSchema), smsPreferenceController.upsert);
+smsRoutes.get('/preferences', read, validateMiddleware(listSmsPreferencesQuerySchema, 'query'), asyncHandler(smsPreferenceController.list));
+smsRoutes.put('/preferences', configure, validateMiddleware(upsertSmsPreferenceSchema), asyncHandler(smsPreferenceController.upsert));
 
-smsRoutes.get('/queue', read, validateMiddleware(listSmsQueueQuerySchema, 'query'), smsQueueController.list);
+smsRoutes.get('/queue', read, validateMiddleware(listSmsQueueQuerySchema, 'query'), asyncHandler(smsQueueController.list));

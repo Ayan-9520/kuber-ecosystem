@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -16,7 +16,8 @@ import {
 import { Screen } from '@/components/ui';
 import { sendAdvisorChat, type ChatMessage } from '@/lib/ai-chat';
 import { voiceService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { radius, spacing, typography } from '@/theme';
 
 const WELCOME: ChatMessage = {
   id: 'welcome',
@@ -26,6 +27,8 @@ const WELCOME: ChatMessage = {
 };
 
 export function VoiceAiScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
@@ -159,7 +162,8 @@ export function VoiceAiScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   flex: { flex: 1 },
   statusBar: {
     flexDirection: 'row',
@@ -220,3 +224,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+}

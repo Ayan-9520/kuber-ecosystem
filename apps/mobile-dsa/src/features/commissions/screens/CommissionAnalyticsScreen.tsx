@@ -1,13 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Card, EmptyState, Screen, StatCard } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { formatCurrency, getApiErrorMessage, str } from '@/lib/utils';
 import { commissionsService } from '@/services';
-import { colors, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { spacing, typography } from '@/theme';
 
 export function CommissionAnalyticsScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { partnerId } = useAuth();
 
   const analytics = useQuery({
@@ -49,10 +53,12 @@ export function CommissionAnalyticsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   row: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
   line: { ...typography.bodySm, color: colors.textSecondary, marginBottom: spacing.xs },
   breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs },
   label: { ...typography.bodySm, color: colors.textMuted },
   value: { ...typography.bodySm, color: colors.text, fontWeight: '600' },
 });
+}

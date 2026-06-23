@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { asyncHandler } from '../../../shared/middleware/async-handler.middleware.js';
 import { RBAC_PERMISSIONS } from '../../../shared/constants/rbac.constants.js';
 import { authenticateWithSessionMiddleware } from '../../../shared/middleware/authenticate.middleware.js';
 import { requireAnyPermission } from '../../../shared/middleware/rbac.middleware.js';
@@ -22,7 +23,7 @@ const eligibilityRead = requireAnyPermission(RBAC_PERMISSIONS.ELIGIBILITY_READ, 
 
 export const emiCalculateRoutes = Router();
 emiCalculateRoutes.use(authenticateWithSessionMiddleware);
-emiCalculateRoutes.post('/calculate', emiRead, validateMiddleware(calculateEmiSchema), financeEngineController.calculateEmi);
+emiCalculateRoutes.post('/calculate', emiRead, validateMiddleware(calculateEmiSchema), asyncHandler(financeEngineController.calculateEmi));
 
 export const eligibilityCalculateRoutes = Router();
 eligibilityCalculateRoutes.use(authenticateWithSessionMiddleware);
@@ -30,7 +31,7 @@ eligibilityCalculateRoutes.post(
   '/calculate',
   eligibilityRead,
   validateMiddleware(calculateEligibilitySchema),
-  financeEngineController.calculateEligibility,
+  asyncHandler(financeEngineController.calculateEligibility),
 );
 
 export const savingsCalculateRoutes = Router();
@@ -39,12 +40,12 @@ savingsCalculateRoutes.post(
   '/calculate',
   emiRead,
   validateMiddleware(calculateSavingsSchema),
-  financeEngineController.calculateSavings,
+  asyncHandler(financeEngineController.calculateSavings),
 );
 
 export const loanComparisonRoutes = Router();
 loanComparisonRoutes.use(authenticateWithSessionMiddleware);
-loanComparisonRoutes.post('/', eligibilityRead, validateMiddleware(calculateLoanComparisonSchema), financeEngineController.compareLoans);
+loanComparisonRoutes.post('/', eligibilityRead, validateMiddleware(calculateLoanComparisonSchema), asyncHandler(financeEngineController.compareLoans));
 
 export const approvalProbabilityRoutes = Router();
 approvalProbabilityRoutes.use(authenticateWithSessionMiddleware);
@@ -52,7 +53,7 @@ approvalProbabilityRoutes.post(
   '/',
   eligibilityRead,
   validateMiddleware(calculateApprovalProbabilitySchema),
-  financeEngineController.calculateApprovalProbability,
+  asyncHandler(financeEngineController.calculateApprovalProbability),
 );
 
 export const financeEngineHistoryRoutes = Router();
@@ -61,13 +62,13 @@ financeEngineHistoryRoutes.get(
   '/',
   eligibilityRead,
   validateMiddleware(listFinanceCalculationsQuerySchema, 'query'),
-  financeEngineController.listCalculations,
+  asyncHandler(financeEngineController.listCalculations),
 );
 financeEngineHistoryRoutes.get(
   '/:id',
   eligibilityRead,
   validateMiddleware(uuidParamSchema, 'params'),
-  financeEngineController.getCalculationById,
+  asyncHandler(financeEngineController.getCalculationById),
 );
 
 export const aiFinanceRoutes = Router();
@@ -76,11 +77,11 @@ aiFinanceRoutes.post(
   '/product-recommendations',
   eligibilityRead,
   validateMiddleware(productRecommendationSchema),
-  financeEngineController.getProductRecommendations,
+  asyncHandler(financeEngineController.getProductRecommendations),
 );
 aiFinanceRoutes.post(
   '/lender-recommendations',
   eligibilityRead,
   validateMiddleware(lenderRecommendationSchema),
-  financeEngineController.getLenderRecommendations,
+  asyncHandler(financeEngineController.getLenderRecommendations),
 );

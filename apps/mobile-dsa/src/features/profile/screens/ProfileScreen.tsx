@@ -67,7 +67,7 @@ export function ProfileScreen() {
           <Pressable
             key={item.screen}
             style={styles.menuRow}
-            onPress={() => navigation.navigate(item.screen)}
+            onPress={() => (navigation.navigate as (name: keyof ProfileStackParamList) => void)(item.screen)}
           >
             <Ionicons name={item.icon} size={20} color={colors.primary} />
             <Text style={styles.menuLabel}>{item.label}</Text>

@@ -54,55 +54,55 @@ notificationRoutes.delete('/:id', write, validateMiddleware(uuidParamSchema, 'pa
 
 export const notificationTemplateRoutes = Router();
 notificationTemplateRoutes.use(authenticateWithSessionMiddleware);
-notificationTemplateRoutes.get('/', read, validateMiddleware(listNotificationTemplatesQuerySchema, 'query'), notificationTemplateController.list);
-notificationTemplateRoutes.post('/', configure, validateMiddleware(createNotificationTemplateSchema), notificationTemplateController.create);
-notificationTemplateRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), notificationTemplateController.getById);
+notificationTemplateRoutes.get('/', read, validateMiddleware(listNotificationTemplatesQuerySchema, 'query'), asyncHandler(notificationTemplateController.list));
+notificationTemplateRoutes.post('/', configure, validateMiddleware(createNotificationTemplateSchema), asyncHandler(notificationTemplateController.create));
+notificationTemplateRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(notificationTemplateController.getById));
 notificationTemplateRoutes.patch(
   '/:id',
   configure,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateNotificationTemplateSchema),
-  notificationTemplateController.update,
+  asyncHandler(notificationTemplateController.update),
 );
 notificationTemplateRoutes.post(
   '/:id/version',
   configure,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(createTemplateVersionSchema),
-  notificationTemplateController.createVersion,
+  asyncHandler(notificationTemplateController.createVersion),
 );
-notificationTemplateRoutes.delete('/:id', configure, validateMiddleware(uuidParamSchema, 'params'), notificationTemplateController.remove);
+notificationTemplateRoutes.delete('/:id', configure, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(notificationTemplateController.remove));
 
 export const notificationPreferenceRoutes = Router();
 notificationPreferenceRoutes.use(authenticateWithSessionMiddleware);
-notificationPreferenceRoutes.get('/', read, validateMiddleware(listNotificationPreferencesQuerySchema, 'query'), notificationPreferenceController.list);
-notificationPreferenceRoutes.put('/', write, validateMiddleware(upsertNotificationPreferenceSchema), notificationPreferenceController.upsert);
-notificationPreferenceRoutes.put('/bulk', write, validateMiddleware(bulkUpsertPreferencesSchema), notificationPreferenceController.bulkUpsert);
+notificationPreferenceRoutes.get('/', read, validateMiddleware(listNotificationPreferencesQuerySchema, 'query'), asyncHandler(notificationPreferenceController.list));
+notificationPreferenceRoutes.put('/', write, validateMiddleware(upsertNotificationPreferenceSchema), asyncHandler(notificationPreferenceController.upsert));
+notificationPreferenceRoutes.put('/bulk', write, validateMiddleware(bulkUpsertPreferencesSchema), asyncHandler(notificationPreferenceController.bulkUpsert));
 
 export const emailRoutes = Router();
 emailRoutes.use(authenticateWithSessionMiddleware);
-emailRoutes.get('/', read, validateMiddleware(listChannelLogsQuerySchema, 'query'), emailController.list);
-emailRoutes.post('/send', send, validateMiddleware(sendEmailSchema), emailController.send);
-emailRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), emailController.getById);
+emailRoutes.get('/', read, validateMiddleware(listChannelLogsQuerySchema, 'query'), asyncHandler(emailController.list));
+emailRoutes.post('/send', send, validateMiddleware(sendEmailSchema), asyncHandler(emailController.send));
+emailRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(emailController.getById));
 
 export const smsRoutes = Router();
 smsRoutes.use(authenticateWithSessionMiddleware);
-smsRoutes.get('/', read, validateMiddleware(listChannelLogsQuerySchema, 'query'), smsController.list);
-smsRoutes.post('/send', send, validateMiddleware(sendSmsSchema), smsController.send);
-smsRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), smsController.getById);
+smsRoutes.get('/', read, validateMiddleware(listChannelLogsQuerySchema, 'query'), asyncHandler(smsController.list));
+smsRoutes.post('/send', send, validateMiddleware(sendSmsSchema), asyncHandler(smsController.send));
+smsRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(smsController.getById));
 
 export const whatsAppRoutes = Router();
 whatsAppRoutes.use(authenticateWithSessionMiddleware);
-whatsAppRoutes.get('/', read, validateMiddleware(listChannelLogsQuerySchema, 'query'), whatsAppController.list);
-whatsAppRoutes.post('/send', send, validateMiddleware(sendWhatsAppSchema), whatsAppController.send);
-whatsAppRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), whatsAppController.getById);
+whatsAppRoutes.get('/', read, validateMiddleware(listChannelLogsQuerySchema, 'query'), asyncHandler(whatsAppController.list));
+whatsAppRoutes.post('/send', send, validateMiddleware(sendWhatsAppSchema), asyncHandler(whatsAppController.send));
+whatsAppRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(whatsAppController.getById));
 
 export const pushRoutes = Router();
 pushRoutes.use(authenticateWithSessionMiddleware);
-pushRoutes.get('/', read, validateMiddleware(listChannelLogsQuerySchema, 'query'), pushController.list);
-pushRoutes.post('/send', send, validateMiddleware(sendPushSchema), pushController.send);
-pushRoutes.post('/register-device', write, validateMiddleware(registerDeviceSchema), pushController.registerDevice);
-pushRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), pushController.getById);
+pushRoutes.get('/', read, validateMiddleware(listChannelLogsQuerySchema, 'query'), asyncHandler(pushController.list));
+pushRoutes.post('/send', send, validateMiddleware(sendPushSchema), asyncHandler(pushController.send));
+pushRoutes.post('/register-device', write, validateMiddleware(registerDeviceSchema), asyncHandler(pushController.registerDevice));
+pushRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(pushController.getById));
 
 export const communicationLogRoutes = Router();
 communicationLogRoutes.use(authenticateWithSessionMiddleware);

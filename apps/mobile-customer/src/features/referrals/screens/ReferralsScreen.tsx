@@ -7,7 +7,8 @@ import { Button, Card, EmptyState, Screen, StatCard, StatusBadge } from '@/compo
 import { useAuth } from '@/hooks';
 import { formatCurrency, formatDate, getApiErrorMessage, str } from '@/lib/utils';
 import { referralsService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { radius, spacing, typography } from '@/theme';
 
 interface LeaderboardEntry {
   name: string;
@@ -30,6 +31,8 @@ function buildLeaderboard(items: Record<string, unknown>[]): LeaderboardEntry[] 
 }
 
 export function ReferralsScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { customerId } = useAuth();
   const queryClient = useQueryClient();
   const [shareError, setShareError] = useState('');
@@ -172,7 +175,8 @@ export function ReferralsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   codeBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -225,3 +229,4 @@ const styles = StyleSheet.create({
   refBadges: { alignItems: 'flex-end', gap: spacing.xs },
   reward: { ...typography.bodySm, color: colors.primary },
 });
+}

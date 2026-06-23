@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { asyncHandler } from '../../../shared/middleware/async-handler.middleware.js';
 import { RBAC_PERMISSIONS } from '../../../shared/constants/rbac.constants.js';
 import { authenticateWithSessionMiddleware } from '../../../shared/middleware/authenticate.middleware.js';
 import { requireAnyPermission } from '../../../shared/middleware/rbac.middleware.js';
@@ -60,67 +61,67 @@ const ticketsEscalate = requireAnyPermission(
 
 export const ticketRoutes = Router();
 ticketRoutes.use(authenticateWithSessionMiddleware);
-ticketRoutes.get('/', ticketsRead, validateMiddleware(listTicketsQuerySchema, 'query'), ticketController.list);
-ticketRoutes.post('/', ticketsWrite, validateMiddleware(createTicketSchema), ticketController.create);
-ticketRoutes.get('/:id', ticketsRead, validateMiddleware(uuidParamSchema, 'params'), ticketController.getById);
+ticketRoutes.get('/', ticketsRead, validateMiddleware(listTicketsQuerySchema, 'query'), asyncHandler(ticketController.list));
+ticketRoutes.post('/', ticketsWrite, validateMiddleware(createTicketSchema), asyncHandler(ticketController.create));
+ticketRoutes.get('/:id', ticketsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(ticketController.getById));
 ticketRoutes.patch(
   '/:id',
   ticketsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateTicketSchema),
-  ticketController.update,
+  asyncHandler(ticketController.update),
 );
-ticketRoutes.delete('/:id', ticketsWrite, validateMiddleware(uuidParamSchema, 'params'), ticketController.remove);
+ticketRoutes.delete('/:id', ticketsWrite, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(ticketController.remove));
 ticketRoutes.post(
   '/:id/assign',
   ticketsAssign,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(assignTicketSchema),
-  ticketController.assign,
+  asyncHandler(ticketController.assign),
 );
 ticketRoutes.post(
   '/:id/escalate',
   ticketsEscalate,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(escalateTicketSchema),
-  ticketController.escalate,
+  asyncHandler(ticketController.escalate),
 );
 ticketRoutes.post(
   '/:id/resolve',
   ticketsResolve,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(resolveTicketSchema),
-  ticketController.resolve,
+  asyncHandler(ticketController.resolve),
 );
 ticketRoutes.post(
   '/:id/close',
   ticketsClose,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(closeTicketSchema),
-  ticketController.close,
+  asyncHandler(ticketController.close),
 );
 ticketRoutes.post(
   '/:id/reject',
   ticketsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(rejectTicketSchema),
-  ticketController.reject,
+  asyncHandler(ticketController.reject),
 );
-ticketRoutes.get('/:id/timeline', ticketsRead, validateMiddleware(uuidParamSchema, 'params'), ticketController.timeline);
-ticketRoutes.get('/:id/attachments', ticketsRead, validateMiddleware(uuidParamSchema, 'params'), ticketController.listAttachments);
+ticketRoutes.get('/:id/timeline', ticketsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(ticketController.timeline));
+ticketRoutes.get('/:id/attachments', ticketsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(ticketController.listAttachments));
 ticketRoutes.post(
   '/:id/attachments',
   ticketsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(createTicketAttachmentBodySchema),
-  ticketController.addAttachment,
+  asyncHandler(ticketController.addAttachment),
 );
 
 export const ticketMessageRoutes = Router();
 ticketMessageRoutes.use(authenticateWithSessionMiddleware);
-ticketMessageRoutes.get('/', ticketsRead, validateMiddleware(listTicketMessagesQuerySchema, 'query'), ticketMessageController.list);
-ticketMessageRoutes.post('/', ticketsWrite, validateMiddleware(createTicketMessageSchema), ticketMessageController.create);
-ticketMessageRoutes.get('/:id', ticketsRead, validateMiddleware(uuidParamSchema, 'params'), ticketMessageController.getById);
+ticketMessageRoutes.get('/', ticketsRead, validateMiddleware(listTicketMessagesQuerySchema, 'query'), asyncHandler(ticketMessageController.list));
+ticketMessageRoutes.post('/', ticketsWrite, validateMiddleware(createTicketMessageSchema), asyncHandler(ticketMessageController.create));
+ticketMessageRoutes.get('/:id', ticketsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(ticketMessageController.getById));
 
 export const ticketAssignmentRoutes = Router();
 ticketAssignmentRoutes.use(authenticateWithSessionMiddleware);
@@ -128,7 +129,7 @@ ticketAssignmentRoutes.get(
   '/',
   ticketsRead,
   validateMiddleware(listTicketAssignmentsQuerySchema, 'query'),
-  ticketAssignmentController.list,
+  asyncHandler(ticketAssignmentController.list),
 );
 
 export const ticketEscalationRoutes = Router();
@@ -137,7 +138,7 @@ ticketEscalationRoutes.get(
   '/',
   ticketsRead,
   validateMiddleware(listTicketEscalationsQuerySchema, 'query'),
-  ticketEscalationController.list,
+  asyncHandler(ticketEscalationController.list),
 );
 
 export const ticketResolutionRoutes = Router();
@@ -146,7 +147,7 @@ ticketResolutionRoutes.get(
   '/',
   ticketsRead,
   validateMiddleware(listTicketResolutionsQuerySchema, 'query'),
-  ticketResolutionController.list,
+  asyncHandler(ticketResolutionController.list),
 );
 
 export const ticketCategoryRoutes = Router();
@@ -155,16 +156,16 @@ ticketCategoryRoutes.get(
   '/',
   ticketsRead,
   validateMiddleware(listTicketCategoriesQuerySchema, 'query'),
-  ticketCategoryController.list,
+  asyncHandler(ticketCategoryController.list),
 );
-ticketCategoryRoutes.post('/', ticketsWrite, validateMiddleware(createTicketCategorySchema), ticketCategoryController.create);
-ticketCategoryRoutes.get('/:id', ticketsRead, validateMiddleware(uuidParamSchema, 'params'), ticketCategoryController.getById);
+ticketCategoryRoutes.post('/', ticketsWrite, validateMiddleware(createTicketCategorySchema), asyncHandler(ticketCategoryController.create));
+ticketCategoryRoutes.get('/:id', ticketsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(ticketCategoryController.getById));
 ticketCategoryRoutes.patch(
   '/:id',
   ticketsWrite,
   validateMiddleware(uuidParamSchema, 'params'),
   validateMiddleware(updateTicketCategorySchema),
-  ticketCategoryController.update,
+  asyncHandler(ticketCategoryController.update),
 );
 
 export const ticketAnalyticsRoutes = Router();
@@ -173,5 +174,5 @@ ticketAnalyticsRoutes.get(
   '/',
   ticketsRead,
   validateMiddleware(ticketAnalyticsQuerySchema, 'query'),
-  ticketAnalyticsController.summary,
+  asyncHandler(ticketAnalyticsController.summary),
 );

@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Input, Screen } from '@/components/ui';
@@ -9,11 +9,14 @@ import { useAuth } from '@/hooks';
 import { getApiErrorMessage } from '@/lib/utils';
 import type { ProfileStackParamList } from '@/navigation/types';
 import { supportService } from '@/services';
-import { colors, radius, spacing, typography } from '@/theme';
+import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+import { radius, spacing, typography } from '@/theme';
 
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
 
 export function CreateTicketScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const { partnerId } = useAuth();
   const [subject, setSubject] = useState('');
@@ -85,7 +88,8 @@ export function CreateTicketScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   content: { padding: spacing.md },
   error: { color: colors.danger, marginBottom: spacing.md },
   label: { ...typography.label, color: colors.textSecondary, marginBottom: spacing.sm, marginTop: spacing.md },
@@ -102,3 +106,4 @@ const styles = StyleSheet.create({
   chipText: { ...typography.caption, color: colors.textMuted },
   chipTextActive: { color: colors.primary, fontWeight: '600' },
 });
+}

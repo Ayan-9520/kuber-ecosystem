@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { asyncHandler } from '../../../shared/middleware/async-handler.middleware.js';
 import { RBAC_PERMISSIONS } from '../../../shared/constants/rbac.constants.js';
 import { authenticateWithSessionMiddleware } from '../../../shared/middleware/authenticate.middleware.js';
 import { requireAnyPermission } from '../../../shared/middleware/rbac.middleware.js';
@@ -15,18 +16,18 @@ auditLogRoutes.get(
   '/export',
   requireAnyPermission(RBAC_PERMISSIONS.AUDIT_EXPORT, RBAC_PERMISSIONS.AUDIT_READ),
   validateMiddleware(exportAuditLogsQuerySchema, 'query'),
-  auditLogController.export,
+  asyncHandler(auditLogController.export),
 );
 
 auditLogRoutes.get(
   '/',
   requireAnyPermission(RBAC_PERMISSIONS.AUDIT_READ),
   validateMiddleware(listAuditLogsQuerySchema, 'query'),
-  auditLogController.list,
+  asyncHandler(auditLogController.list),
 );
 
 auditLogRoutes.get(
   '/:id',
   requireAnyPermission(RBAC_PERMISSIONS.AUDIT_READ),
-  auditLogController.getById,
+  asyncHandler(auditLogController.getById),
 );
