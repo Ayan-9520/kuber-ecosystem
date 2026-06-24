@@ -1,7 +1,7 @@
 import './load-env.js';
 
 import { createApp } from './app.js';
-import { disconnectDatabase } from './config/database.js';
+import { disconnectDatabase, prisma } from './config/database.js';
 import { env } from './config/env.js';
 import { openAiClientService } from './modules/ai-platform/services/openai-client.service.js';
 import { assertProductionReadiness } from './config/production-readiness.js';
@@ -42,27 +42,38 @@ if (env.APP_ENV === 'production') {
 
 const app = createApp();
 
+async function startBackgroundWorkers(): Promise<void> {
+  if (!env.API_WORKERS_ENABLED) {
+    console.log('   Background workers: disabled (API-only mode)');
+    return;
+  }
+
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+  } catch {
+    console.warn('   Background workers: skipped (database unreachable — run pnpm db:docker && pnpm db:setup)');
+    return;
+  }
+
+  notificationWorkerService.start();
+  automationWorkerService.start();
+  contentWorkerService.start();
+  analyticsWorkerService.start();
+  executiveAnalyticsWorkerService.start();
+  branchAnalyticsWorkerService.start();
+  regionalAnalyticsWorkerService.start();
+  emailWorkerService.start();
+  smsWorkerService.start();
+  pushWorkerService.start();
+  backupWorkerService.start();
+  console.log('   Background workers: enabled');
+}
+
 const server = app.listen(env.API_PORT, '0.0.0.0', () => {
   console.log(`🚀 KuberOne API running on ${env.API_BASE_URL}`);
-  console.log(`   Listening on 0.0.0.0:${env.API_PORT} (LAN devices use your PC IPv4, e.g. http://192.168.x.x:${env.API_PORT})`);
   console.log(`   Environment: ${env.APP_ENV}`);
   console.log(`   API Version: /api/${env.API_VERSION}`);
-  if (env.API_WORKERS_ENABLED) {
-    notificationWorkerService.start();
-    automationWorkerService.start();
-    contentWorkerService.start();
-    analyticsWorkerService.start();
-    executiveAnalyticsWorkerService.start();
-    branchAnalyticsWorkerService.start();
-    regionalAnalyticsWorkerService.start();
-    emailWorkerService.start();
-    smsWorkerService.start();
-    pushWorkerService.start();
-    backupWorkerService.start();
-    console.log('   Background workers: enabled');
-  } else {
-    console.log('   Background workers: disabled (API-only mode)');
-  }
+  void startBackgroundWorkers();
 });
 
 async function shutdown(signal: string): Promise<void> {

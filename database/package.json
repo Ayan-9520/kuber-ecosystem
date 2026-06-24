@@ -13,16 +13,16 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "generate": "prisma generate --schema=./prisma/schema",
-    "migrate:dev": "prisma migrate dev --schema=./prisma/schema",
-    "migrate:deploy": "prisma migrate deploy --schema=./prisma/schema",
-    "migrate:reset": "prisma migrate reset --schema=./prisma/schema --force",
-    "seed": "tsx prisma/seeds/index.ts",
-    "studio": "prisma studio --schema=./prisma/schema",
+    "build": "node ../scripts/tsc.mjs -p tsconfig.json",
+    "generate": "node ../node_modules/prisma/build/index.js generate --schema=./prisma/schema",
+    "migrate:dev": "node ../node_modules/prisma/build/index.js migrate dev --schema=./prisma/schema",
+    "migrate:deploy": "node ../node_modules/prisma/build/index.js migrate deploy --schema=./prisma/schema",
+    "migrate:reset": "node ../node_modules/prisma/build/index.js migrate reset --schema=./prisma/schema --force",
+    "seed": "node ../scripts/tsx.mjs prisma/seeds/index.ts",
+    "studio": "node ../node_modules/prisma/build/index.js studio --schema=./prisma/schema",
     "lint": "eslint src prisma/seeds --max-warnings 0",
     "lint:fix": "eslint src prisma/seeds --fix",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.seeds.json --noEmit",
+    "typecheck": "node ../scripts/tsc.mjs -p tsconfig.json --noEmit && node ../scripts/tsc.mjs -p tsconfig.seeds.json --noEmit",
     "clean": "rimraf dist"
   },
   "dependencies": {

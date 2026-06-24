@@ -49,9 +49,8 @@ jobs:
       - name: Prebuild
         env:
           EXPO_PUBLIC_APP_ENV: production
-        run: |
-          cd apps/${{ matrix.app }}
-          npx expo prebuild --platform android --clean --non-interactive
+        working-directory: apps/${{ matrix.app }}
+        run: pnpm exec expo prebuild --platform android --clean --non-interactive
 
       - name: Build AAB
         working-directory: apps/${{ matrix.app }}/android

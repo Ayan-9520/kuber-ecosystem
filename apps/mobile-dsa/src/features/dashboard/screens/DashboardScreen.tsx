@@ -107,16 +107,50 @@ export function DashboardScreen() {
   const referralEarnings =
     referrals.data?.items.reduce((s, r) => s + Number(r.rewardAmount ?? 0), 0) ?? 0;
 
+  const tabNav = navigation.getParent();
+
   const openLead = (id: string) => {
-    navigation.getParent()?.navigate('Leads', { screen: 'LeadDetail', params: { id } });
+    tabNav?.navigate('Leads', { screen: 'LeadDetail', params: { id } });
   };
 
   const openApp = (id: string) => {
-    navigation.getParent()?.navigate('Applications', { screen: 'ApplicationDetail', params: { id } });
+    tabNav?.navigate('Applications', { screen: 'ApplicationDetail', params: { id } });
   };
 
   const goProfile = () => {
-    navigation.getParent()?.navigate('Profile');
+    tabNav?.navigate('Profile');
+  };
+
+  const goLeads = () => {
+    tabNav?.navigate('Leads', { screen: 'LeadsList' });
+  };
+
+  const goLeadAnalytics = () => {
+    tabNav?.navigate('Leads', { screen: 'LeadAnalytics' });
+  };
+
+  const goApplications = () => {
+    tabNav?.navigate('Applications', { screen: 'ApplicationsList' });
+  };
+
+  const goCommissions = () => {
+    tabNav?.navigate('Commissions', { screen: 'CommissionsHome' });
+  };
+
+  const goCommissionAnalytics = () => {
+    tabNav?.navigate('Commissions', { screen: 'CommissionAnalytics' });
+  };
+
+  const goReferrals = () => {
+    tabNav?.navigate('Profile', { screen: 'Referrals' });
+  };
+
+  const goDocuments = () => {
+    tabNav?.navigate('Profile', { screen: 'Documents' });
+  };
+
+  const goNotifications = () => {
+    navigation.navigate('Notifications');
   };
 
   if (leads.isError) {
@@ -153,26 +187,18 @@ export function DashboardScreen() {
         <QuickAction
           label="New Lead"
           icon="person-add"
-          onPress={() => navigation.getParent()?.navigate('Leads', { screen: 'CreateLead' })}
+          onPress={() => tabNav?.navigate('Leads', { screen: 'CreateLead' })}
         />
         <QuickAction
           label="Analytics"
           icon="bar-chart"
-          onPress={() => navigation.getParent()?.navigate('Leads', { screen: 'LeadAnalytics' })}
+          onPress={goLeadAnalytics}
         />
-        <QuickAction
-          label="Commissions"
-          icon="wallet"
-          onPress={() => navigation.getParent()?.navigate('Commissions')}
-        />
+        <QuickAction label="Commissions" icon="wallet" onPress={goCommissions} />
         <QuickAction label="AI Advisor" icon="sparkles" onPress={() => navigation.navigate('AiAdvisor')} />
         <QuickAction label="Voice AI" icon="mic" onPress={() => navigation.navigate('VoiceAi')} />
-        <QuickAction label="Alerts" icon="notifications" onPress={() => navigation.navigate('Notifications')} />
-        <QuickAction
-          label="Referrals"
-          icon="gift"
-          onPress={() => navigation.getParent()?.navigate('Profile', { screen: 'Referrals' })}
-        />
+        <QuickAction label="Alerts" icon="notifications" onPress={goNotifications} />
+        <QuickAction label="Referrals" icon="gift" onPress={goReferrals} />
       </ScrollView>
 
       <View style={styles.section}>
@@ -181,29 +207,60 @@ export function DashboardScreen() {
           <Text style={styles.sectionSub}>Today's numbers at a glance</Text>
         </View>
         <View style={styles.statRow}>
-          <StatCard label="Today's Leads" value={todayLeads} icon="today" accent />
-          <StatCard label="Hot Leads" value={hotLeads.data?.meta.total ?? 0} icon="flame" />
+          <StatCard label="Today's Leads" value={todayLeads} icon="today" accent onPress={goLeads} />
+          <StatCard
+            label="Hot Leads"
+            value={hotLeads.data?.meta.total ?? 0}
+            icon="flame"
+            onPress={goLeadAnalytics}
+          />
         </View>
         <View style={styles.statRow}>
-          <StatCard label="Applications" value={applications.data?.meta.total ?? 0} icon="document-text" />
-          <StatCard label="Sanctions" value={sanctions.data?.meta.total ?? 0} icon="ribbon" />
+          <StatCard
+            label="Applications"
+            value={applications.data?.meta.total ?? 0}
+            icon="document-text"
+            onPress={goApplications}
+          />
+          <StatCard
+            label="Sanctions"
+            value={sanctions.data?.meta.total ?? 0}
+            icon="ribbon"
+            onPress={goApplications}
+          />
         </View>
         <View style={styles.statRow}>
-          <StatCard label="Disbursements" value={disbursements.data?.meta.total ?? 0} icon="cash" />
+          <StatCard
+            label="Disbursements"
+            value={disbursements.data?.meta.total ?? 0}
+            icon="cash"
+            onPress={goApplications}
+          />
           <StatCard
             label="Commission ₹"
             value={formatCurrency(Number(commissions.data?.totalEarned ?? commissions.data?.totalAmount ?? 0))}
             icon="trending-up"
+            onPress={goCommissionAnalytics}
           />
         </View>
         <View style={styles.statRow}>
-          <StatCard label="Referral ₹" value={formatCurrency(referralEarnings)} icon="gift" />
-          <StatCard label="Pending Docs" value={pendingDocs.data?.meta.total ?? 0} icon="folder-open" />
+          <StatCard
+            label="Referral ₹"
+            value={formatCurrency(referralEarnings)}
+            icon="gift"
+            onPress={goReferrals}
+          />
+          <StatCard
+            label="Pending Docs"
+            value={pendingDocs.data?.meta.total ?? 0}
+            icon="folder-open"
+            onPress={goDocuments}
+          />
         </View>
       </View>
 
       <View style={styles.section}>
-        <Card title="Hot Leads" subtitle="High priority prospects" elevated>
+        <Card title="Hot Leads" subtitle="High priority prospects" elevated onPress={goLeads}>
           {(hotLeads.data?.items.length ?? 0) === 0 ? (
             <EmptyState title="No hot leads" description="Create leads with HIGH priority to see them here" />
           ) : (
@@ -228,7 +285,7 @@ export function DashboardScreen() {
           )}
         </Card>
 
-        <Card title="Recent Applications" subtitle="Latest in your pipeline" elevated>
+        <Card title="Recent Applications" subtitle="Latest in your pipeline" elevated onPress={goApplications}>
           {(applications.data?.items.length ?? 0) === 0 ? (
             <EmptyState title="No applications yet" description="Convert leads to start applications" />
           ) : (
@@ -253,7 +310,12 @@ export function DashboardScreen() {
           )}
         </Card>
 
-        <Card title="Unread Alerts" subtitle={`${notifications.data?.meta.total ?? 0} unread`} elevated>
+        <Card
+          title="Unread Alerts"
+          subtitle={`${notifications.data?.meta.total ?? 0} unread`}
+          elevated
+          onPress={goNotifications}
+        >
           {(notifications.data?.items.length ?? 0) === 0 ? (
             <Text style={styles.muted}>All caught up — no new alerts</Text>
           ) : (

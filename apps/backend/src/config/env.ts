@@ -84,11 +84,13 @@ export function getCorsOrigins(): string[] {
 
 const LOCALHOST_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 const PRIVATE_LAN_ORIGIN = /^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?$/;
+const VERCEL_ORIGIN = /^https:\/\/[\w-]+(-[\w-]+)*\.vercel\.app$/;
 
 /** In development, allow localhost and LAN IPs (Expo web / admin on same WiFi). */
 export function isCorsOriginAllowed(origin: string | undefined): boolean {
   if (!origin) return true;
   if (env.APP_ENV === 'development' && LOCALHOST_ORIGIN.test(origin)) return true;
   if (env.APP_ENV === 'development' && PRIVATE_LAN_ORIGIN.test(origin)) return true;
+  if (VERCEL_ORIGIN.test(origin)) return true;
   return getCorsOrigins().includes(origin);
 }

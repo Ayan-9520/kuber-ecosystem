@@ -73,14 +73,24 @@ export function DashboardScreen() {
   ) ?? 0;
 
   const openApplication = (id: string) => {
-    navigation.getParent()?.navigate('Applications', {
+    tabNav?.navigate('Applications', {
       screen: 'ApplicationDetail',
       params: { id },
     });
   };
 
+  const tabNav = navigation.getParent();
+
   const goProfile = () => {
-    navigation.getParent()?.navigate('Profile');
+    tabNav?.navigate('Profile');
+  };
+
+  const goApplications = () => {
+    tabNav?.navigate('Applications', { screen: 'ApplicationsList' });
+  };
+
+  const goDocuments = () => {
+    tabNav?.navigate('Profile', { screen: 'Documents' });
   };
 
   const loadFailed = applications.isError || notifications.isError;
@@ -148,16 +158,21 @@ export function DashboardScreen() {
             value={applications.data?.meta.total ?? 0}
             icon="document-text"
             accent
-            onPress={() => navigation.getParent()?.navigate('Applications')}
+            onPress={goApplications}
           />
-          <StatCard label="Referral ₹" value={formatCurrency(referralEarnings)} icon="wallet" />
+          <StatCard
+            label="Referral ₹"
+            value={formatCurrency(referralEarnings)}
+            icon="wallet"
+            onPress={() => navigation.navigate('Referrals')}
+          />
         </View>
         <View style={styles.statRow}>
           <StatCard
             label="Pending Docs"
             value={pendingDocs.data?.meta.total ?? 0}
             icon="folder-open"
-            onPress={() => navigation.getParent()?.navigate('Profile', { screen: 'Documents' })}
+            onPress={goDocuments}
           />
           <StatCard
             label="Unread"
@@ -169,7 +184,7 @@ export function DashboardScreen() {
       </View>
 
       <View style={styles.section}>
-        <Card title="Active Applications" subtitle="Track your loan pipeline" elevated>
+        <Card title="Active Applications" subtitle="Track your loan pipeline" elevated onPress={goApplications}>
           {applications.isLoading ? (
             <Text style={styles.muted}>Loading...</Text>
           ) : (applications.data?.items.length ?? 0) === 0 ? (

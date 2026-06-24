@@ -32,9 +32,8 @@ jobs:
       - name: Prebuild Android
         env:
           EXPO_PUBLIC_APP_ENV: staging
-        run: |
-          cd apps/mobile-customer
-          npx expo prebuild --platform android --clean --non-interactive
+        working-directory: apps/mobile-customer
+        run: pnpm exec expo prebuild --platform android --clean --non-interactive
       - name: Build Android APK
         working-directory: apps/mobile-customer/android
         run: |
@@ -66,9 +65,8 @@ jobs:
       - name: Prebuild Android
         env:
           EXPO_PUBLIC_APP_ENV: staging
-        run: |
-          cd apps/mobile-dsa
-          npx expo prebuild --platform android --clean --non-interactive
+        working-directory: apps/mobile-dsa
+        run: pnpm exec expo prebuild --platform android --clean --non-interactive
       - name: Build Android APK
         working-directory: apps/mobile-dsa/android
         run: |

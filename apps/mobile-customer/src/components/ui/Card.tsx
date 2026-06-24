@@ -1,5 +1,5 @@
 import { type ReactNode, useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View, type ViewProps } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View, type ViewProps } from 'react-native';
 
 import { radius, spacing, typography } from '@/theme';
 import { cardShadow } from '@/theme/elevation';
@@ -62,7 +62,13 @@ export function Card({ title, subtitle, onPress, children, action, elevated, sty
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [
+          pressed && styles.pressed,
+          Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
+        ]}
+      >
         {content}
       </Pressable>
     );

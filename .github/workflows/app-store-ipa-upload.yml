@@ -29,9 +29,8 @@ jobs:
       - name: Prebuild iOS
         env:
           EXPO_PUBLIC_APP_ENV: production
-        run: |
-          cd apps/mobile-${{ inputs.app || github.event.inputs.app }}
-          npx expo prebuild --platform ios --clean --non-interactive
+        working-directory: apps/mobile-${{ inputs.app || github.event.inputs.app }}
+        run: pnpm exec expo prebuild --platform ios --clean --non-interactive
 
       - name: Install pods
         working-directory: apps/mobile-${{ inputs.app || github.event.inputs.app }}/ios

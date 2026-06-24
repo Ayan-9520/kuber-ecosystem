@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { radius, spacing, typography } from '@/theme';
 import { cardShadow } from '@/theme/elevation';
@@ -109,7 +109,12 @@ export function StatCard({ label, value, icon, trend, accent, onPress }: StatCar
   if (onPress) {
     return (
       <Pressable
-        style={({ pressed }) => [styles.card, accent && styles.cardAccent, pressed && { opacity: 0.9 }]}
+        style={({ pressed }) => [
+          styles.card,
+          accent && styles.cardAccent,
+          pressed && { opacity: 0.9 },
+          Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
+        ]}
         onPress={onPress}
         accessibilityRole="button"
       >
@@ -135,7 +140,11 @@ export function QuickAction({
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
+      style={({ pressed }) => [
+        styles.action,
+        pressed && styles.actionPressed,
+        Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
+      ]}
       onPress={onPress}
     >
       <View style={styles.actionIcon}>

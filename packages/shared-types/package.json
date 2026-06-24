@@ -13,11 +13,11 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json --watch",
+    "build": "node ../../scripts/tsc.mjs -p tsconfig.json",
+    "dev": "node ../../scripts/tsc.mjs -p tsconfig.json --watch",
     "lint": "eslint src --max-warnings 0",
     "lint:fix": "eslint src --fix",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "node ../../scripts/tsc.mjs -p tsconfig.json --noEmit",
     "clean": "rimraf dist"
   },
   "devDependencies": {

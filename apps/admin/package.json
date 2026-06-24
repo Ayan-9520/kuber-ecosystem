@@ -5,15 +5,15 @@
   "description": "KuberOne CRM Admin Panel",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview",
+    "dev": "node ../../scripts/run-bin.mjs vite",
+    "build": "node ../../scripts/tsc.mjs --noEmit && node ../../scripts/run-bin.mjs vite build",
+    "preview": "node ../../scripts/run-bin.mjs vite preview",
     "lint": "eslint src --max-warnings 0",
     "lint:fix": "eslint src --fix",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
+    "typecheck": "node ../../scripts/tsc.mjs --noEmit",
+    "test": "node ../../scripts/run-bin.mjs vitest run",
+    "test:watch": "node ../../scripts/run-bin.mjs vitest",
+    "test:coverage": "node ../../scripts/run-bin.mjs vitest run --coverage",
     "clean": "rimraf dist coverage"
   },
   "dependencies": {

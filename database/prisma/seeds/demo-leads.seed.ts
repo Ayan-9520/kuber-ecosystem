@@ -77,7 +77,7 @@ export async function seedDemoLeads(prisma: PrismaClient): Promise<void> {
       update: {
         prospectName: lead.prospectName,
         prospectPhone: lead.prospectPhone,
-        prospectEmail: lead.prospectEmail ?? null,
+        prospectEmail: 'prospectEmail' in lead ? lead.prospectEmail : null,
         status: lead.status,
         grade: lead.grade,
         score: lead.score,
@@ -92,7 +92,7 @@ export async function seedDemoLeads(prisma: PrismaClient): Promise<void> {
         leadNumber: lead.leadNumber,
         prospectName: lead.prospectName,
         prospectPhone: lead.prospectPhone,
-        prospectEmail: lead.prospectEmail ?? null,
+        prospectEmail: 'prospectEmail' in lead ? lead.prospectEmail : null,
         productId: product.id,
         sourceId: source.id,
         partnerId: demoPartner?.id ?? null,

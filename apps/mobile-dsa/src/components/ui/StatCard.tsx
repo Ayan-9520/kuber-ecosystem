@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { radius, spacing, typography } from '@/theme';
 import { cardShadow } from '@/theme/elevation';
@@ -12,6 +12,7 @@ interface StatCardProps {
   icon?: keyof typeof Ionicons.glyphMap;
   trend?: string;
   accent?: boolean;
+  onPress?: () => void;
 }
 
 function createStyles(colors: AppColors) {
@@ -88,12 +89,12 @@ function createStyles(colors: AppColors) {
   });
 }
 
-export function StatCard({ label, value, icon, trend, accent }: StatCardProps) {
+export function StatCard({ label, value, icon, trend, accent, onPress }: StatCardProps) {
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  return (
-    <View style={[styles.card, accent && styles.cardAccent]}>
+  const content = (
+    <>
       {icon && (
         <View style={styles.iconWrap}>
           <Ionicons name={icon} size={20} color={colors.primary} />
@@ -102,8 +103,27 @@ export function StatCard({ label, value, icon, trend, accent }: StatCardProps) {
       <Text style={styles.label}>{label}</Text>
       <Text style={styles.value}>{value}</Text>
       {trend && <Text style={styles.trend}>{trend}</Text>}
-    </View>
+    </>
   );
+
+  if (onPress) {
+    return (
+      <Pressable
+        style={({ pressed }) => [
+          styles.card,
+          accent && styles.cardAccent,
+          pressed && { opacity: 0.9 },
+          Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
+        ]}
+        onPress={onPress}
+        accessibilityRole="button"
+      >
+        {content}
+      </Pressable>
+    );
+  }
+
+  return <View style={[styles.card, accent && styles.cardAccent]}>{content}</View>;
 }
 
 export function QuickAction({
@@ -120,7 +140,11 @@ export function QuickAction({
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
+      style={({ pressed }) => [
+        styles.action,
+        pressed && styles.actionPressed,
+        Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
+      ]}
       onPress={onPress}
     >
       <View style={styles.actionIcon}>

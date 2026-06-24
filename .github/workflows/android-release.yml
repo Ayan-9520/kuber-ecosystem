@@ -93,9 +93,8 @@ jobs:
       - name: Prebuild Android
         env:
           EXPO_PUBLIC_APP_ENV: ${{ github.event.inputs.environment || 'staging' }}
-        run: |
-          cd apps/${{ matrix.app }}
-          npx expo prebuild --platform android --clean --non-interactive
+        working-directory: apps/${{ matrix.app }}
+        run: pnpm exec expo prebuild --platform android --clean --non-interactive
 
       - name: Write signing config
         if: env.ANDROID_KEYSTORE_BASE64 != ''

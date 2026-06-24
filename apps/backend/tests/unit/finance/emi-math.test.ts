@@ -1,4 +1,4 @@
-import { buildAmiBreakdown, buildAmortizationYearSummary, calculateEmi } from '@kuberone/shared-utils';
+import { buildAmortizationYearSummary, buildEmiBreakdown, calculateEmi } from '@kuberone/shared-utils';
 
 describe('emi math utils', () => {
   it('calculates EMI for standard loan', () => {
