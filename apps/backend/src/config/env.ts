@@ -28,7 +28,11 @@ const backendEnvSchema = baseEnvSchema
     API_PORT: z.coerce.number().default(4000),
     API_BASE_URL: z.string().url().default('http://localhost:4000'),
     API_VERSION: z.string().default('v1'),
-    CORS_ORIGINS: z.string().default('http://localhost:5173'),
+    CORS_ORIGINS: z
+      .string()
+      .default(
+        'http://localhost:5173,https://kuberone.online,https://www.kuberone.online',
+      ),
     DATA_ENCRYPTION_KEY: z.string().min(32).optional(),
     OTP_RATE_LIMIT_PER_PHONE: z.coerce.number().default(10),
     RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900_000),
@@ -85,12 +89,14 @@ export function getCorsOrigins(): string[] {
 const LOCALHOST_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 const PRIVATE_LAN_ORIGIN = /^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?$/;
 const VERCEL_ORIGIN = /^https:\/\/[\w-]+(-[\w-]+)*\.vercel\.app$/;
+const KUBERONE_ORIGIN = /^https:\/\/(www\.)?kuberone\.online$/;
 
 /** In development, allow localhost and LAN IPs (Expo web / admin on same WiFi). */
 export function isCorsOriginAllowed(origin: string | undefined): boolean {
   if (!origin) return true;
   if (env.APP_ENV === 'development' && LOCALHOST_ORIGIN.test(origin)) return true;
   if (env.APP_ENV === 'development' && PRIVATE_LAN_ORIGIN.test(origin)) return true;
+  if (KUBERONE_ORIGIN.test(origin)) return true;
   if (VERCEL_ORIGIN.test(origin)) return true;
   return getCorsOrigins().includes(origin);
 }

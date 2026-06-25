@@ -31,7 +31,7 @@ export function createApp(): express.Application {
     cors({
       origin: (origin, callback) => {
         if (isCorsOriginAllowed(origin)) {
-          callback(null, true);
+          callback(null, origin ?? true);
           return;
         }
         callback(null, false);
@@ -50,6 +50,9 @@ export function createApp(): express.Application {
         'traceparent',
         'tracestate',
       ],
+      optionsSuccessStatus: 204,
+      maxAge: 86_400,
+      preflightContinue: false,
     }),
   );
   app.use(compression());
@@ -69,6 +72,7 @@ export function createApp(): express.Application {
       standardHeaders: true,
       legacyHeaders: false,
       skip: (req) =>
+        req.method === 'OPTIONS' ||
         req.path === '/health' ||
         req.path.startsWith('/health/') ||
         req.path === '/metrics' ||
