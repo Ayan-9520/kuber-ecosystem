@@ -7,7 +7,7 @@ type AppEnv = 'development' | 'qa' | 'staging' | 'production';
 const APP_ENV = (process.env.EXPO_PUBLIC_APP_ENV ?? 'development') as AppEnv;
 
 const API_URLS: Record<AppEnv, string> = {
-  development: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:4000/api/v1',
+  development: process.env.EXPO_PUBLIC_API_BASE_URL ?? process.env.VITE_API_BASE_URL ?? '',
   qa: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://qa-api.kuberone.com/api/v1',
   staging: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://staging-api.kuberone.com/api/v1',
   production: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.kuberone.com/api/v1',

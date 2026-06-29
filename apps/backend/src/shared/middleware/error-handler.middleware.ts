@@ -136,6 +136,19 @@ export function errorHandlerMiddleware(
     return;
   }
 
+  const statusCode = 'statusCode' in err ? Number((err as { statusCode?: number }).statusCode) : undefined;
+  if (statusCode && statusCode >= 400 && statusCode < 600) {
+    res.status(statusCode).json({
+      success: false,
+      error: {
+        code: statusCode === 404 ? 'NOT_FOUND' : 'REQUEST_ERROR',
+        message: err.message,
+      },
+      requestId,
+    });
+    return;
+  }
+
   appLogger.error('Unhandled error', err, { module: 'http', action: `${req.method} ${req.path}`, category: 'SYSTEM' });
   trackError(req, err, { errorCode: 'INTERNAL_ERROR', statusCode: 500 });
 

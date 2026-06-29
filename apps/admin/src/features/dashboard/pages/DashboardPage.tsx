@@ -33,6 +33,7 @@ import {
   TableSkeleton,
 } from '@/components/ui';
 import { CHART_COLORS, CHART_GRID, CHART_TICK, CHART_TOOLTIP } from '@/lib/chart-theme';
+import { customerDisplayName, documentTypeDisplay } from '@/lib/entity-display';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
 import { dashboardService } from '@/services/index';
 
@@ -45,21 +46,8 @@ function str(v: unknown): string {
   return String(v);
 }
 
-function documentTypeLabel(row: Record<string, unknown>): string {
-  const dt = row.documentType;
-  if (dt && typeof dt === 'object') {
-    const typed = dt as Record<string, unknown>;
-    return str(typed.name ?? typed.code);
-  }
-  return str(row.documentTypeName ?? row.type);
-}
-
 function customerLabel(row: Record<string, unknown>): string {
-  const customer = row.customer;
-  if (customer && typeof customer === 'object') {
-    return str((customer as Record<string, unknown>).fullName ?? (customer as Record<string, unknown>).customerCode);
-  }
-  return str(row.customerName ?? row.customerId);
+  return customerDisplayName(row);
 }
 
 export function DashboardPage() {
@@ -333,7 +321,7 @@ export function DashboardPage() {
           ) : (
             <DataTable
               columns={[
-                { key: 'documentType', header: 'Type', render: (r) => documentTypeLabel(r) },
+                { key: 'documentType', header: 'Type', render: (r) => documentTypeDisplay(r) },
                 { key: 'customer', header: 'Customer', render: (r) => customerLabel(r) },
                 {
                   key: 'status',

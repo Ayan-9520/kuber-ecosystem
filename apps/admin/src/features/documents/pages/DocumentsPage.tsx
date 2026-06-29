@@ -14,6 +14,7 @@ import {
 } from '@/components/ui';
 import { useDebounce, usePagination } from '@/hooks';
 import { formatDateTime } from '@/lib/utils';
+import { customerDisplayName, documentNumberDisplay, documentTypeDisplay } from '@/lib/entity-display';
 import { documentsService } from '@/services/index';
 
 const STATUS_OPTIONS = [
@@ -79,9 +80,9 @@ export function DocumentsPage() {
         <>
           <DataTable
             columns={[
-              { key: 'documentNumber', header: 'Doc #', render: (r) => str(r.documentNumber ?? r.id) },
-              { key: 'documentType', header: 'Type', render: (r) => str(r.documentType ?? r.type) },
-              { key: 'customerName', header: 'Customer', render: (r) => str(r.customerName ?? r.customerId) },
+              { key: 'documentNumber', header: 'Doc #', render: (r) => documentNumberDisplay(r) },
+              { key: 'documentType', header: 'Type', render: (r) => documentTypeDisplay(r) },
+              { key: 'customerName', header: 'Customer', render: (r) => customerDisplayName(r) },
               {
                 key: 'status',
                 header: 'Verification',

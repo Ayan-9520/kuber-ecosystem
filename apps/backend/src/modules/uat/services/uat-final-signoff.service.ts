@@ -5,6 +5,7 @@ import type { Prisma } from '@kuberone/database';
 import type { AuthenticatedUser } from '@kuberone/shared-types';
 
 import { NotFoundError, ValidationError } from '../../../shared/errors/app-error.js';
+import { opsHubBootstrapService } from '../../ops-hub/services/ops-hub-bootstrap.service.js';
 import {
   UAT_CERTIFICATION_DOMAINS,
   UAT_FINAL_SIGNOFF_GATES,
@@ -36,8 +37,8 @@ async function resolveCycleId(cycleId?: string) {
     orderBy: { createdAt: 'desc' },
     take: 1,
   });
-  if (!cycles[0]) throw new NotFoundError('UatCycle', 'active');
-  return cycles[0].id;
+  if (cycles[0]) return cycles[0].id;
+  return opsHubBootstrapService.ensureUatCycle();
 }
 
 function readJsonReport(path: string): Record<string, unknown> | null {

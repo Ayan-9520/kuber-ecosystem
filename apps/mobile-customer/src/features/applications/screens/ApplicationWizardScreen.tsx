@@ -7,7 +7,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Card, Input, Screen } from '@/components/ui';
 import { useAuth } from '@/hooks';
-import { guessMimeType, resolveDocumentTypeForLabel } from '@/lib/document-checklist';
+import { guessMimeType, resolveDocumentTypeForLabel, formatDocumentChecklistLabel, formatDocumentTypeLabel } from '@/lib/document-checklist';
+import { API_BASE_URL } from '@/lib/api';
 import { pickDocumentBase64 } from '@/lib/read-file-base64';
 import { findProductDisplayItem, flattenProductsWithVariants } from '@/lib/product-mapper';
 import {
@@ -388,7 +389,11 @@ export function ApplicationWizardScreen() {
 
     const docType = resolveDocumentTypeForLabel(docLabel, documentTypesQuery.data?.items ?? []);
     if (!docType?.id) {
-      setError(`Document type not configured for "${docLabel}". Contact support.`);
+      setError(
+        documentTypesQuery.isError
+          ? `Cannot reach API (${API_BASE_URL}). Set EXPO_PUBLIC_API_BASE_URL and restart the app.`
+          : `Document type "${formatDocumentChecklistLabel(docLabel)}" is not available yet. Pull to refresh or try again.`,
+      );
       return;
     }
 
@@ -812,12 +817,18 @@ export function ApplicationWizardScreen() {
                       color={uploaded ? colors.success : colors.textMuted}
                     />
                     <View style={styles.docItemBody}>
-                      <Text style={styles.docLabel}>{doc}</Text>
+                      <Text style={styles.docLabel}>
+                        {docType ? formatDocumentTypeLabel(docType) : formatDocumentChecklistLabel(doc)}
+                      </Text>
                       {uploaded ? (
                         <Text style={styles.docFileName}>{uploaded.fileName}</Text>
                       ) : (
                         <Text style={styles.docHint}>
-                          {docType ? 'Tap upload — PDF or image' : 'Type not mapped — contact support'}
+                          {docType
+                            ? 'Tap upload — PDF or image'
+                            : documentTypesQuery.isError
+                              ? `API unreachable (${API_BASE_URL})`
+                              : 'Loading document types…'}
                         </Text>
                       )}
                     </View>

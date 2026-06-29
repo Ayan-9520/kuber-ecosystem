@@ -64,6 +64,35 @@ export function sha256Checksum(buffer: Buffer): string {
   return createHash('sha256').update(buffer).digest('hex');
 }
 
+type DocumentWithType = {
+  documentType?: { name?: string | null; code?: string | null } | null;
+  customer?: { customerCode?: string | null; fullName?: string | null } | null;
+  uploadedBy?: { email?: string | null; fullName?: string | null } | null;
+  documentCode?: string | null;
+  [key: string]: unknown;
+};
+
+/** Flatten nested relations for API consumers (admin + mobile). */
+export function serializeDocument<T extends DocumentWithType>(doc: T) {
+  const type = doc.documentType;
+  const customer = doc.customer;
+  const uploadedBy = doc.uploadedBy;
+  const typeLabel =
+    type?.name?.trim() ||
+    (type?.code ? type.code.trim().replace(/_/g, ' ') : null);
+  return {
+    ...doc,
+    documentNumber: doc.documentCode ?? null,
+    documentTypeName: type?.name ?? null,
+    documentTypeCode: type?.code ?? null,
+    typeName: type?.name ?? null,
+    type: typeLabel ?? (typeof doc.type === 'string' ? doc.type : null),
+    customerName: customer?.fullName ?? null,
+    customerCode: customer?.customerCode ?? null,
+    uploadedByName: uploadedBy?.fullName ?? uploadedBy?.email ?? null,
+  };
+}
+
 export function buildS3Key(
   ownerType: string,
   ownerId: string,
@@ -123,3 +152,4 @@ export function sanitizeDocumentResponse<T extends Record<string, unknown>>(doc:
   }
   return sanitized;
 }
+

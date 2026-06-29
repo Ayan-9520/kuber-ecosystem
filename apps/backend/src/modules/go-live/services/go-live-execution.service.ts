@@ -19,6 +19,7 @@ import {
   WAR_ROOM_TEAMS,
 } from '../constants/go-live-execution.constants.js';
 import { goLiveRepository } from '../repositories/go-live.repository.js';
+import { opsHubBootstrapService } from '../../ops-hub/services/ops-hub-bootstrap.service.js';
 
 import { goLivePlatformService } from './go-live-platform.service.js';
 
@@ -35,9 +36,16 @@ function nextStep(current: string): string | null {
 }
 
 async function resolveLaunch(launchExecutionId?: string) {
-  const launch = launchExecutionId
-    ? await goLiveRepository.findLaunchById(launchExecutionId)
-    : await goLiveRepository.getActiveLaunch();
+  if (launchExecutionId) {
+    const launch = await goLiveRepository.findLaunchById(launchExecutionId);
+    if (!launch) throw Object.assign(new Error('Launch execution not found'), { statusCode: 404 });
+    return launch;
+  }
+  let launch = await goLiveRepository.getActiveLaunch();
+  if (!launch) {
+    await opsHubBootstrapService.ensureGoLiveLaunch();
+    launch = await goLiveRepository.getActiveLaunch();
+  }
   if (!launch) throw Object.assign(new Error('No active launch execution'), { statusCode: 404 });
   return launch;
 }

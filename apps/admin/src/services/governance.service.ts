@@ -1,4 +1,5 @@
 import { apiGet, apiGetPaginated, apiPost } from '@/lib/api';
+import { resolveApiBaseUrl } from '@/lib/api-config';
 import { tokenStorage } from '@/lib/token-storage';
 
 export const governanceService = {
@@ -11,7 +12,7 @@ export const governanceService = {
   exportAuditEvents: async (params: Record<string, unknown>) => {
     const qs = new URLSearchParams(params as Record<string, string>).toString();
     const token = tokenStorage.getAccessToken();
-    const base = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
+    const base = resolveApiBaseUrl();
     const res = await fetch(`${base}/audit/export?${qs}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });

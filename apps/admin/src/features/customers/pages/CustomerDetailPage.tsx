@@ -15,6 +15,7 @@ import {
 } from '@/components/ui';
 import { RecommendationsPanel } from '@/features/recommendations';
 import { formatDate, formatDateTime } from '@/lib/utils';
+import { documentTypeLabel } from '@/lib/document-utils';
 import { applicationsService, auditService, customersService, documentsService, kycService } from '@/services/index';
 
 const TABS = [
@@ -194,7 +195,7 @@ export function CustomerDetailPage() {
           ) : (
             <DataTable
               columns={[
-                { key: 'documentType', header: 'Type', render: (r) => str(r.documentType ?? r.type) },
+                { key: 'documentType', header: 'Type', render: (r) => documentTypeLabel(r) },
                 {
                   key: 'status',
                   header: 'Status',

@@ -3,7 +3,26 @@ import type { ReactNode } from 'react';
 
 import { Button } from './Button';
 
+import { formatDocumentTypeLabel } from '@kuberone/shared-utils';
+
+import { customerDisplayName, documentTypeDisplay } from '@/lib/entity-display';
 import { paginationRange } from '@/lib/utils';
+
+function formatCellValue(value: unknown, key?: string, row?: Record<string, unknown>): string {
+  if (row) {
+    if (key === 'documentType' || key === 'type') return documentTypeDisplay(row);
+    if (key === 'customerName' || key === 'customer' || key === 'customerId') {
+      return customerDisplayName(row);
+    }
+  }
+  if (value === null || value === undefined || value === '') return '—';
+  if (typeof value === 'object') {
+    return formatDocumentTypeLabel(value, row);
+  }
+  const asString = String(value);
+  if (asString === '[object Object]') return 'Unknown Document';
+  return asString;
+}
 
 export { Button } from './Button';
 export { Card } from './Card';
@@ -204,7 +223,11 @@ export function DataTable<T extends Record<string, unknown>>({
               onClick={() => onRowClick?.(row)}
             >
               {columns.map((col) => (
-                <td key={col.key}>{col.render ? col.render(row) : String(row[col.key] ?? '—')}</td>
+                <td key={col.key}>
+                  {col.render
+                    ? col.render(row)
+                    : formatCellValue(row[col.key], col.key, row)}
+                </td>
               ))}
             </tr>
           ))}

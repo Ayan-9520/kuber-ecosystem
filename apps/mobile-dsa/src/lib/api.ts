@@ -1,31 +1,12 @@
 import type { ApiResponse, AuthTokens } from '@kuberone/shared-types';
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import Constants from 'expo-constants';
-import { Platform } from 'react-native';
 
+import { resolveApiBaseUrl } from './api-config';
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from './storage';
 
-function resolveApiBaseUrl(): string {
-  const extraUrl = Constants.expoConfig?.extra?.apiBaseUrl as string | undefined;
-  const configured =
-    extraUrl ?? process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:4000/api/v1';
-
-  if (!__DEV__) {
-    return configured;
-  }
-
-  if (Platform.OS === 'web') {
-    return 'http://localhost:4000/api/v1';
-  }
-
-  if (Platform.OS === 'android' && !Constants.isDevice) {
-    return 'http://10.0.2.2:4000/api/v1';
-  }
-
-  return configured;
-}
-
 const API_BASE_URL = resolveApiBaseUrl();
+
+export { API_BASE_URL };
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

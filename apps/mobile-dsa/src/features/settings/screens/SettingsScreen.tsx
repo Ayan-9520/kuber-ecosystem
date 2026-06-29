@@ -1,10 +1,10 @@
-import Constants from 'expo-constants';
 import { useMemo } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { ThemeAppearanceCard } from '@/components/ThemeAppearanceCard';
 import { Button, Card, Screen } from '@/components/ui';
 import { useAuth } from '@/hooks';
+import { API_BASE_URL } from '@/lib/api';
 import { spacing, typography } from '@/theme';
 import { useAppTheme } from '@/theme/ThemeProvider';
 
@@ -12,7 +12,7 @@ export function SettingsScreen() {
   const { logout, user, partnerId } = useAuth();
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const apiUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? Constants.expoConfig?.extra?.apiBaseUrl ?? '—';
+  const apiUrl = API_BASE_URL;
 
   return (
     <Screen scroll title="Settings">

@@ -26,6 +26,7 @@ import {
   generateDocumentCode,
   normalizeDocumentMimeType,
   resolveOwnerId,
+  serializeDocument,
   sha256Checksum,
 } from '../utils/documents.utils.js';
 import { shouldUseLocalDocumentStorage } from '../utils/document-storage.util.js';
@@ -102,14 +103,17 @@ export const documentService = {
       documentRepository.count(where),
     ]);
 
-    return { items, meta: buildPaginationMeta(query.page, query.limit, total) };
+    return {
+      items: items.map((doc) => serializeDocument(doc)),
+      meta: buildPaginationMeta(query.page, query.limit, total),
+    };
   },
 
   async getById(actor: AuthenticatedUser, id: string) {
     const doc = await documentRepository.findById(id);
     if (!doc) throw new NotFoundError('Document', id);
     assertDocumentAccess(actor, doc);
-    return doc;
+    return serializeDocument(doc);
   },
 
   async upload(input: UploadDocumentInput, ctx: RequestContext) {

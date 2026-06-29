@@ -87,6 +87,12 @@ export function getDeviceId(): string {
 export function fieldStr(row: Record<string, unknown>, key: string): string {
   const v = row[key];
   if (v === null || v === undefined || v === '') return '—';
+  if (typeof v === 'object') {
+    const obj = v as Record<string, unknown>;
+    const inner = obj.name ?? obj.code ?? obj.label ?? obj.title;
+    if (inner != null && inner !== '') return String(inner);
+    return 'Unknown Document';
+  }
   return String(v);
 }
 
@@ -97,15 +103,25 @@ export function fieldNum(row: Record<string, unknown>, key: string): number | nu
   return Number.isNaN(n) ? null : n;
 }
 
+import { resolveApiBaseUrl } from '@/lib/api-config';
+
+const API_BASE_URL = resolveApiBaseUrl();
+
 export function getApiErrorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'response' in error) {
     const resp = (error as {
       response?: {
         status?: number;
-        data?: { error?: { message?: string; details?: Record<string, string[]> } };
+        data?: { error?: { message?: string; code?: string; details?: Record<string, string[]> } };
       };
     }).response;
-    if (resp?.data?.error?.message) return resp.data.error.message;
+    if (resp?.data?.error?.message) {
+      const msg = resp.data.error.message;
+      if (resp.status === 404 && msg === 'Route not found') {
+        return `API route not found (${API_BASE_URL}). Ensure VITE_API_BASE_URL ends with /api/v1 and backend is running.`;
+      }
+      return msg;
+    }
     if (resp?.status === 503) {
       return resp.data?.error?.message ?? 'Database unavailable. Start MySQL on port 3306.';
     }
@@ -118,7 +134,7 @@ export function getApiErrorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'code' in error) {
     const code = (error as { code?: string }).code;
     if (code === 'ERR_NETWORK' || code === 'ECONNREFUSED') {
-      return 'Cannot reach API server. Start backend: pnpm dev:backend';
+      return `Cannot reach API at ${API_BASE_URL}. Check backend is running and CORS allows kuberone.online.`;
     }
   }
   if (error instanceof Error) return error.message;

@@ -2,6 +2,7 @@ import type { Prisma } from '@kuberone/database';
 
 import { NotFoundError } from '../../../shared/errors/app-error.js';
 import { monitoringHealthService } from '../../monitoring/services/monitoring-health.service.js';
+import { opsHubBootstrapService } from '../../ops-hub/services/ops-hub-bootstrap.service.js';
 import {
   POST_DEPLOY_CHECKLIST,
   PRE_DEPLOY_CHECKLIST,
@@ -14,6 +15,7 @@ type ValidationStatus = 'PENDING' | 'RUNNING' | 'PASSED' | 'FAILED' | 'SKIPPED';
 
 export class StagingService {
   async getStatus() {
+    await opsHubBootstrapService.ensureStaging();
     const env = await stagingRepository.findEnvironmentByCode('staging');
     if (!env) throw new NotFoundError('Staging environment not configured');
 
@@ -191,6 +193,7 @@ export class StagingService {
   }
 
   async getReports() {
+    await opsHubBootstrapService.ensureStaging();
     const env = await stagingRepository.findEnvironmentByCode('staging');
     if (!env) throw new NotFoundError('Staging environment not configured');
 

@@ -2,9 +2,10 @@ import type { ApiResponse, AuthTokens } from '@kuberone/shared-types';
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
 import { tokenStorage } from '@/lib/token-storage';
+import { resolveApiBaseUrl } from '@/lib/api-config';
 import { mockDownload, mockGet, mockGetPaginated, mockMutate, shouldUseMock } from '@/mocks/router';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
+const API_BASE_URL = resolveApiBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

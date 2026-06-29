@@ -3,6 +3,7 @@ import { prisma } from '@kuberone/database';
 
 import { NotFoundError } from '../../../shared/errors/app-error.js';
 import { monitoringHealthService } from '../../monitoring/services/monitoring-health.service.js';
+import { opsHubBootstrapService } from '../../ops-hub/services/ops-hub-bootstrap.service.js';
 import {
   AI_SERVICES,
   BUSINESS_SERVICES,
@@ -14,6 +15,7 @@ import { productionRepository } from '../repositories/production.repository.js';
 
 export class ProductionService {
   private async getEnv() {
+    await opsHubBootstrapService.ensureProduction();
     const env = await productionRepository.findEnvironmentByCode('production');
     if (!env) throw new NotFoundError('Production environment not configured');
     return env;

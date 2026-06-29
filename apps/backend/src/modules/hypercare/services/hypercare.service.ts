@@ -5,6 +5,7 @@ import type { Prisma } from '@kuberone/database';
 import type { AuthenticatedUser } from '@kuberone/shared-types';
 
 import { productionService } from '../../production/services/production.service.js';
+import { opsHubBootstrapService } from '../../ops-hub/services/ops-hub-bootstrap.service.js';
 import {
   ADOPTION_METRICS,
   AI_SUPPORT_AREAS,
@@ -27,9 +28,16 @@ function pct(n: number, d: number) {
 }
 
 async function resolveSession(sessionId?: string) {
-  const session = sessionId
-    ? await hypercareRepository.findSessionById(sessionId)
-    : await hypercareRepository.getActiveSession();
+  if (sessionId) {
+    const session = await hypercareRepository.findSessionById(sessionId);
+    if (!session) throw Object.assign(new Error('Hypercare session not found'), { statusCode: 404 });
+    return session;
+  }
+  let session = await hypercareRepository.getActiveSession();
+  if (!session) {
+    await opsHubBootstrapService.ensureHypercareSession();
+    session = await hypercareRepository.getActiveSession();
+  }
   if (!session) throw Object.assign(new Error('No active hypercare session'), { statusCode: 404 });
   return session;
 }

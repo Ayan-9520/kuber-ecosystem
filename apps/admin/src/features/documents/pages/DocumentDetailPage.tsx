@@ -15,6 +15,7 @@ import {
   StatusBadge,
 } from '@/components/ui';
 import { formatDateTime, getApiErrorMessage } from '@/lib/utils';
+import { customerDisplayName, documentNumberDisplay, documentTypeDisplay } from '@/lib/entity-display';
 import { documentsService } from '@/services/index';
 
 function str(v: unknown): string {
@@ -102,8 +103,8 @@ export function DocumentDetailPage() {
   return (
     <div className="page-container">
       <PageHeader
-        title={str(data.documentType ?? data.type ?? 'Document')}
-        subtitle={`Document ${str(data.documentNumber ?? data.id)}`}
+        title={documentTypeDisplay(data)}
+        subtitle={`Document ${documentNumberDisplay(data)}`}
         actions={
           <Button variant="ghost" onClick={() => navigate('/documents')}>
             <ArrowLeft size={16} />
@@ -126,7 +127,8 @@ export function DocumentDetailPage() {
         <div>
           <Card title="Document Preview" className="detail-section">
             <div className="info-grid">
-              <InfoItem label="Customer" value={str(data.customerName ?? data.customerId)} />
+              <InfoItem label="Document Type" value={documentTypeDisplay(data)} />
+              <InfoItem label="Customer" value={customerDisplayName(data)} />
               <InfoItem label="Application" value={str(data.applicationId)} />
               <InfoItem label="File Name" value={str(data.fileName ?? data.originalFileName)} />
               <InfoItem label="MIME Type" value={str(data.mimeType)} />

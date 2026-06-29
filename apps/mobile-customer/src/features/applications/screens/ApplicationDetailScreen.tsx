@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { formatDocumentTypeLabel } from '@kuberone/shared-utils';
 import { Card, EmptyState, Screen, StatusBadge } from '@/components/ui';
 import { formatCurrency, formatDateTime, getApiErrorMessage, str } from '@/lib/utils';
 import type { ApplicationsStackParamList } from '@/navigation/types';
@@ -357,7 +358,7 @@ function TabContent({
       <Card key={String(item.id)}>
         <View style={styles.itemRow}>
           <View style={styles.itemInfo}>
-            <Text style={styles.itemTitle}>{str(docType?.name ?? item.documentTypeId)}</Text>
+            <Text style={styles.itemTitle}>{formatDocumentTypeLabel(docType ?? item.documentTypeId, item)}</Text>
             <Text style={styles.itemSub}>{formatDateTime(item.createdAt as string)}</Text>
           </View>
           <StatusBadge status={str(item.status)} />

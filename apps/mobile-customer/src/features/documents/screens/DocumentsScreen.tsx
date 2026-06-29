@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import { formatDocumentTypeLabel } from '@kuberone/shared-utils';
 import { Button, Card, EmptyState, Screen, StatusBadge } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { guessMimeType } from '@/lib/document-checklist';
@@ -112,7 +113,7 @@ export function DocumentsScreen() {
               onPress={() => setUploadTypeId(String(type.id))}
             >
               <Text style={[styles.typeChipText, uploadTypeId === type.id && styles.typeChipTextActive]}>
-                {str(type.name ?? type.code)}
+                {formatDocumentTypeLabel(type)}
               </Text>
             </Pressable>
           ))}
@@ -137,9 +138,9 @@ export function DocumentsScreen() {
                 <Ionicons name="document-text" size={20} color={colors.primary} />
               </View>
               <View style={styles.docInfo}>
-                <Text style={styles.docName}>{str(doc.fileName ?? doc.documentTypeName)}</Text>
+                <Text style={styles.docName}>{str(doc.fileName ?? formatDocumentTypeLabel(doc.documentType, doc))}</Text>
                 <Text style={styles.docSub}>
-                  {str(doc.documentTypeName ?? doc.documentTypeCode)} · {formatDate(doc.createdAt as string)}
+                  {formatDocumentTypeLabel(doc.documentType, doc)} · {formatDate(doc.createdAt as string)}
                 </Text>
               </View>
               <StatusBadge status={str(doc.status)} />

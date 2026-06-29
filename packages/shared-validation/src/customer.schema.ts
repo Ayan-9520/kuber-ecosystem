@@ -66,7 +66,7 @@ export const listCustomersQuerySchema = z.object({
   search: z.string().max(100).optional(),
   branchId: z.string().uuid().optional(),
   kycStatus: z.enum(['NOT_STARTED', 'IN_PROGRESS', 'VERIFIED', 'REJECTED', 'EXPIRED']).optional(),
-  sortBy: z.enum(['createdAt', 'fullName', 'customerCode']).default('createdAt'),
+  sortBy: z.enum(['createdAt', 'updatedAt', 'fullName', 'customerCode']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
