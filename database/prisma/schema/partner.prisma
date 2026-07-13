@@ -38,6 +38,7 @@ model Partner {
   commissionAdjustments CommissionAdjustment[]
   commissionRecoveries  CommissionRecovery[]
   tickets               Ticket[]
+  brandProfile          PartnerBrandProfile?
 
   @@map("partners")
   @@index([partnerTypeId, status])

@@ -1,4 +1,8 @@
-import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
+import {
+  DarkTheme,
+  DefaultTheme,
+  NavigationContainer,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
@@ -7,7 +11,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AuthNavigator } from './AuthNavigator';
 import { linking } from './linking';
 import { MainTabNavigator } from './MainTabNavigator';
-import type { RootStackParamList } from './types';
+import { resolveInitialRoute } from './resolveInitialRoute';
+import type { AuthStackParamList, RootStackParamList } from './types';
 
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { OnboardingScreen } from '@/features/auth/screens/OnboardingScreen';
@@ -29,6 +34,14 @@ export function RootNavigator() {
   const { ready, showOnboarding: initialOnboarding } = useAuthBootstrap();
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const showOnboarding = initialOnboarding && !onboardingComplete;
+
+  const initialRouteName = useMemo(
+    () => resolveInitialRoute(showOnboarding, onboardingComplete, isAuthenticated, requiresPartnerKyc),
+    [showOnboarding, onboardingComplete, isAuthenticated, requiresPartnerKyc],
+  );
+
+  const authInitialRoute: keyof AuthStackParamList | undefined =
+    isAuthenticated && requiresPartnerKyc ? 'PartnerKyc' : undefined;
 
   const navTheme = useMemo(() => {
     const base = resolved === 'dark' ? DarkTheme : DefaultTheme;
@@ -76,21 +89,17 @@ export function RootNavigator() {
   return (
     <NavigationContainer theme={navTheme} linking={linking}>
       <OfflineBanner />
-      <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
-        {showOnboarding && !isAuthenticated ? (
-          <Stack.Screen name="Onboarding">
-            {() => <OnboardingScreen onDone={() => setOnboardingComplete(true)} />}
-          </Stack.Screen>
-        ) : null}
-        {isAuthenticated && !requiresPartnerKyc ? (
-          <Stack.Screen name="Main" component={MainTabNavigator} />
-        ) : isAuthenticated && requiresPartnerKyc ? (
-          <Stack.Screen name="Auth">
-            {() => <AuthNavigator initialRouteName="PartnerKyc" />}
-          </Stack.Screen>
-        ) : (
-          <Stack.Screen name="Auth" component={AuthNavigator} />
-        )}
+      <Stack.Navigator
+        initialRouteName={initialRouteName}
+        screenOptions={{ headerShown: false, animation: 'fade' }}
+      >
+        <Stack.Screen name="Onboarding">
+          {() => <OnboardingScreen onDone={() => setOnboardingComplete(true)} />}
+        </Stack.Screen>
+        <Stack.Screen name="Auth">
+          {() => <AuthNavigator initialRouteName={authInitialRoute} />}
+        </Stack.Screen>
+        <Stack.Screen name="Main" component={MainTabNavigator} />
       </Stack.Navigator>
     </NavigationContainer>
   );

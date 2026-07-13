@@ -253,7 +253,7 @@ function buildVariantConfig(familyCode: string, productCode: string, variantName
     PL: ['PAN', 'Aadhaar', 'Salary slips', 'Bank statements'],
     BL: ['PAN', 'Aadhaar', 'GST certificate', 'Business proof', 'Bank statements', 'ITR'],
     AL: ['PAN', 'Aadhaar', 'Invoice / RC', 'Bank statements', 'Income proof'],
-    ML: ['PAN', 'Aadhaar', 'Quotation', 'Business proof', 'Bank statements'],
+    ML: ['PAN', 'Aadhaar', 'Machine quotation', 'Business proof', 'Bank statements'],
     INS: ['PAN', 'Aadhaar', 'Age proof', 'Medical reports (if applicable)'],
     CC: ['PAN', 'Aadhaar', 'Salary slips', 'Bank statements'],
   };

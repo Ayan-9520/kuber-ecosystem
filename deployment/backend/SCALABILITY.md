@@ -25,7 +25,7 @@ pm2 scale kuberone-api 6
 
 ## Kubernetes Ready
 
-Docker images: `deployment/docker/backend/Dockerfile`  
+Docker images: `docker/backend/Dockerfile`  
 Compose reference: `deployment/docker/docker-compose.production.yml`
 
 Future migration path: Helm chart wrapping existing containers.

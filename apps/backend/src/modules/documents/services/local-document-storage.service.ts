@@ -1,7 +1,24 @@
-import { access, mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, access, readFile, stat, unlink, writeFile } from 'node:fs/promises';
 import { dirname, normalize, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const STORAGE_ROOT = resolve(process.cwd(), 'storage', 'documents');
+/**
+ * Resolve local document storage root.
+ * Docker runs `node apps/backend/dist/server.js` with cwd=/app, so process.cwd()/storage
+ * is wrong — use package-relative path (volume: /app/apps/backend/storage).
+ */
+function resolveStorageRoot(): string {
+  const fromEnv = process.env.DOCUMENT_STORAGE_PATH?.trim();
+  if (fromEnv) {
+    return resolve(fromEnv);
+  }
+
+  // dist/modules/documents/services → apps/backend
+  const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
+  return resolve(packageRoot, 'storage', 'documents');
+}
+
+const STORAGE_ROOT = resolveStorageRoot();
 
 function resolveLocalPath(storageKey: string): string {
   const normalizedKey = normalize(storageKey).replace(/^(\.\.(\/|\\|$))+/, '');
@@ -15,6 +32,10 @@ function resolveLocalPath(storageKey: string): string {
 export const localDocumentStorageService = {
   getRoot(): string {
     return STORAGE_ROOT;
+  },
+
+  async ensureRoot(): Promise<void> {
+    await mkdir(STORAGE_ROOT, { recursive: true });
   },
 
   async uploadObject(storageKey: string, body: Buffer): Promise<void> {

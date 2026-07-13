@@ -8,15 +8,9 @@
     "lib": ["ES2022"],
     "types": ["node"],
     "declaration": false,
-    "declarationMap": false
+    "declarationMap": false,
+    "skipLibCheck": true
   },
   "include": ["src/**/*"],
-  "exclude": ["dist", "node_modules", "tests"],
-  "references": [
-    { "path": "../../packages/shared-types" },
-    { "path": "../../packages/shared-utils" },
-    { "path": "../../packages/shared-config" },
-    { "path": "../../packages/shared-validation" },
-    { "path": "../../database" }
-  ]
+  "exclude": ["dist", "node_modules", "tests"]
 }

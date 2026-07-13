@@ -38,6 +38,7 @@ export type CommissionsStackParamList = {
 
 export type ProfileStackParamList = {
   ProfileHome: undefined;
+  BrandingDashboard: undefined;
   BankAccount: undefined;
   PartnerKycStatus: undefined;
   Documents: undefined;

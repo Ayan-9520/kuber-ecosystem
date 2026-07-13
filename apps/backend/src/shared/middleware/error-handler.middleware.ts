@@ -118,7 +118,7 @@ export function errorHandlerMiddleware(
 
   if (isPrismaConnectionError(err)) {
     const dbError = new ServiceUnavailableError(
-      'Database is unavailable. Start MySQL on port 3306 or run: docker compose -f docker/docker-compose.dev.yml up -d',
+      'Database is unavailable. Start MySQL on port 3306/3307 or run: docker compose up -d mysql redis',
     );
     appLogger.error('Database unavailable', err, { module: 'database', category: 'DATABASE' });
     trackError(req, err, {

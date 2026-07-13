@@ -1,8 +1,16 @@
 import type { LinkingOptions } from '@react-navigation/native';
+import { Platform } from 'react-native';
 
 import type { ProductsStackParamList, RootStackParamList } from './types';
 
 import { resolveProductFromApi } from '@/lib/product-mapper';
+import { getWebHostname } from '@/lib/webStorage';
+
+function webDevPrefixes(port: string): string[] {
+  if (Platform.OS !== 'web') return [];
+  const host = getWebHostname() ?? 'localhost';
+  return [`http://${host}:${port}`, `http://127.0.0.1:${port}`];
+}
 
 /** Resolves deep-link ProductDetail params when only slug or id is present. */
 export async function resolveProductDetailLinkParams(
@@ -29,9 +37,10 @@ export async function resolveProductDetailLinkParams(
 }
 
 export const linking: LinkingOptions<RootStackParamList> = {
-  prefixes: ['kuberone://', 'https://app.kuberone.com'],
+  prefixes: ['kuberone://', 'https://app.kuberone.com', ...webDevPrefixes('8081')],
   config: {
     screens: {
+      Onboarding: 'Onboarding',
       Main: {
         screens: {
           Applications: {

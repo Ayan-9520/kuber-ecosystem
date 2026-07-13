@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Ensure MySQL/MariaDB is reachable on 127.0.0.1:3306 before starting the API. */
+/** Ensure MySQL is reachable before starting the API on the host. */
 import { execSync, spawn } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import net from 'node:net';
@@ -7,11 +7,11 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const composeFile = resolve(root, 'docker/docker-compose.dev.yml');
+const MYSQL_PORTS = [3306, 3307];
 
-function isMysqlReachable(timeoutMs = 2000) {
+function isMysqlReachable(port, timeoutMs = 2000) {
   return new Promise((resolveReachable) => {
-    const socket = net.createConnection({ host: '127.0.0.1', port: 3306 });
+    const socket = net.createConnection({ host: '127.0.0.1', port });
     const done = (ok) => {
       socket.destroy();
       resolveReachable(ok);
@@ -23,13 +23,21 @@ function isMysqlReachable(timeoutMs = 2000) {
   });
 }
 
-async function waitForMysql(maxWaitMs = 45_000) {
+async function findReachableMysqlPort() {
+  for (const port of MYSQL_PORTS) {
+    if (await isMysqlReachable(port)) return port;
+  }
+  return null;
+}
+
+async function waitForMysql(maxWaitMs = 60_000) {
   const started = Date.now();
   while (Date.now() - started < maxWaitMs) {
-    if (await isMysqlReachable()) return true;
+    const port = await findReachableMysqlPort();
+    if (port) return port;
     await new Promise((r) => setTimeout(r, 1500));
   }
-  return false;
+  return null;
 }
 
 function findLocalMariaDb() {
@@ -92,9 +100,9 @@ function tryStartDockerMysql() {
     return false;
   }
 
-  console.log('MySQL not running — starting Docker container (kuberone-dev-mysql)...');
+  console.log('MySQL not running — starting Docker mysql + redis (docker compose)...');
   try {
-    execSync(`docker compose -f "${composeFile}" up -d`, { cwd: root, stdio: 'inherit' });
+    execSync('docker compose up -d mysql redis', { cwd: root, stdio: 'inherit' });
     return true;
   } catch {
     return false;
@@ -102,21 +110,26 @@ function tryStartDockerMysql() {
 }
 
 async function main() {
-  if (await isMysqlReachable()) return;
+  const existing = await findReachableMysqlPort();
+  if (existing) {
+    console.log(`✅ MySQL ready at 127.0.0.1:${existing}`);
+    return;
+  }
 
   tryStartWindowsService() || tryStartLocalMariaDb() || tryStartDockerMysql();
 
-  if (!(await waitForMysql())) {
-    console.error('\n❌ MySQL is not reachable at 127.0.0.1:3306');
+  const port = await waitForMysql();
+  if (!port) {
+    console.error('\n❌ MySQL is not reachable at 127.0.0.1:3306 or :3307');
     console.error('   Fix options:');
     console.error('   1. Start MariaDB/MySQL service (Services app)');
-    console.error('   2. pnpm db:docker   (requires Docker Desktop)');
+    console.error('   2. pnpm db:docker   (Docker — MySQL on :3307 + Redis on :6380)');
     console.error('   3. winget install MariaDB.Server   (then restart terminal)');
     console.error('   Then run once: pnpm db:setup\n');
     process.exit(1);
   }
 
-  console.log('✅ MySQL ready at 127.0.0.1:3306');
+  console.log(`✅ MySQL ready at 127.0.0.1:${port}`);
 }
 
 await main();

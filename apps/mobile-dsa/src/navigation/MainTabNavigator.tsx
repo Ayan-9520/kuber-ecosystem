@@ -29,6 +29,7 @@ import { LeadsListScreen } from '@/features/leads/screens/LeadsListScreen';
 import { CommunicationHistoryScreen } from '@/features/notifications/screens/CommunicationHistoryScreen';
 import { NotificationsScreen } from '@/features/notifications/screens/NotificationsScreen';
 import { BankAccountScreen } from '@/features/profile/screens/BankAccountScreen';
+import { BrandingDashboardScreen } from '@/features/profile/screens/BrandingDashboardScreen';
 import { CustomerDetailScreen } from '@/features/profile/screens/CustomerDetailScreen';
 import { CustomersListScreen } from '@/features/profile/screens/CustomersListScreen';
 import { DocumentDeficienciesScreen } from '@/features/profile/screens/DocumentDeficienciesScreen';
@@ -150,6 +151,7 @@ function ProfileStackNavigator() {
   return (
     <ProfileStack.Navigator screenOptions={screenOptions}>
       <ProfileStack.Screen name="ProfileHome" component={ProfileScreen} options={{ title: 'Profile' }} />
+      <ProfileStack.Screen name="BrandingDashboard" component={BrandingDashboardScreen} options={{ title: 'My Brand Profile' }} />
       <ProfileStack.Screen name="BankAccount" component={BankAccountScreen} options={{ title: 'Bank Account' }} />
       <ProfileStack.Screen name="PartnerKycStatus" component={PartnerKycStatusScreen} options={{ title: 'KYC Status' }} />
       <ProfileStack.Screen name="Documents" component={DocumentsScreen} options={{ title: 'Documents' }} />

@@ -85,6 +85,11 @@ export const loginService = {
     }
 
     if (user.userType !== UserType.PARTNER) {
+      if (user.userType === UserType.CUSTOMER) {
+        throw new ForbiddenError(
+          'Customer account detected. Use customer app or partner demo mobile 8888777766.',
+        );
+      }
       throw new ForbiddenError('Partner login only');
     }
 

@@ -17,6 +17,8 @@ import { pushWorkerService } from './modules/push/push.module.js';
 import { regionalAnalyticsWorkerService } from './modules/regional-analytics/regional-analytics.module.js';
 import { smsWorkerService } from './modules/sms/sms.module.js';
 import { initOtel } from './shared/observability/otel.js';
+import { shouldUseLocalDocumentStorage } from './modules/documents/utils/document-storage.util.js';
+import { localDocumentStorageService } from './modules/documents/services/local-document-storage.service.js';
 
 void initOtel();
 
@@ -73,6 +75,13 @@ const server = app.listen(env.API_PORT, '0.0.0.0', () => {
   console.log(`🚀 KuberOne API running on ${env.API_BASE_URL}`);
   console.log(`   Environment: ${env.APP_ENV}`);
   console.log(`   API Version: /api/${env.API_VERSION}`);
+  if (shouldUseLocalDocumentStorage()) {
+    void localDocumentStorageService.ensureRoot().then(() => {
+      console.log(`   Document storage: local (${localDocumentStorageService.getRoot()})`);
+    }).catch((err: unknown) => {
+      console.error('   Document storage: failed to prepare local directory', err);
+    });
+  }
   void startBackgroundWorkers();
 });
 

@@ -383,7 +383,7 @@ export function ApplicationWizardScreen() {
       cid = me.customerId ?? undefined;
     }
     if (!cid) {
-      setError('Customer profile not linked. Logout karke dubara login karein.');
+      setError('Customer profile not linked. Please sign out and sign in again.');
       return;
     }
 
@@ -490,7 +490,7 @@ export function ApplicationWizardScreen() {
         const me = await authService.me();
         cid = me.customerId ?? undefined;
       }
-      if (!cid) throw new Error('Customer profile not linked. Logout karke Register se dubara login karein.');
+      if (!cid) throw new Error('Customer profile not linked. Please sign out and register or sign in again.');
       if (!product?.id) throw new Error('Product not found. Try again later.');
 
       const applicantProfile = {
@@ -800,9 +800,12 @@ export function ApplicationWizardScreen() {
       )}
 
       {currentStep === 'documents' && (
-        <Card title="Upload Documents" subtitle="Har required document ke liye file upload karein (PDF / photo)">
+        <Card
+          title="Upload Documents"
+          subtitle="Please upload a file for each required document (PDF or photo)"
+        >
           {documentTypesQuery.isLoading ? (
-            <Text style={styles.docHint}>Loading document types...</Text>
+            <Text style={styles.docHint}>Loading document types…</Text>
           ) : (
             documentChecklist.map((doc) => {
               const uploaded = form.uploadedDocs[doc];
@@ -825,10 +828,12 @@ export function ApplicationWizardScreen() {
                       ) : (
                         <Text style={styles.docHint}>
                           {docType
-                            ? 'Tap upload — PDF or image'
+                            ? 'Tap Upload to add a PDF or image'
                             : documentTypesQuery.isError
-                              ? `API unreachable (${API_BASE_URL})`
-                              : 'Loading document types…'}
+                              ? `Unable to reach API (${API_BASE_URL})`
+                              : documentTypesQuery.isLoading
+                                ? 'Loading document types…'
+                                : 'Document type unavailable — pull to refresh'}
                         </Text>
                       )}
                     </View>
@@ -846,7 +851,7 @@ export function ApplicationWizardScreen() {
             })
           )}
           <Text style={styles.docHint}>
-            {Object.keys(form.uploadedDocs).length}/{documentChecklist.length} uploaded
+            {Object.keys(form.uploadedDocs).length} of {documentChecklist.length} documents uploaded
           </Text>
         </Card>
       )}

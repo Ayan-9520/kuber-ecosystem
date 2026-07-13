@@ -1,0 +1,64 @@
+# Dependencies & build output
+node_modules
+**/node_modules
+**/dist
+**/coverage
+**/.turbo
+**/*.tsbuildinfo
+**/.expo
+**/build
+**/.next
+**/.cache
+
+# Git & IDE
+.git
+.gitignore
+.cursor
+.vscode
+.idea
+
+# Env & secrets (never bake into images)
+.env
+.env.*
+!.env.example
+!.env.docker
+docker/.env
+**/*.pem
+**/*.key
+**/secrets
+
+# Mobile native builds (heavy; not needed for Expo web export)
+**/android
+**/ios
+**/.gradle
+**/*.apk
+**/*.aab
+**/*.ipa
+
+# Logs & temp
+*.log
+tmp
+temp
+terminals
+**/.DS_Store
+**/Thumbs.db
+
+# Docs, tests, deployment (not needed in local app images)
+maestro
+mobile-testing
+performance-testing
+security-testing
+deployment
+infrastructure
+docs
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/__tests__
+**/__mocks__
+**/.github
+
+# Agent / local tooling
+agent-transcripts
+mcps

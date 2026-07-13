@@ -1,8 +1,20 @@
-import type { PaginatedMeta, PaginationQuery } from '@kuberone/shared-types';
-
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
+
+/** Local shape — kept in sync with @kuberone/shared-types PaginationQuery */
+export interface PaginationQuery {
+  page?: number;
+  limit?: number;
+}
+
+/** Local shape — kept in sync with @kuberone/shared-types PaginatedMeta */
+export interface PaginatedMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
 
 export function parsePagination(query: PaginationQuery): {
   page: number;

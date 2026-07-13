@@ -45,4 +45,5 @@ export * from './go-live.schema.js';
 export * from './hypercare.schema.js';
 export * from './organization.schema.js';
 export * from './partner.schema.js';
+export * from './partner-branding.schema.js';
 export * from './settings.schema.js';

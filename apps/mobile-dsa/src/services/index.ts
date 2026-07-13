@@ -11,5 +11,6 @@ export { commissionsService } from './commissions.service';
 export { notificationsService } from './notifications.service';
 export { supportService } from './support.service';
 export { partnersService } from './partners.service';
+export { partnerBrandingService } from './partner-branding.service';
 export { recommendationsService } from './recommendations.service';
 export { productsService } from './products.service';

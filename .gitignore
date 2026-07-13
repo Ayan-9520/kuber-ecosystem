@@ -17,6 +17,7 @@ devops/artifacts/
 .env.uat
 .env.production
 !.env.example
+!.env.docker
 
 # Logs
 logs/

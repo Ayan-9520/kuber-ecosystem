@@ -17,7 +17,7 @@ services:
   api:
     build:
       context: ../..
-      dockerfile: deployment/docker/backend/Dockerfile
+      dockerfile: docker/backend/Dockerfile
     environment:
       <<: *staging-env
       API_PORT: 4000
@@ -37,7 +37,7 @@ services:
   worker:
     build:
       context: ../..
-      dockerfile: deployment/docker/worker/Dockerfile
+      dockerfile: docker/backend/Dockerfile
     environment:
       <<: *staging-env
       DATABASE_URL: ${STAGING_DATABASE_URL}

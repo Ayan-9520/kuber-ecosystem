@@ -11,7 +11,7 @@ const checks = [
   { id: 'health-checks', path: 'deployment/backend/HEALTH_CHECKS.md', weight: 8 },
   { id: 'security', path: 'deployment/backend/SECURITY.md', weight: 8 },
   { id: 'docker-compose', path: 'deployment/docker/docker-compose.production.yml', weight: 10 },
-  { id: 'backend-dockerfile', path: 'deployment/docker/backend/Dockerfile', weight: 8 },
+  { id: 'backend-dockerfile', path: 'docker/backend/Dockerfile', weight: 8 },
   { id: 'deploy-script', path: 'deployment/scripts/deploy-backend.sh', weight: 8 },
   { id: 'deploy-workflow', path: '.github/workflows/backend-production-deploy.yml', weight: 12 },
   { id: 'rollback-workflow', path: '.github/workflows/backend-production-rollback.yml', weight: 8 },

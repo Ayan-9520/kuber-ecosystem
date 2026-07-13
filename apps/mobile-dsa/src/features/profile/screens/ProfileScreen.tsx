@@ -15,6 +15,7 @@ import { spacing, typography } from '@/theme';
 import { useAppTheme } from '@/theme/ThemeProvider';
 
 const MENU: { label: string; screen: keyof ProfileStackParamList; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { label: 'My Brand Profile', screen: 'BrandingDashboard', icon: 'ribbon' },
   { label: 'Bank Account', screen: 'BankAccount', icon: 'card' },
   { label: 'KYC Status', screen: 'PartnerKycStatus', icon: 'shield-checkmark' },
   { label: 'Documents', screen: 'Documents', icon: 'folder' },

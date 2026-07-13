@@ -5,6 +5,17 @@ import { clearTokens, getAccessToken, getRefreshToken, isOnboardingDone } from '
 import { authService } from '@/services';
 import { clearCredentials, setCredentials } from '@/store/slices/authSlice';
 
+const BOOTSTRAP_TIMEOUT_MS = 8_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error('bootstrap_timeout')), ms);
+    }),
+  ]);
+}
+
 export function useAuthBootstrap() {
   const dispatch = useDispatch();
   const [ready, setReady] = useState(false);
@@ -22,7 +33,7 @@ export function useAuthBootstrap() {
         const refresh = await getRefreshToken();
         if (!token || !refresh) return;
 
-        const me = await authService.me();
+        const me = await withTimeout(authService.me(), BOOTSTRAP_TIMEOUT_MS);
         if (!mounted) return;
 
         dispatch(

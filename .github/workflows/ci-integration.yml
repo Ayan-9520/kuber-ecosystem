@@ -7,7 +7,7 @@ on:
       - 'apps/backend/**'
       - 'packages/**'
       - 'database/**'
-      - 'docker/docker-compose.integration.yml'
+      - 'docker-compose.yml'
       - 'pnpm-lock.yaml'
   pull_request:
     branches: [main, develop]
@@ -15,7 +15,7 @@ on:
       - 'apps/backend/**'
       - 'packages/**'
       - 'database/**'
-      - 'docker/docker-compose.integration.yml'
+      - 'docker-compose.yml'
 
 jobs:
   integration:

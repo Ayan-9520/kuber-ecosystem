@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import { BadgeCheck, Building2, Lock, ShieldCheck, Sparkles } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -35,6 +36,14 @@ async function completeLogin(accessToken: string, refreshToken: string, setCrede
   const me = await authService.me();
   setCredentials({ accessToken, user: mapMeToUser(me) });
 }
+
+const HERO_STATS = [
+  { value: '500+', label: 'Partners Nationwide' },
+  { value: '₹250Cr+', label: 'Business Facilitated' },
+  { value: '100%', label: 'Transparent Process' },
+];
+
+const TRUST_ITEMS = ['RBI Regulated Partners', 'Enterprise Security', 'Audit Ready CRM'];
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -114,133 +123,202 @@ export function LoginPage() {
   const isLoading = passwordLogin.isPending || sendOtp.isPending || verifyOtp.isPending;
 
   return (
-    <div className="auth-layout">
-      <div className="auth-card">
-        <div className="auth-brand">
-          <div className="brand-mark">K</div>
-          <h1 className="auth-title">KuberOne Admin</h1>
-          <p className="auth-subtitle">Sign in to your employee account</p>
+    <div className="auth-premium">
+      <aside className="auth-premium-hero" aria-hidden="true">
+        <div className="auth-premium-hero-glow auth-premium-hero-glow--gold" />
+        <div className="auth-premium-hero-glow auth-premium-hero-glow--teal" />
+
+        <div className="auth-premium-hero-inner">
+          <div className="auth-premium-brand-row">
+            <div className="auth-premium-logo">K</div>
+            <div>
+              <p className="auth-premium-eyebrow">Kuber Finserve</p>
+              <span className="auth-premium-badge">
+                <BadgeCheck size={14} />
+                Admin Command Center
+              </span>
+            </div>
+          </div>
+
+          <h1 className="auth-premium-headline">
+            BUILD YOUR BRAND.
+            <br />
+            GROW YOUR BUSINESS.
+            <br />
+            <span>CREATE YOUR LEGACY.</span>
+          </h1>
+
+          <p className="auth-premium-lead">
+            Secure employee access to KuberOne CRM — leads, partners, compliance & operations in one premium workspace.
+          </p>
+
+          <div className="auth-premium-stats">
+            {HERO_STATS.map((stat) => (
+              <div key={stat.label} className="auth-premium-stat">
+                <strong>{stat.value}</strong>
+                <span>{stat.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="auth-premium-features">
+            <div className="auth-premium-feature">
+              <ShieldCheck size={18} />
+              <span>Role-based access control</span>
+            </div>
+            <div className="auth-premium-feature">
+              <Building2 size={18} />
+              <span>Multi-branch operations</span>
+            </div>
+            <div className="auth-premium-feature">
+              <Sparkles size={18} />
+              <span>AI-powered workflows</span>
+            </div>
+          </div>
+
+          <div className="auth-premium-trust">
+            {TRUST_ITEMS.map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
         </div>
+      </aside>
 
-        {sessionExpired && (
-          <div className="alert alert-error">Your session has expired. Please sign in again.</div>
-        )}
-        {error && <div className="alert alert-error">{error}</div>}
-        {success && <div className="alert alert-success">{success}</div>}
-
-        {mode === 'login' && (
-          <div className="auth-tabs">
-            <button
-              type="button"
-              className={`auth-tab${tab === 'password' ? ' active' : ''}`}
-              onClick={() => switchTab('password')}
-            >
-              Email & Password
-            </button>
-            <button
-              type="button"
-              className={`auth-tab${tab === 'otp' ? ' active' : ''}`}
-              onClick={() => switchTab('otp')}
-            >
-              OTP Login
-            </button>
+      <main className="auth-premium-panel">
+        <div className="auth-card auth-card--premium">
+          <div className="auth-brand auth-brand--compact">
+            <div className="brand-mark brand-mark--premium">K</div>
+            <h1 className="auth-title">KuberOne Admin</h1>
+            <p className="auth-subtitle">
+              <Lock size={14} />
+              Sign in to your employee account
+            </p>
           </div>
-        )}
 
-        {mode === 'forgot' && (
-          <div style={{ marginBottom: '1rem' }}>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => {
-                setMode('login');
-                resetOtpFlow();
-              }}
-            >
-              ← Back to login
-            </button>
-            <h2 className="auth-title" style={{ fontSize: '1.125rem', marginTop: '0.5rem' }}>
-              Reset Password
-            </h2>
-            <p className="auth-subtitle">Enter your phone number to receive a reset OTP</p>
-          </div>
-        )}
+          {sessionExpired && (
+            <div className="alert alert-error">Your session has expired. Please sign in again.</div>
+          )}
+          {error && <div className="alert alert-error">{error}</div>}
+          {success && <div className="alert alert-success">{success}</div>}
 
-        {tab === 'password' && mode === 'login' ? (
-          <form className="auth-form" onSubmit={handlePasswordSubmit}>
-            <Input
-              label="Work Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@kuberfinserve.com"
-              required
-              autoComplete="email"
-            />
-            <Input
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-              autoComplete="current-password"
-            />
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          {mode === 'login' && (
+            <div className="auth-tabs auth-tabs--premium">
+              <button
+                type="button"
+                className={`auth-tab${tab === 'password' ? ' active' : ''}`}
+                onClick={() => switchTab('password')}
+              >
+                Email & Password
+              </button>
+              <button
+                type="button"
+                className={`auth-tab${tab === 'otp' ? ' active' : ''}`}
+                onClick={() => switchTab('otp')}
+              >
+                OTP Login
+              </button>
+            </div>
+          )}
+
+          {mode === 'forgot' && (
+            <div className="auth-forgot-header">
               <button
                 type="button"
                 className="btn btn-ghost btn-sm"
                 onClick={() => {
-                  setMode('forgot');
-                  setTab('otp');
+                  setMode('login');
                   resetOtpFlow();
                 }}
               >
-                Forgot password?
+                ← Back to login
               </button>
+              <h2 className="auth-title auth-title--sm">Reset Password</h2>
+              <p className="auth-subtitle">Enter your phone number to receive a reset OTP</p>
             </div>
-            <Button type="submit" loading={isLoading} style={{ width: '100%' }}>
-              Sign In
-            </Button>
-          </form>
-        ) : (
-          <form className="auth-form" onSubmit={handleOtpSubmit}>
-            <Input
-              label="Phone Number"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+91 98765 43210"
-              required
-              disabled={otpSent}
-            />
-            {otpSent && (
-              <Input
-                label="OTP"
-                type="text"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                placeholder="Enter 6-digit OTP"
-                required
-                maxLength={6}
-                inputMode="numeric"
-              />
-            )}
-            <Button type="submit" loading={isLoading} style={{ width: '100%' }}>
-              {otpSent ? (mode === 'forgot' ? 'Reset & Sign In' : 'Verify & Sign In') : 'Send OTP'}
-            </Button>
-            {otpSent && (
-              <Button type="button" variant="ghost" onClick={resetOtpFlow} style={{ width: '100%' }}>
-                Resend OTP
-              </Button>
-            )}
-          </form>
-        )}
+          )}
 
-        <div className="auth-footer">
-          Kuber Finserve · Secure employee access
+          {tab === 'password' && mode === 'login' ? (
+            <form className="auth-form" onSubmit={handlePasswordSubmit}>
+              <Input
+                label="Work Email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@kuberfinserve.com"
+                required
+                autoComplete="email"
+              />
+              <Input
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+                autoComplete="current-password"
+              />
+              <div className="auth-form-actions">
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    setMode('forgot');
+                    setTab('otp');
+                    resetOtpFlow();
+                  }}
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <Button type="submit" loading={isLoading} className="auth-submit-btn">
+                Sign In
+              </Button>
+            </form>
+          ) : (
+            <form className="auth-form" onSubmit={handleOtpSubmit}>
+              <Input
+                label="Phone Number"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+91 98765 43210"
+                required
+                disabled={otpSent}
+              />
+              {otpSent && (
+                <Input
+                  label="OTP"
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="Enter 6-digit OTP"
+                  required
+                  maxLength={6}
+                  inputMode="numeric"
+                />
+              )}
+              <Button type="submit" loading={isLoading} className="auth-submit-btn">
+                {otpSent ? (mode === 'forgot' ? 'Reset & Sign In' : 'Verify & Sign In') : 'Send OTP'}
+              </Button>
+              {otpSent && (
+                <Button type="button" variant="ghost" onClick={resetOtpFlow} className="auth-submit-btn">
+                  Resend OTP
+                </Button>
+              )}
+            </form>
+          )}
+
+          <div className="auth-footer">
+            Kuber Finserve · Secure employee access
+          </div>
         </div>
-      </div>
+
+        <div className="auth-premium-mobile-trust">
+          {TRUST_ITEMS.map((item) => (
+            <span key={item}>{item}</span>
+          ))}
+        </div>
+      </main>
     </div>
   );
 }

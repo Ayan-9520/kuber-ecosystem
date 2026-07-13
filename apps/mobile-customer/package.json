@@ -20,6 +20,7 @@
     "test:detox": "detox test -c ios.sim",
     "test:detox:android": "detox test -c android.emu",
     "test:detox:build": "detox build -c ios.sim",
+    "build:docker": "node ../../scripts/docker-build-expo-web.mjs",
     "clean": "rimraf .expo dist coverage",
     "android:prebuild": "expo prebuild --platform android --clean",
     "android:apk": "expo run:android --variant release",

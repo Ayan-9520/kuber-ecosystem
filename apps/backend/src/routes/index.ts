@@ -80,6 +80,10 @@ import {
 } from '../modules/notifications/notifications.module.js';
 import { createObservabilityModule } from '../modules/observability/observability.module.js';
 import { createPartnersModule } from '../modules/partners/partners.module.js';
+import {
+  createPartnerBrandingModule,
+  createPublicProfessionalsModule,
+} from '../modules/partner-branding/partner-branding.module.js';
 import { createPermissionsModule } from '../modules/permissions/permissions.module.js';
 import { createPlayStoreModule } from '../modules/play-store/play-store.module.js';
 import {
@@ -131,6 +135,8 @@ apiRouter.use('/customer-income', createCustomerIncomeModule());
 apiRouter.use('/customer-preferences', createCustomerPreferencesModule());
 apiRouter.use('/customer-consents', createCustomerConsentsModule());
 apiRouter.use('/partners', createPartnersModule());
+apiRouter.use(createPublicProfessionalsModule());
+apiRouter.use(createPartnerBrandingModule());
 apiRouter.use('/employees', createEmployeesModule());
 apiRouter.use('/branches', createBranchesModule());
 apiRouter.use('/product-families', createProductFamiliesModule());

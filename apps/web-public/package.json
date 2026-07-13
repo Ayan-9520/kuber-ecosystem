@@ -1,0 +1,36 @@
+{
+  "name": "@kuberone/web-public",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kuber Verified Professional™ — Public Partner Branding Platform",
+  "type": "module",
+  "scripts": {
+    "dev": "node ../../scripts/run-bin.mjs vite",
+    "build": "node ../../scripts/tsc.mjs --noEmit && node ../../scripts/run-bin.mjs vite build",
+    "build:docker": "node ../../scripts/run-bin.mjs vite build",
+    "preview": "node ../../scripts/run-bin.mjs vite preview",
+    "lint": "eslint src --max-warnings 0",
+    "lint:fix": "eslint src --fix",
+    "typecheck": "node ../../scripts/tsc.mjs --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@kuberone/shared-theme": "workspace:*",
+    "@kuberone/shared-utils": "workspace:*",
+    "@tanstack/react-query": "^5.62.8",
+    "axios": "^1.7.9",
+    "lucide-react": "^1.17.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-helmet-async": "^2.0.5",
+    "react-router-dom": "^7.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  }
+}

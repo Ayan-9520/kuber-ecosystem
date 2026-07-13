@@ -52,7 +52,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: deployment/docker/backend/Dockerfile
+          file: docker/backend/Dockerfile
           push: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' }}
           tags: |
             ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_PREFIX }}-backend:${{ github.sha }}
@@ -79,7 +79,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: deployment/docker/admin/Dockerfile
+          file: docker/admin/Dockerfile
           push: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' }}
           tags: |
             ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_PREFIX }}-admin:${{ github.sha }}
@@ -104,7 +104,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: deployment/docker/worker/Dockerfile
+          file: docker/backend/Dockerfile
           push: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' }}
           tags: |
             ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_PREFIX }}-worker:${{ github.sha }}

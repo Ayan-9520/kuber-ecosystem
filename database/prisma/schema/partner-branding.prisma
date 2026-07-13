@@ -1,0 +1,347 @@
+// ── Kuber Verified Professional™ — Partner Personal Branding Platform ──
+
+enum PartnerBrandExpertiseType {
+  HOME_LOAN
+  BUSINESS_LOAN
+  LOAN_AGAINST_PROPERTY
+  WORKING_CAPITAL
+  INSURANCE
+  CREDIT_CARDS
+  PERSONAL_LOAN
+  MSME_FINANCE
+  BUILDER_FUNDING
+  PROJECT_FINANCE
+  VEHICLE_LOAN
+}
+
+enum PartnerBrandAchievementType {
+  TOP_PERFORMER
+  ELITE_PARTNER
+  CHAIRMANS_CIRCLE
+  PRESIDENT_CLUB
+  CERTIFIED_ADVISOR
+  LEADERSHIP_AWARD
+  BUSINESS_EXCELLENCE
+}
+
+enum PartnerBrandCertificateType {
+  KUBER_ACADEMY
+  PRODUCT
+  INSURANCE
+  SALES
+  LEADERSHIP
+  COMPLIANCE
+}
+
+enum PartnerBrandMediaType {
+  YOUTUBE
+  FACEBOOK
+  INSTAGRAM
+  ARTICLE
+  BLOG
+  SUCCESS_STORY
+}
+
+enum PartnerBrandGalleryCategory {
+  OFFICE
+  TEAM
+  CUSTOMER_MEETING
+  AWARD
+  EVENT
+  SEMINAR
+}
+
+enum PartnerBrandBadgeType {
+  VERIFIED_PROFESSIONAL
+  KUBER_CERTIFIED
+  IDENTITY_VERIFIED
+  KYC_VERIFIED
+  ACADEMY_CERTIFIED
+  TOP_PERFORMER
+  OFFICE_VERIFIED
+  GST_VERIFIED
+  FAST_RESPONSE
+  TRUSTED_PROFESSIONAL
+}
+
+enum PartnerBrandContentType {
+  BIOGRAPHY
+  LINKEDIN_SUMMARY
+  FACEBOOK_INTRO
+  INSTAGRAM_BIO
+  BUSINESS_DESCRIPTION
+  COMPANY_DESCRIPTION
+  SEO_TITLE
+  SEO_DESCRIPTION
+  ARTICLE
+  BLOG
+  REELS_CAPTION
+  SUCCESS_STORY
+  CASE_STUDY
+  LINKEDIN_POST
+  FACEBOOK_POST
+  INSTAGRAM_CAPTION
+  BUSINESS_QUOTE
+  MARKET_UPDATE
+  FINANCE_TIP
+  FESTIVAL_GREETING
+  BIRTHDAY_WISH
+  LOAN_AWARENESS
+  INSURANCE_AWARENESS
+}
+
+enum PartnerBrandSocialPlatform {
+  LINKEDIN
+  FACEBOOK
+  INSTAGRAM
+  WHATSAPP
+  X
+  TELEGRAM
+  YOUTUBE
+  WEBSITE
+}
+
+model PartnerBrandProfile {
+  id        String  @id @default(uuid()) @db.Char(36)
+  partnerId String  @unique @map("partner_id") @db.Char(36)
+  slug      String  @unique @db.VarChar(120)
+  isPublished Boolean @default(false) @map("is_published")
+
+  coverImageUrl  String? @map("cover_image_url") @db.VarChar(500)
+  photoUrl       String? @map("photo_url") @db.VarChar(500)
+  companyLogoUrl String? @map("company_logo_url") @db.VarChar(500)
+
+  displayName   String  @map("display_name") @db.VarChar(150)
+  designation   String? @db.VarChar(150)
+  tagline       String? @db.VarChar(300)
+  companyName   String? @map("company_name") @db.VarChar(200)
+  companyCategory String? @map("company_category") @db.VarChar(100)
+
+  biography     String? @db.Text
+  mission       String? @db.Text
+  vision        String? @db.Text
+  experienceYears Int?  @map("experience_years")
+  businessSince   Int?  @map("business_since")
+  languages       Json?
+  workingAreas    Json? @map("working_areas")
+  gender          String? @db.VarChar(20)
+
+  city    String? @db.VarChar(100)
+  state   String? @db.VarChar(100)
+  country String  @default("India") @db.VarChar(60)
+
+  gstNumber       String? @map("gst_number") @db.VarChar(20)
+  establishedYear Int?    @map("established_year")
+  founderName     String? @map("founder_name") @db.VarChar(150)
+  officeAddress   String? @map("office_address") @db.Text
+  citiesServed    Json?   @map("cities_served")
+  companyWebsite  String? @map("company_website") @db.VarChar(500)
+
+  phone           String? @db.VarChar(15)
+  whatsapp        String? @db.VarChar(15)
+  email           String? @db.VarChar(255)
+  consultationUrl String? @map("consultation_url") @db.VarChar(500)
+  calendarUrl     String? @map("calendar_url") @db.VarChar(500)
+  applyLoanUrl    String? @map("apply_loan_url") @db.VarChar(500)
+  applyInsuranceUrl String? @map("apply_insurance_url") @db.VarChar(500)
+
+  seoTitle       String? @map("seo_title") @db.VarChar(200)
+  seoDescription String? @map("seo_description") @db.Text
+  seoKeywords    Json?   @map("seo_keywords")
+
+  businessFacilitated Decimal? @map("business_facilitated") @db.Decimal(18, 2)
+  customersServed     Int?     @map("customers_served")
+  customerRating      Decimal? @map("customer_rating") @db.Decimal(3, 2)
+  partnerSince        DateTime? @map("partner_since")
+  productsCount       Int?     @map("products_count")
+  citiesCovered       Int?     @map("cities_covered")
+  statsVerified       Boolean  @default(false) @map("stats_verified")
+
+  themePreference String @default("light") @map("theme_preference") @db.VarChar(10)
+  profileViews    Int    @default(0) @map("profile_views")
+
+  publishedAt DateTime? @map("published_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  partner          Partner                    @relation(fields: [partnerId], references: [id])
+  expertises       PartnerBrandExpertise[]
+  achievements     PartnerBrandAchievement[]
+  certificates     PartnerBrandCertificate[]
+  reviews          PartnerBrandReview[]
+  media            PartnerBrandMedia[]
+  gallery          PartnerBrandGallery[]
+  socialLinks      PartnerBrandSocialLink[]
+  teamMembers      PartnerBrandTeamMember[]
+  badges           PartnerBrandBadge[]
+  generatedContent PartnerBrandGeneratedContent[]
+
+  @@index([isPublished, city, state])
+  @@index([isPublished, customerRating])
+  @@index([slug, isPublished])
+  @@map("partner_brand_profiles")
+}
+
+model PartnerBrandExpertise {
+  id        String                  @id @default(uuid()) @db.Char(36)
+  profileId String                  @map("profile_id") @db.Char(36)
+  type      PartnerBrandExpertiseType
+  isPrimary Boolean                 @default(false) @map("is_primary")
+  sortOrder Int                     @default(0) @map("sort_order")
+  createdAt DateTime                @default(now()) @map("created_at")
+
+  profile PartnerBrandProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, type])
+  @@index([profileId, sortOrder])
+  @@map("partner_brand_expertises")
+}
+
+model PartnerBrandAchievement {
+  id          String                    @id @default(uuid()) @db.Char(36)
+  profileId   String                    @map("profile_id") @db.Char(36)
+  type        PartnerBrandAchievementType
+  title       String?                   @db.VarChar(200)
+  description String?                   @db.Text
+  year        Int?
+  imageUrl    String?                   @map("image_url") @db.VarChar(500)
+  isVerified  Boolean                   @default(false) @map("is_verified")
+  sortOrder   Int                       @default(0) @map("sort_order")
+  createdAt   DateTime                  @default(now()) @map("created_at")
+
+  profile PartnerBrandProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, sortOrder])
+  @@map("partner_brand_achievements")
+}
+
+model PartnerBrandCertificate {
+  id           String                    @id @default(uuid()) @db.Char(36)
+  profileId    String                    @map("profile_id") @db.Char(36)
+  type         PartnerBrandCertificateType
+  title        String                    @db.VarChar(200)
+  issuer       String?                   @db.VarChar(200)
+  issuedAt     DateTime?                 @map("issued_at")
+  expiresAt    DateTime?                 @map("expires_at")
+  imageUrl     String?                   @map("image_url") @db.VarChar(500)
+  downloadUrl  String?                   @map("download_url") @db.VarChar(500)
+  isVerified   Boolean                   @default(false) @map("is_verified")
+  sortOrder    Int                       @default(0) @map("sort_order")
+  createdAt    DateTime                  @default(now()) @map("created_at")
+
+  profile PartnerBrandProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, sortOrder])
+  @@map("partner_brand_certificates")
+}
+
+model PartnerBrandReview {
+  id           String   @id @default(uuid()) @db.Char(36)
+  profileId    String   @map("profile_id") @db.Char(36)
+  reviewerName String   @map("reviewer_name") @db.VarChar(150)
+  rating       Int
+  comment      String?  @db.Text
+  photoUrl     String?  @map("photo_url") @db.VarChar(500)
+  videoUrl     String?  @map("video_url") @db.VarChar(500)
+  isVerified   Boolean  @default(false) @map("is_verified")
+  reviewedAt   DateTime @default(now()) @map("reviewed_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  profile PartnerBrandProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, isVerified, rating])
+  @@map("partner_brand_reviews")
+}
+
+model PartnerBrandMedia {
+  id          String              @id @default(uuid()) @db.Char(36)
+  profileId   String              @map("profile_id") @db.Char(36)
+  type        PartnerBrandMediaType
+  title       String              @db.VarChar(300)
+  description String?             @db.Text
+  url         String              @db.VarChar(500)
+  thumbnailUrl String?            @map("thumbnail_url") @db.VarChar(500)
+  publishedAt DateTime?           @map("published_at")
+  sortOrder   Int                 @default(0) @map("sort_order")
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  profile PartnerBrandProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, type, sortOrder])
+  @@map("partner_brand_media")
+}
+
+model PartnerBrandGallery {
+  id        String                    @id @default(uuid()) @db.Char(36)
+  profileId String                    @map("profile_id") @db.Char(36)
+  category  PartnerBrandGalleryCategory
+  title     String?                   @db.VarChar(200)
+  imageUrl  String                    @map("image_url") @db.VarChar(500)
+  caption   String?                   @db.Text
+  sortOrder Int                       @default(0) @map("sort_order")
+  createdAt DateTime                  @default(now()) @map("created_at")
+
+  profile PartnerBrandProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, category, sortOrder])
+  @@map("partner_brand_gallery")
+}
+
+model PartnerBrandSocialLink {
+  id        String                   @id @default(uuid()) @db.Char(36)
+  profileId String                   @map("profile_id") @db.Char(36)
+  platform  PartnerBrandSocialPlatform
+  url       String                   @db.VarChar(500)
+  sortOrder Int                      @default(0) @map("sort_order")
+  createdAt DateTime                 @default(now()) @map("created_at")
+
+  profile PartnerBrandProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, platform])
+  @@map("partner_brand_social_links")
+}
+
+model PartnerBrandTeamMember {
+  id        String   @id @default(uuid()) @db.Char(36)
+  profileId String   @map("profile_id") @db.Char(36)
+  name      String   @db.VarChar(150)
+  role      String?  @db.VarChar(150)
+  photoUrl  String?  @map("photo_url") @db.VarChar(500)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  profile PartnerBrandProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, sortOrder])
+  @@map("partner_brand_team_members")
+}
+
+model PartnerBrandBadge {
+  id        String              @id @default(uuid()) @db.Char(36)
+  profileId String              @map("profile_id") @db.Char(36)
+  type      PartnerBrandBadgeType
+  isActive  Boolean             @default(true) @map("is_active")
+  awardedAt DateTime            @default(now()) @map("awarded_at")
+  createdAt DateTime            @default(now()) @map("created_at")
+
+  profile PartnerBrandProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, type])
+  @@map("partner_brand_badges")
+}
+
+model PartnerBrandGeneratedContent {
+  id        String                @id @default(uuid()) @db.Char(36)
+  profileId String                @map("profile_id") @db.Char(36)
+  type      PartnerBrandContentType
+  title     String?               @db.VarChar(300)
+  body      String                @db.Text
+  metadata  Json?
+  createdAt DateTime              @default(now()) @map("created_at")
+
+  profile PartnerBrandProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, type, createdAt])
+  @@map("partner_brand_generated_content")
+}

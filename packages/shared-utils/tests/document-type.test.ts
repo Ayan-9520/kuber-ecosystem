@@ -30,6 +30,23 @@ describe('document-type utils', () => {
     expect(resolveDocumentTypeForLabel('Bank statements', types)?.code).toBe('BANK_STATEMENT');
   });
 
+  it('resolves product-specific labels with fallbacks', () => {
+    const productTypes = [
+      ...types,
+      { id: '6', code: 'MACHINE_QUOTATION', name: 'Machine Quotation' },
+      { id: '7', code: 'BUSINESS_PROOF', name: 'Business Proof' },
+      { id: '8', code: 'INVOICE', name: 'Invoice / Proforma' },
+      { id: '9', code: 'VEHICLE_RC', name: 'Vehicle RC' },
+    ];
+    expect(resolveDocumentTypeForLabel('Machine quotation', productTypes)?.code).toBe('MACHINE_QUOTATION');
+    expect(resolveDocumentTypeForLabel('Business proof', productTypes)?.code).toBe('BUSINESS_PROOF');
+    expect(resolveDocumentTypeForLabel('Invoice / proforma', productTypes)?.code).toBe('INVOICE');
+    expect(resolveDocumentTypeForLabel('RC & insurance', productTypes)?.code).toBe('VEHICLE_RC');
+    expect(resolveDocumentTypeForLabel('Quotation', [{ id: '10', code: 'BUSINESS_DOCUMENT', name: 'Business Document' }])?.code).toBe(
+      'BUSINESS_DOCUMENT',
+    );
+  });
+
   it('resolves income proof to INCOME_PROOF when seeded', () => {
     const withIncome = [...types, { id: '5', code: 'INCOME_PROOF', name: 'Income Proof' }];
     expect(resolveDocumentTypeForLabel('Income proof', withIncome)?.code).toBe('INCOME_PROOF');
