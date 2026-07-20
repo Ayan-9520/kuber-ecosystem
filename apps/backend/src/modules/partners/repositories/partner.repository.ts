@@ -27,6 +27,18 @@ export const partnerRepository = {
       where: { partnerCode, deletedAt: null },
     }),
 
+  findByPhone: (phone: string) =>
+    prisma.partner.findFirst({
+      where: { phone, deletedAt: null },
+      include: partnerInclude,
+    }),
+
+  findByEmail: (email: string) =>
+    prisma.partner.findFirst({
+      where: { email, deletedAt: null },
+      include: partnerInclude,
+    }),
+
   findPartnerTypeByCode: (code: string) =>
     prisma.partnerType.findFirst({
       where: { code, isActive: true },
@@ -37,6 +49,12 @@ export const partnerRepository = {
   findUserByPhone: (phone: string) =>
     prisma.user.findFirst({
       where: { phone, deletedAt: null },
+    }),
+
+  updateUserStatus: (userId: string, status: string) =>
+    prisma.user.update({
+      where: { id: userId },
+      data: { status },
     }),
 
   create: (data: Prisma.PartnerCreateInput) =>
@@ -72,7 +90,7 @@ export const partnerRepository = {
       const user = await tx.user.create({
         data: {
           phone: input.phone,
-          email: input.email,
+          email: input.email ? input.email.toLowerCase() : undefined,
           userType: 'PARTNER',
           status: 'PENDING',
           phoneVerified: false,
@@ -95,7 +113,7 @@ export const partnerRepository = {
           businessName: input.businessName,
           contactName: input.contactName,
           phone: input.phone,
-          email: input.email,
+          email: input.email ? input.email.toLowerCase() : undefined,
           kycStatus: 'NOT_STARTED',
           status: 'PENDING',
         },

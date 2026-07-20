@@ -41,6 +41,11 @@ export const leadsService = {
   remove: (id: string) => apiDelete(`/leads/${id}`),
 };
 
+export const websiteVisitorsService = {
+  list: (params: Record<string, unknown>) =>
+    apiGetPaginated<Record<string, unknown>>('/leads/website-visitors', params),
+};
+
 export const customersService = {
   list: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/customers', params),
   getById: (id: string) => apiGet<Record<string, unknown>>(`/customers/${id}`),

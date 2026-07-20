@@ -1,4 +1,4 @@
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { CommonActions, useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useEffect, useState, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -57,6 +57,15 @@ export function OtpLoginScreen() {
     }
   };
 
+  const goToAppHome = () => {
+    navigation.getParent()?.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      }),
+    );
+  };
+
   const completeLogin = async (normalizedPhone: string, otpCode: string) => {
     const tokens = await authService.partnerLogin(normalizedPhone, otpCode);
     await login(tokens.accessToken, tokens.refreshToken);
@@ -66,11 +75,13 @@ export function OtpLoginScreen() {
       const partner = await partnersService.getById(me.partnerId);
       if (String(partner.kycStatus) !== 'VERIFIED') {
         dispatch(setRequiresPartnerKyc(true));
+        navigation.replace('PartnerKyc');
         return;
       }
     }
 
     dispatch(setRequiresPartnerKyc(false));
+    goToAppHome();
   };
 
   const demoLogin = async () => {
@@ -119,14 +130,24 @@ export function OtpLoginScreen() {
           <Text style={styles.link} onPress={() => navigation.navigate('PartnerRegister')}>
             New DSA partner? Register here
           </Text>
-          <Text style={styles.hint}>Sign in with OTP using your registered partner mobile number</Text>
+          <Text style={styles.hint}>
+            Sign in with OTP using your registered partner mobile. Same login as kuberfinserve.com/partner-login
+          </Text>
         </View>
       }
     >
       <Text style={styles.cardTitle}>Sign in with OTP</Text>
-      <Text style={styles.cardSubtitle}>Enter your registered mobile number to receive an OTP</Text>
+      <Text style={styles.cardSubtitle}>
+        Enter your registered mobile number. Login works after Admin approval (ACTIVE).
+      </Text>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <Text style={styles.error}>
+          {/pending approval/i.test(error)
+            ? 'Pending approval — wait for Admin to approve your partner application.'
+            : error}
+        </Text>
+      ) : null}
 
       {SHOW_DEMO_LOGIN ? (
         <>
@@ -151,7 +172,6 @@ export function OtpLoginScreen() {
         value={phone}
         onChangeText={setPhone}
         editable={!otpSent}
-        onLightSurface
       />
 
       {otpSent && (
@@ -162,7 +182,6 @@ export function OtpLoginScreen() {
           maxLength={6}
           value={otp}
           onChangeText={setOtp}
-          onLightSurface
         />
       )}
 
@@ -192,39 +211,39 @@ function createStyles() {
   return StyleSheet.create({
     cardTitle: {
       ...typography.h3,
-      color: '#0f172a',
+      color: '#ffffff',
       fontWeight: '700',
     },
     cardSubtitle: {
       ...typography.bodySm,
-      color: '#64748b',
+      color: 'rgba(199, 210, 217, 0.85)',
       marginTop: -spacing.sm,
     },
     error: {
       ...typography.bodySm,
-      color: '#dc2626',
+      color: '#fecaca',
       textAlign: 'center',
-      backgroundColor: '#fef2f2',
+      backgroundColor: 'rgba(220, 38, 38, 0.15)',
       borderWidth: 1,
-      borderColor: '#fecaca',
+      borderColor: 'rgba(248, 113, 113, 0.35)',
       padding: spacing.sm,
       borderRadius: 10,
     },
     devHint: {
       ...typography.caption,
-      color: '#64748b',
+      color: 'rgba(148, 163, 184, 0.9)',
       textAlign: 'center',
     },
     links: { alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs },
     link: {
       ...typography.bodySm,
-      color: '#0d9488',
+      color: '#22d3a6',
       fontWeight: '600',
       textAlign: 'center',
     },
     hint: {
       ...typography.caption,
-      color: 'rgba(255,255,255,0.65)',
+      color: 'rgba(255,255,255,0.55)',
       textAlign: 'center',
     },
   });

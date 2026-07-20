@@ -1,0 +1,25 @@
+model WebsiteVisitor {
+  id                String   @id @default(uuid()) @db.Char(36)
+  city              String   @db.VarChar(100)
+  name              String?  @db.VarChar(200)
+  phone             String?  @db.VarChar(15)
+  email             String?  @db.VarChar(255)
+  pageUrl           String?  @map("page_url") @db.VarChar(500)
+  referrer          String?  @db.VarChar(500)
+  utmSource         String?  @map("utm_source") @db.VarChar(120)
+  utmMedium         String?  @map("utm_medium") @db.VarChar(120)
+  utmCampaign       String?  @map("utm_campaign") @db.VarChar(120)
+  sessionId         String?  @map("session_id") @db.VarChar(64)
+  externalVisitorId String?  @map("external_visitor_id") @db.VarChar(64)
+  ipAddress         String?  @map("ip_address") @db.VarChar(45)
+  userAgent         String?  @map("user_agent") @db.Text
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@unique([externalVisitorId])
+  @@index([city])
+  @@index([phone])
+  @@index([sessionId, createdAt])
+  @@index([createdAt])
+  @@map("website_visitors")
+}

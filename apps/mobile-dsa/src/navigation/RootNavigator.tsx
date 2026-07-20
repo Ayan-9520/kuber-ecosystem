@@ -4,8 +4,8 @@ import {
   NavigationContainer,
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Platform, StyleSheet, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { AuthNavigator } from './AuthNavigator';
@@ -26,6 +26,19 @@ import { useAppTheme } from '@/theme/ThemeProvider';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+function syncWebPath(route: keyof RootStackParamList) {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+  if (route === 'Main') {
+    window.history.replaceState(null, '', '/Home/Dashboard');
+    return;
+  }
+  if (route === 'Onboarding') {
+    window.history.replaceState(null, '', '/Onboarding');
+    return;
+  }
+  window.history.replaceState(null, '', '/login');
+}
+
 export function RootNavigator() {
   const dispatch = useDispatch();
   const { colors, resolved } = useAppTheme();
@@ -42,6 +55,9 @@ export function RootNavigator() {
 
   const authInitialRoute: keyof AuthStackParamList | undefined =
     isAuthenticated && requiresPartnerKyc ? 'PartnerKyc' : undefined;
+
+  /** Remount navigator when auth gate changes so login actually lands on Main. */
+  const navSessionKey = `${initialRouteName}:${authInitialRoute ?? 'default'}`;
 
   const navTheme = useMemo(() => {
     const base = resolved === 'dark' ? DarkTheme : DefaultTheme;
@@ -77,6 +93,11 @@ export function RootNavigator() {
 
   usePushNotifications();
 
+  useLayoutEffect(() => {
+    if (!ready) return;
+    syncWebPath(initialRouteName);
+  }, [ready, initialRouteName, navSessionKey]);
+
   if (!ready) {
     return (
       <View style={styles.boot}>
@@ -87,7 +108,7 @@ export function RootNavigator() {
   }
 
   return (
-    <NavigationContainer theme={navTheme} linking={linking}>
+    <NavigationContainer key={navSessionKey} theme={navTheme} linking={linking}>
       <OfflineBanner />
       <Stack.Navigator
         initialRouteName={initialRouteName}

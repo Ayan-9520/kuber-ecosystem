@@ -19,7 +19,7 @@ export function Sidebar({ open = false, onNavigate }: SidebarProps) {
   return (
     <aside className={`sidebar${open ? ' sidebar--open' : ''}`}>
       <div className="sidebar-brand">
-        <div className="brand-mark">K</div>
+        <img className="brand-mark brand-mark--logo" src="/logo-k1.png" alt="KuberOne" width={38} height={38} />
         <div className="sidebar-brand-text">
           <div className="brand-name">KuberOne</div>
           <div className="brand-tagline">Kuber Finserve</div>

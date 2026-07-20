@@ -7,6 +7,7 @@ import { asyncHandler } from '../../../shared/middleware/async-handler.middlewar
 import { authenticateWithSessionMiddleware } from '../../../shared/middleware/authenticate.middleware.js';
 import { requireAnyPermission } from '../../../shared/middleware/rbac.middleware.js';
 import { validateMiddleware } from '../../../shared/middleware/validate.middleware.js';
+import { paginatedResponse } from '../../../shared/responses/success-response.js';
 import {
   leadActivityController,
   leadAnalyticsController,
@@ -18,6 +19,7 @@ import {
   leadSourceController,
   leadTimelineController,
 } from '../controllers/lead.controller.js';
+import { websiteIntakeService } from '../services/website-intake.service.js';
 import {
   assignLeadSchema,
   autoAssignLeadSchema,
@@ -36,6 +38,7 @@ import {
   listLeadScoresQuerySchema,
   listLeadSourcesQuerySchema,
   listLeadsQuerySchema,
+  listWebsiteVisitorsQuerySchema,
   scoreLeadSchema,
   updateLeadFollowUpSchema,
   updateLeadNoteSchema,
@@ -92,6 +95,15 @@ export const leadRoutes = Router();
 leadRoutes.use(authenticateWithSessionMiddleware);
 leadRoutes.get('/export', leadsExport, validateMiddleware(exportLeadsQuerySchema, 'query'), asyncHandler(leadController.export));
 leadRoutes.post('/score', leadsWrite, validateMiddleware(scoreLeadSchema), asyncHandler(leadController.score));
+leadRoutes.get(
+  '/website-visitors',
+  leadsRead,
+  validateMiddleware(listWebsiteVisitorsQuerySchema, 'query'),
+  asyncHandler(async (req, res) => {
+    const result = await websiteIntakeService.listVisitors(req.query as never);
+    res.json(paginatedResponse(result.items, result.meta));
+  }),
+);
 leadRoutes.get('/', leadsRead, validateMiddleware(listLeadsQuerySchema, 'query'), asyncHandler(leadController.list));
 leadRoutes.post('/', leadsWrite, validateMiddleware(createLeadSchema), asyncHandler(leadController.create));
 leadRoutes.get('/:id', leadsRead, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(leadController.getById));

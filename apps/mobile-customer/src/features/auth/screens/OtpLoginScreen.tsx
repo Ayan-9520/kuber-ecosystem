@@ -1,4 +1,4 @@
-import { useNavigation } from '@react-navigation/native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -48,6 +48,15 @@ export function OtpLoginScreen() {
     }
   };
 
+  const goToAppHome = () => {
+    navigation.getParent()?.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      }),
+    );
+  };
+
   const completeLogin = async (normalizedPhone: string, otpCode: string) => {
     const tokens = await authService.verifyOtp(normalizedPhone, otpCode, 'LOGIN');
     await login(tokens.accessToken, tokens.refreshToken);
@@ -57,8 +66,13 @@ export function OtpLoginScreen() {
       const customer = await customerService.getById(me.customerId);
       if (isCustomerProfileIncomplete(customer)) {
         dispatch(setRequiresProfileCompletion(true));
+        navigation.replace('ProfileCompletion');
+        return;
       }
     }
+
+    dispatch(setRequiresProfileCompletion(false));
+    goToAppHome();
   };
 
   const demoLogin = async () => {
@@ -141,7 +155,6 @@ export function OtpLoginScreen() {
         value={phone}
         onChangeText={setPhone}
         editable={!otpSent}
-        onLightSurface
       />
 
       {otpSent && (
@@ -152,7 +165,6 @@ export function OtpLoginScreen() {
           maxLength={6}
           value={otp}
           onChangeText={setOtp}
-          onLightSurface
         />
       )}
 
@@ -182,33 +194,33 @@ function createStyles() {
   return StyleSheet.create({
     cardTitle: {
       ...typography.h3,
-      color: '#0f172a',
+      color: '#ffffff',
       fontWeight: '700',
     },
     cardSubtitle: {
       ...typography.bodySm,
-      color: '#64748b',
+      color: 'rgba(199, 210, 217, 0.85)',
       marginTop: -spacing.sm,
     },
     error: {
       ...typography.bodySm,
-      color: '#dc2626',
+      color: '#fecaca',
       textAlign: 'center',
-      backgroundColor: '#fef2f2',
+      backgroundColor: 'rgba(220, 38, 38, 0.15)',
       borderWidth: 1,
-      borderColor: '#fecaca',
+      borderColor: 'rgba(248, 113, 113, 0.35)',
       padding: spacing.sm,
       borderRadius: 10,
     },
     devHint: {
       ...typography.caption,
-      color: '#64748b',
+      color: 'rgba(148, 163, 184, 0.9)',
       textAlign: 'center',
     },
     links: { alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs },
     link: {
       ...typography.bodySm,
-      color: '#0d9488',
+      color: '#22d3a6',
       fontWeight: '600',
       textAlign: 'center',
     },

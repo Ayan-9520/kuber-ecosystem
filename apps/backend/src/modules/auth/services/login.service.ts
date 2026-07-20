@@ -94,6 +94,7 @@ export const loginService = {
     }
 
     await securityService.assertUserCanAuthenticate(user.id);
+    await securityService.assertPartnerCanLogin(user.id);
 
     if (input.otp) {
       const devOtpBypass =

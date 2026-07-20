@@ -1,6 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo, type ReactNode } from 'react';
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -13,12 +14,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { radius, spacing, typography } from '@/theme';
 
+/** Clear K1 mark — no white plate on dark auth screens */
+const logoK1 = require('../../../assets/logo-k1.png');
+
 export type PremiumAuthVariant = 'partner' | 'customer';
 
 const COPY: Record<
   PremiumAuthVariant,
   {
-    eyebrow: string;
+    brand: string;
     title: string;
     subtitle: string;
     badge: string;
@@ -27,16 +31,16 @@ const COPY: Record<
   }
 > = {
   partner: {
-    eyebrow: 'Kuber Verified Professional™',
+    brand: 'KuberOne',
     title: 'Partner Sign In',
-    subtitle: 'Build your brand. Grow your business. Create your legacy.',
-    badge: 'Verified Partner Access',
+    subtitle: 'Sign in with OTP after Admin approval. Same login as the Partner App.',
+    badge: 'DSA & Partner Access',
     highlights: ['AI Branding Tools', 'Lead Management', 'Verified Profile'],
     trust: ['RBI Regulated Partners', '100% Transparent', 'Secure OTP Login'],
   },
   customer: {
-    eyebrow: 'Kuber Finserve',
-    title: 'Welcome Back',
+    brand: 'KuberOne',
+    title: 'Customer Sign In',
     subtitle: 'Loans, insurance & financial services — trusted and transparent.',
     badge: 'Customer Portal',
     highlights: ['Track Applications', 'EMI Calculator', 'Document Vault'],
@@ -54,11 +58,11 @@ interface PremiumAuthShellProps {
 export function PremiumAuthShell({ variant, children, footer, contentStyle }: PremiumAuthShellProps) {
   const insets = useSafeAreaInsets();
   const copy = COPY[variant];
-  const styles = useMemo(() => createStyles(), []);
+  const styles = useMemo(() => createStyles(variant), [variant]);
 
   return (
     <LinearGradient
-      colors={['#0f172a', '#134e4a', '#071a1f']}
+      colors={['#071a1f', '#0d2428', '#102b2e', '#071a1f']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.root}
@@ -82,34 +86,29 @@ export function PremiumAuthShell({ variant, children, footer, contentStyle }: Pr
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.hero}>
-            <View style={styles.logoRow}>
-              <LinearGradient colors={['#22d3a6', '#18c964']} style={styles.logo}>
-                <Text style={styles.logoText}>K</Text>
-              </LinearGradient>
-              <View style={styles.logoMeta}>
-                <Text style={styles.eyebrow}>{copy.eyebrow}</Text>
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{copy.badge}</Text>
-                </View>
+          <View style={[styles.card, contentStyle]}>
+            <View style={styles.brandBlock}>
+              <Image source={logoK1} style={styles.logoImage} accessibilityLabel={copy.brand} />
+              <Text style={styles.brandName}>{copy.brand}</Text>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{copy.badge}</Text>
               </View>
+              <Text style={styles.title}>{copy.title}</Text>
+              <Text style={styles.subtitle}>{copy.subtitle}</Text>
             </View>
 
-            <Text style={styles.title}>{copy.title}</Text>
-            <Text style={styles.subtitle}>{copy.subtitle}</Text>
-
-            <View style={styles.highlights}>
-              {copy.highlights.map((item) => (
-                <View key={item} style={styles.highlightPill}>
-                  <Text style={styles.highlightText}>{item}</Text>
-                </View>
-              ))}
-            </View>
+            <View style={styles.form}>{children}</View>
           </View>
 
-          <View style={[styles.card, contentStyle]}>{children}</View>
-
           {footer}
+
+          <View style={styles.highlights}>
+            {copy.highlights.map((item) => (
+              <View key={item} style={styles.highlightPill}>
+                <Text style={styles.highlightText}>{item}</Text>
+              </View>
+            ))}
+          </View>
 
           <View style={styles.trustRow}>
             {copy.trust.map((item) => (
@@ -119,14 +118,18 @@ export function PremiumAuthShell({ variant, children, footer, contentStyle }: Pr
             ))}
           </View>
 
-          <Text style={styles.footerBrand}>Powered by Kuber Finserve</Text>
+          <Text style={styles.footerBrand}>Powered by KuberFinserve</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </LinearGradient>
   );
 }
 
-function createStyles() {
+function createStyles(variant: PremiumAuthVariant) {
+  const accent = variant === 'partner' ? '#fcd34d' : '#22d3a6';
+  const accentBorder = variant === 'partner' ? 'rgba(245, 158, 11, 0.35)' : 'rgba(34, 211, 166, 0.35)';
+  const accentBg = variant === 'partner' ? 'rgba(245, 158, 11, 0.14)' : 'rgba(34, 211, 166, 0.12)';
+
   return StyleSheet.create({
     root: { flex: 1 },
     flex: { flex: 1 },
@@ -137,7 +140,7 @@ function createStyles() {
       width: 220,
       height: 220,
       borderRadius: 110,
-      opacity: 0.35,
+      opacity: 0.28,
     },
     glowGold: { backgroundColor: '#f59e0b' },
     glowTeal: { backgroundColor: '#22d3a6' },
@@ -149,95 +152,97 @@ function createStyles() {
       height: 260,
       borderRadius: 130,
       backgroundColor: '#0d9488',
-      opacity: 0.2,
+      opacity: 0.18,
     },
     scroll: {
       flexGrow: 1,
       paddingHorizontal: spacing.lg,
       justifyContent: 'center',
+      gap: spacing.md,
+    },
+    card: {
+      backgroundColor: 'rgba(16, 43, 46, 0.92)',
+      borderRadius: 20,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: 'rgba(34, 211, 166, 0.22)',
+      shadowColor: '#000',
+      shadowOpacity: 0.4,
+      shadowRadius: 28,
+      shadowOffset: { width: 0, height: 16 },
+      elevation: 12,
       gap: spacing.lg,
     },
-    hero: { gap: spacing.sm },
-    logoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-    logo: {
-      width: 52,
-      height: 52,
-      borderRadius: radius.md,
+    brandBlock: {
       alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: '#000',
-      shadowOpacity: 0.25,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 6,
+      gap: spacing.sm,
     },
-    logoText: { fontSize: 26, fontWeight: '800', color: '#071a1f' },
-    logoMeta: { flex: 1, gap: 6 },
-    eyebrow: {
-      ...typography.caption,
-      color: 'rgba(255,255,255,0.72)',
-      textTransform: 'uppercase',
-      letterSpacing: 1.2,
-      fontWeight: '600',
+    logoImage: {
+      width: 72,
+      height: 72,
+      resizeMode: 'contain',
+    },
+    brandName: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: '#ffffff',
+      letterSpacing: -0.3,
+      marginTop: 2,
     },
     badge: {
-      alignSelf: 'flex-start',
-      backgroundColor: 'rgba(245, 158, 11, 0.18)',
+      alignSelf: 'center',
+      backgroundColor: accentBg,
       borderWidth: 1,
-      borderColor: 'rgba(245, 158, 11, 0.35)',
-      paddingHorizontal: 10,
-      paddingVertical: 4,
+      borderColor: accentBorder,
+      paddingHorizontal: 12,
+      paddingVertical: 5,
       borderRadius: radius.full,
+      marginTop: 2,
     },
     badgeText: {
       ...typography.caption,
-      color: '#fcd34d',
+      color: accent,
       fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+      fontSize: 10,
     },
     title: {
-      fontSize: 28,
+      fontSize: 24,
       fontWeight: '800',
       color: '#ffffff',
-      letterSpacing: -0.5,
-      marginTop: spacing.xs,
+      letterSpacing: -0.4,
+      textAlign: 'center',
+      marginTop: spacing.sm,
     },
     subtitle: {
-      ...typography.body,
-      color: 'rgba(255,255,255,0.78)',
-      lineHeight: 22,
-      maxWidth: 340,
+      ...typography.bodySm,
+      color: 'rgba(199, 210, 217, 0.9)',
+      lineHeight: 20,
+      textAlign: 'center',
+      maxWidth: 320,
+    },
+    form: {
+      gap: spacing.md,
     },
     highlights: {
       flexDirection: 'row',
       flexWrap: 'wrap',
+      justifyContent: 'center',
       gap: spacing.sm,
-      marginTop: spacing.sm,
     },
     highlightPill: {
-      backgroundColor: 'rgba(255,255,255,0.08)',
+      backgroundColor: 'rgba(255,255,255,0.06)',
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.12)',
+      borderColor: 'rgba(34, 211, 166, 0.15)',
       paddingHorizontal: 12,
       paddingVertical: 6,
       borderRadius: radius.full,
     },
     highlightText: {
       ...typography.caption,
-      color: 'rgba(255,255,255,0.9)',
+      color: 'rgba(255,255,255,0.85)',
       fontWeight: '600',
-    },
-    card: {
-      backgroundColor: 'rgba(255,255,255,0.96)',
-      borderRadius: radius.lg,
-      padding: spacing.lg,
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.5)',
-      shadowColor: '#000',
-      shadowOpacity: 0.18,
-      shadowRadius: 24,
-      shadowOffset: { width: 0, height: 12 },
-      elevation: 10,
-      gap: spacing.md,
     },
     trustRow: {
       flexDirection: 'row',
@@ -246,22 +251,22 @@ function createStyles() {
       gap: spacing.sm,
     },
     trustPill: {
-      backgroundColor: 'rgba(255,255,255,0.06)',
+      backgroundColor: 'rgba(255,255,255,0.04)',
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.1)',
+      borderColor: 'rgba(255,255,255,0.08)',
       paddingHorizontal: 10,
       paddingVertical: 6,
       borderRadius: radius.full,
     },
     trustText: {
       ...typography.caption,
-      color: 'rgba(255,255,255,0.65)',
+      color: 'rgba(255,255,255,0.55)',
       fontWeight: '500',
     },
     footerBrand: {
       ...typography.caption,
       textAlign: 'center',
-      color: 'rgba(255,255,255,0.45)',
+      color: 'rgba(255,255,255,0.4)',
       marginTop: spacing.xs,
     },
   });

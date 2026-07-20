@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { radius, spacing, typography } from '@/theme';
 import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+
+const logoK1 = require('../../../assets/logo-k1.png');
 
 interface DashboardHeaderProps {
   name: string;
@@ -33,17 +35,14 @@ function createStyles(colors: AppColors) {
       marginBottom: spacing.lg,
     },
     brand: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      gap: 4,
     },
-    logo: {
-      width: 36,
-      height: 36,
-      borderRadius: radius.md,
-      backgroundColor: 'rgba(255,255,255,0.18)',
-      alignItems: 'center',
-      justifyContent: 'center',
+    logoImage: {
+      width: 40,
+      height: 40,
+      resizeMode: 'contain',
     },
     logoText: {
       ...typography.label,
@@ -53,16 +52,17 @@ function createStyles(colors: AppColors) {
     },
     brandName: {
       ...typography.label,
-      color: 'rgba(255,255,255,0.92)',
+      color: 'rgba(255,255,255,0.95)',
       fontSize: 14,
-      fontWeight: '700',
+      fontWeight: '800',
+      letterSpacing: -0.2,
     },
     brandTag: {
       ...typography.caption,
-      color: 'rgba(255,255,255,0.72)',
+      color: 'rgba(255,255,255,0.7)',
       textTransform: 'none',
       letterSpacing: 0.2,
-      fontSize: 11,
+      fontSize: 10,
     },
     actions: { flexDirection: 'row', gap: spacing.sm },
     iconBtn: {
@@ -167,13 +167,9 @@ export function DashboardHeader({
       <LinearGradient colors={gradientColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradient}>
         <View style={styles.topRow}>
           <View style={styles.brand}>
-            <View style={styles.logo}>
-              <Text style={styles.logoText}>K1</Text>
-            </View>
-            <View>
-              <Text style={styles.brandName}>KuberOne</Text>
-              <Text style={styles.brandTag}>Premium Finance</Text>
-            </View>
+            <Image source={logoK1} style={styles.logoImage} accessibilityLabel="KuberOne" />
+            <Text style={styles.brandName}>KuberOne</Text>
+            <Text style={styles.brandTag}>Premium Finance</Text>
           </View>
           <View style={styles.actions}>
             <Pressable style={styles.iconBtn} onPress={onNotificationsPress} accessibilityLabel="Notifications">

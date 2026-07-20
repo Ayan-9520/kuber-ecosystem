@@ -38,6 +38,32 @@ export const securityService = {
     }
   },
 
+  /** Partner app / website OTP login requires Admin-approved ACTIVE partner. */
+  async assertPartnerCanLogin(userId: string): Promise<void> {
+    const partner = await userRepository.findPartnerByUserId(userId);
+    if (!partner) {
+      throw new ForbiddenError('Partner profile not found');
+    }
+
+    if (partner.status === 'ACTIVE') return;
+
+    if (partner.status === 'PENDING') {
+      throw new ForbiddenError(
+        'Your partner application is pending approval. Please wait for Admin approval.',
+      );
+    }
+    if (partner.status === 'REJECTED') {
+      throw new ForbiddenError(
+        'Your partner application was not approved. Please contact support.',
+      );
+    }
+    if (partner.status === 'SUSPENDED') {
+      throw new ForbiddenError('Your partner account has been suspended. Please contact support.');
+    }
+
+    throw new ForbiddenError('Partner account is not active');
+  },
+
   async recordFailedLogin(
     userId: string,
     reason: string,

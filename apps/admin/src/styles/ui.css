@@ -544,6 +544,14 @@
   font-size: 1.125rem;
 }
 
+.brand-mark--logo {
+  background: transparent;
+  padding: 0;
+  object-fit: contain;
+  border: none;
+  border-radius: 0;
+}
+
 .brand-name {
   font-weight: 700;
   font-size: 1.125rem;
@@ -853,22 +861,31 @@
 
 .auth-premium-brand-row {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
 }
 
 .auth-premium-logo {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #22d3a6, #18c964);
+  width: 56px;
+  height: 56px;
+  border-radius: 0;
+  background: transparent;
   color: #071a1f;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
   font-size: 1.5rem;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  box-shadow: none;
+  padding: 0;
+  overflow: visible;
+}
+
+.auth-premium-logo--img {
+  background: transparent;
+  object-fit: contain;
+  padding: 0;
 }
 
 .auth-premium-eyebrow {
@@ -878,6 +895,14 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.72);
+}
+
+.auth-premium-brand-name {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
 }
 
 .auth-premium-badge {
@@ -1048,8 +1073,17 @@
   width: 52px;
   height: 52px;
   font-size: 1.5rem;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-primary) 35%, transparent);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.brand-mark--premium.brand-mark--logo {
+  background: transparent;
+  padding: 0;
+  object-fit: contain;
+  box-shadow: none;
+  border-radius: 0;
 }
 
 .auth-title {

@@ -130,14 +130,12 @@ export function LoginPage() {
 
         <div className="auth-premium-hero-inner">
           <div className="auth-premium-brand-row">
-            <div className="auth-premium-logo">K</div>
-            <div>
-              <p className="auth-premium-eyebrow">Kuber Finserve</p>
-              <span className="auth-premium-badge">
-                <BadgeCheck size={14} />
-                Admin Command Center
-              </span>
-            </div>
+            <img className="auth-premium-logo auth-premium-logo--img" src="/logo-k1.png" alt="KuberOne" width={64} height={64} />
+            <p className="auth-premium-brand-name">KuberOne</p>
+            <span className="auth-premium-badge">
+              <BadgeCheck size={14} />
+              Admin Command Center
+            </span>
           </div>
 
           <h1 className="auth-premium-headline">
@@ -187,7 +185,7 @@ export function LoginPage() {
       <main className="auth-premium-panel">
         <div className="auth-card auth-card--premium">
           <div className="auth-brand auth-brand--compact">
-            <div className="brand-mark brand-mark--premium">K</div>
+            <img className="brand-mark brand-mark--premium brand-mark--logo" src="/logo-k1.png" alt="KuberOne" width={48} height={48} />
             <h1 className="auth-title">KuberOne Admin</h1>
             <p className="auth-subtitle">
               <Lock size={14} />

@@ -102,6 +102,9 @@ export function LeadsPage() {
         subtitle="Manage and track sales leads across branches"
         actions={
           <>
+            <Button variant="secondary" onClick={() => navigate('/leads/visitors')}>
+              Website Visitors
+            </Button>
             <Button variant="secondary" onClick={() => navigate('/leads/scoring-analytics')}>
               Scoring Analytics
             </Button>

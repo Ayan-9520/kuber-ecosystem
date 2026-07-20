@@ -21,6 +21,11 @@ export {
   updateLeadNoteSchema,
   updateLeadSchema,
   updateLeadSourceSchema,
+  websiteLeadIntakeSchema,
+  websitePartnerIntakeSchema,
+  websitePartnerAuthSchema,
+  websiteVisitorIntakeSchema,
+  listWebsiteVisitorsQuerySchema,
 } from '@kuberone/shared-validation';
 
 export { uuidParamSchema } from '@kuberone/shared-validation';

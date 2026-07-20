@@ -61,7 +61,7 @@ import { createInfrastructureModule } from '../modules/infrastructure/infrastruc
 import { createKnowledgeBaseModule } from '../modules/knowledge-base/knowledge-base.module.js';
 import { createKycModule } from '../modules/kyc/kyc.module.js';
 import { createLeadScoringModule } from '../modules/lead-scoring/lead-scoring.module.js';
-import { createLeadsModule, createLeadSourcesModule, createLeadScoresModule, createLeadAssignmentsModule, createLeadActivitiesModule, createLeadNotesModule, createLeadFollowUpsModule, createLeadTimelineModule, createLeadAnalyticsModule } from '../modules/leads/leads.module.js';
+import { createLeadsModule, createLeadSourcesModule, createLeadScoresModule, createLeadAssignmentsModule, createLeadActivitiesModule, createLeadNotesModule, createLeadFollowUpsModule, createLeadTimelineModule, createLeadAnalyticsModule, createPublicWebsiteIntakeModule } from '../modules/leads/leads.module.js';
 import { createMobileReleaseModule } from '../modules/mobile-release/mobile-release.module.js';
 import { createMonitoringModule } from '../modules/monitoring/monitoring.module.js';
 import {
@@ -136,6 +136,7 @@ apiRouter.use('/customer-preferences', createCustomerPreferencesModule());
 apiRouter.use('/customer-consents', createCustomerConsentsModule());
 apiRouter.use('/partners', createPartnersModule());
 apiRouter.use(createPublicProfessionalsModule());
+apiRouter.use('/public/website', createPublicWebsiteIntakeModule());
 apiRouter.use(createPartnerBrandingModule());
 apiRouter.use('/employees', createEmployeesModule());
 apiRouter.use('/branches', createBranchesModule());

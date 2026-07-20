@@ -60,7 +60,7 @@ import {
   KnowledgeAnalyticsPage,
 } from '@/features/knowledge';
 import { KycHubPage } from '@/features/kyc';
-import { LeadsPage, LeadDetailPage, LeadAnalyticsPage, LeadScoringAnalyticsPage } from '@/features/leads';
+import { LeadsPage, LeadDetailPage, LeadAnalyticsPage, LeadScoringAnalyticsPage, WebsiteVisitorsPage } from '@/features/leads';
 import { ManagementHubPage } from '@/features/management';
 import { MobileReleaseHubPage } from '@/features/mobile-release';
 import { MonitoringHubPage } from '@/features/monitoring';
@@ -124,6 +124,7 @@ export function AppRoutes() {
           <Route path="dashboard" element={withPermission('dashboard', <DashboardPage />)} />
 
           <Route path="leads" element={withPermission('leads', <LeadsPage />)} />
+          <Route path="leads/visitors" element={withPermission('leads', <WebsiteVisitorsPage />)} />
           <Route path="leads/analytics" element={withPermission('leads', <LeadAnalyticsPage />)} />
           <Route path="leads/scoring-analytics" element={withPermission('lead-scoring', <LeadScoringAnalyticsPage />)} />
           <Route path="recommendations/analytics" element={withPermission('recommendations', <RecommendationsAnalyticsPage />)} />

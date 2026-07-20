@@ -12,7 +12,12 @@ function webDevPrefixes(port: string): string[] {
 }
 
 export const linking: LinkingOptions<RootStackParamList> = {
-  prefixes: ['kuberone-dsa://', 'https://dsa.kuberone.com', ...webDevPrefixes('8082')],
+  prefixes: [
+    'kuberone-dsa://',
+    'https://dsa.kuberone.com',
+    ...webDevPrefixes('8082'),
+    ...webDevPrefixes('8083'),
+  ],
   config: {
     screens: {
       Onboarding: 'Onboarding',

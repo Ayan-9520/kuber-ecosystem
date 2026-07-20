@@ -103,6 +103,9 @@ export const otpService = {
         throw new UnauthorizedError('No account found for this mobile number');
       }
       await securityService.assertUserCanAuthenticate(user.id);
+      if (user.userType === UserType.PARTNER) {
+        await securityService.assertPartnerCanLogin(user.id);
+      }
     }
 
     if (input.purpose === 'REGISTER') {
@@ -172,6 +175,9 @@ export const otpService = {
     }
 
     await securityService.assertUserCanAuthenticate(user.id);
+    if (user.userType === UserType.PARTNER) {
+      await securityService.assertPartnerCanLogin(user.id);
+    }
 
     if (
       (input.purpose === 'LOGIN' || input.purpose === 'REGISTER') &&

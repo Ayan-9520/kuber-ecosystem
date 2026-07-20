@@ -11,11 +11,16 @@ import {
   leadSourceRoutes,
   leadTimelineRoutes,
 } from './routes/lead.routes.js';
+import { publicWebsiteIntakeRoutes } from './routes/website-intake.routes.js';
 
 export function createLeadsModule(): Router {
   const router = Router();
   router.use(leadRoutes);
   return router;
+}
+
+export function createPublicWebsiteIntakeModule(): Router {
+  return publicWebsiteIntakeRoutes;
 }
 
 export function createLeadSourcesModule(): Router {

@@ -62,6 +62,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Overview' },
   { path: '/leads', label: 'Leads', icon: Target, permissions: ['leads.read'], section: 'CRM' },
+  { path: '/leads/visitors', label: 'Website Visitors', icon: MapPin, permissions: ['leads.read'], section: 'CRM' },
   { path: '/leads/analytics', label: 'Lead Analytics', icon: BarChart3, permissions: ['leads.read'], section: 'CRM' },
   { path: '/leads/scoring-analytics', label: 'Lead Scoring', icon: Target, permissions: ['lead_scoring.read'], section: 'CRM' },
   { path: '/recommendations/analytics', label: 'Recommendations', icon: Sparkles, permissions: ['recommendations.read', 'analytics.read'], section: 'Insights' },

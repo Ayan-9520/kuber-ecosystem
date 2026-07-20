@@ -125,15 +125,13 @@ export const partnerService = {
   },
 
   async update(id: string, input: UpdatePartnerInput) {
-    await this.getById(id);
+    const existing = await partnerRepository.findById(id);
+    if (!existing) throw new NotFoundError('Partner', id);
 
     if (input.phone) {
       const existingPhone = await partnerRepository.findUserByPhone(input.phone);
-      if (existingPhone) {
-        const partner = await partnerRepository.findById(id);
-        if (partner && existingPhone.id !== partner.userId) {
-          throw new ConflictError('Phone already registered');
-        }
+      if (existingPhone && existingPhone.id !== existing.userId) {
+        throw new ConflictError('Phone already registered');
       }
     }
 
@@ -147,6 +145,18 @@ export const partnerService = {
       ...(input.status !== undefined ? { status: input.status } : {}),
       ...(input.commissionTier !== undefined ? { commissionTier: input.commissionTier } : {}),
     });
+
+    if (input.status !== undefined) {
+      const userStatusMap: Record<string, string> = {
+        ACTIVE: 'ACTIVE',
+        PENDING: 'PENDING',
+        REJECTED: 'INACTIVE',
+        INACTIVE: 'INACTIVE',
+        SUSPENDED: 'SUSPENDED',
+      };
+      const userStatus = userStatusMap[input.status] ?? 'PENDING';
+      await partnerRepository.updateUserStatus(partner.userId, userStatus);
+    }
 
     return toPartnerResponse(partner);
   },

@@ -64,6 +64,8 @@ const backendEnvSchema = baseEnvSchema
     DR_WEBHOOK_SECRET: z.string().min(16).optional(),
     /** staged = deploy with MySQL + OpenAI only; full = all providers required */
     DEPLOYMENT_ROLLOUT_PHASE: z.enum(['staged', 'full']).default('staged'),
+    /** Optional shared secret for website → API dual-write (X-Website-Api-Key). */
+    WEBSITE_INTAKE_API_KEY: z.string().min(16).optional(),
   });
 
 export type BackendEnv = z.infer<typeof backendEnvSchema>;
@@ -90,6 +92,7 @@ const LOCALHOST_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 const PRIVATE_LAN_ORIGIN = /^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?$/;
 const VERCEL_ORIGIN = /^https:\/\/[\w-]+(-[\w-]+)*\.vercel\.app$/;
 const KUBERONE_ORIGIN = /^https:\/\/(www\.)?kuberone\.online$/;
+const KUBERFINSERVE_ORIGIN = /^https:\/\/(www\.)?kuberfinserve\.com$/;
 
 /** In development, allow localhost and LAN IPs (Expo web / admin on same WiFi). */
 export function isCorsOriginAllowed(origin: string | undefined): boolean {
@@ -97,6 +100,7 @@ export function isCorsOriginAllowed(origin: string | undefined): boolean {
   if (env.APP_ENV === 'development' && LOCALHOST_ORIGIN.test(origin)) return true;
   if (env.APP_ENV === 'development' && PRIVATE_LAN_ORIGIN.test(origin)) return true;
   if (KUBERONE_ORIGIN.test(origin)) return true;
+  if (KUBERFINSERVE_ORIGIN.test(origin)) return true;
   if (VERCEL_ORIGIN.test(origin)) return true;
   return getCorsOrigins().includes(origin);
 }

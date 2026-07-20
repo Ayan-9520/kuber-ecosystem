@@ -1,10 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
 import { DetailDrawer } from '@/components/common/DetailDrawer';
 import { PaginatedListView } from '@/components/common/PaginatedListView';
 import { PageHeader } from '@/components/ui';
 import { StatusBadge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useDebounce, usePagination } from '@/hooks';
 import { fieldStr, formatDate, formatDateTime } from '@/lib/utils';
@@ -13,8 +14,10 @@ import { partnersService } from '@/services';
 export function PartnersPage() {
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const debouncedSearch = useDebounce(search);
   const { page, limit, setPage, reset } = usePagination();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     reset();
@@ -40,6 +43,22 @@ export function PartnersPage() {
     queryKey: ['partners', selectedId],
     queryFn: () => partnersService.getById(selectedId!),
     enabled: !!selectedId,
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'ACTIVE' | 'REJECTED' }) =>
+      partnersService.update(id, { status }),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: ['partners'] });
+      setActionMessage(
+        vars.status === 'ACTIVE'
+          ? 'Partner approved (ACTIVE). They can login with mobile / email / Partner Code + OTP.'
+          : 'Partner rejected.',
+      );
+    },
+    onError: (err: Error) => {
+      setActionMessage(err.message || 'Could not update partner status.');
+    },
   });
 
   const columns = [
@@ -68,6 +87,8 @@ export function PartnersPage() {
     },
   ];
 
+  const partnerStatus = detail ? fieldStr(detail, 'status') : '';
+
   return (
     <div className="page-container">
       <PageHeader title="Partners" subtitle="Partner network, KYC status, and commission tiers" />
@@ -81,7 +102,10 @@ export function PartnersPage() {
         meta={data?.meta}
         onPageChange={setPage}
         columns={columns}
-        onRowClick={(row) => setSelectedId(String(row.id))}
+        onRowClick={(row) => {
+          setActionMessage(null);
+          setSelectedId(String(row.id));
+        }}
         emptyTitle="No partners found"
         emptyDescription="Partners will appear here once onboarded to the network."
       />
@@ -90,7 +114,10 @@ export function PartnersPage() {
         open={!!selectedId}
         title={detail ? fieldStr(detail, 'businessName') || fieldStr(detail, 'contactName') : 'Partner Details'}
         subtitle={detail ? fieldStr(detail, 'partnerCode') : undefined}
-        onClose={() => setSelectedId(null)}
+        onClose={() => {
+          setSelectedId(null);
+          setActionMessage(null);
+        }}
       >
         {detailLoading ? (
           <div className="loading-overlay">
@@ -128,6 +155,49 @@ export function PartnersPage() {
                 </div>
               </div>
             </div>
+
+            {actionMessage && (
+              <p style={{ fontSize: '0.875rem', marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>
+                {actionMessage}
+              </p>
+            )}
+
+            {partnerStatus === 'PENDING' && (
+              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <Button
+                  type="button"
+                  disabled={statusMutation.isPending}
+                  onClick={() => selectedId && statusMutation.mutate({ id: selectedId, status: 'ACTIVE' })}
+                >
+                  {statusMutation.isPending ? 'Updating…' : 'Approve Partner'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={statusMutation.isPending}
+                  onClick={() => selectedId && statusMutation.mutate({ id: selectedId, status: 'REJECTED' })}
+                >
+                  Reject
+                </Button>
+              </div>
+            )}
+
+            {partnerStatus === 'ACTIVE' && (
+              <Card title="Next step for partner">
+                <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', margin: 0 }}>
+                  Login with registered mobile <strong>{fieldStr(detail, 'phone')}</strong>
+                  {fieldStr(detail, 'email') ? (
+                    <>
+                      , email <strong>{fieldStr(detail, 'email')}</strong>
+                    </>
+                  ) : null}
+                  , or Partner Code <strong>{fieldStr(detail, 'partnerCode')}</strong>.
+                  <br />
+                  OTP on Partner App (<code>localhost:8082</code>) or website <strong>/partner-login</strong>.
+                  Dev OTP: <strong>123456</strong>.
+                </p>
+              </Card>
+            )}
 
             <Card title="Timeline">
               <div className="info-grid">

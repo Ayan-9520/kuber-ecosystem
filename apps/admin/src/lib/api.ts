@@ -10,7 +10,7 @@ const API_BASE_URL = resolveApiBaseUrl();
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 30_000,
+  timeout: 60_000,
 });
 
 let refreshPromise: Promise<string | null> | null = null;

@@ -133,8 +133,8 @@ export function getApiErrorMessage(error: unknown): string {
   }
   if (error && typeof error === 'object' && 'code' in error) {
     const code = (error as { code?: string }).code;
-    if (code === 'ERR_NETWORK' || code === 'ECONNREFUSED') {
-      return `Cannot reach API at ${API_BASE_URL}. Check backend is running and CORS allows kuberone.online.`;
+    if (code === 'ERR_NETWORK' || code === 'ECONNREFUSED' || code === 'ETIMEDOUT') {
+      return `Cannot reach API at ${API_BASE_URL}. Ensure the backend is running (Docker: kuberone-backend on port 4000) and try again.`;
     }
   }
   if (error instanceof Error) return error.message;

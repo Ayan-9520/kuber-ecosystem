@@ -272,3 +272,114 @@ export type ListLeadFollowUpsQuery = z.infer<typeof listLeadFollowUpsQuerySchema
 export type LeadTimelineQuery = z.infer<typeof leadTimelineQuerySchema>;
 export type LeadAnalyticsQuery = z.infer<typeof leadAnalyticsQuerySchema>;
 export type ScoringProfile = z.infer<typeof scoringProfileSchema>;
+
+/** Public website → KuberOne lead intake (marketing site dual-write). */
+export const websiteLeadIntakeSchema = z.object({
+  form_type: z.string().max(80).optional(),
+  source: z.string().max(120).optional(),
+  page_url: z.string().max(500).optional(),
+  fields: z
+    .object({
+      full_name: z.string().min(2).max(200).optional(),
+      fullName: z.string().min(2).max(200).optional(),
+      name: z.string().min(2).max(200).optional(),
+      phone: z.string().min(10).max(20),
+      email: z.string().email().optional().or(z.literal('')),
+      city: z.string().max(100).optional(),
+      employment_type: z.string().max(80).optional(),
+      employmentType: z.string().max(80).optional(),
+      company_name: z.string().max(150).optional(),
+      companyName: z.string().max(150).optional(),
+      monthly_income: z.union([z.string(), z.number()]).optional(),
+      monthlyIncome: z.union([z.string(), z.number()]).optional(),
+      loan_type: z.string().max(120).optional(),
+      loanType: z.string().max(120).optional(),
+      loan_amount: z.union([z.string(), z.number()]).optional(),
+      loanAmount: z.union([z.string(), z.number()]).optional(),
+      tenure_months: z.union([z.string(), z.number()]).optional(),
+      tenureMonths: z.union([z.string(), z.number()]).optional(),
+      property_value: z.union([z.string(), z.number()]).optional(),
+      message: z.string().max(5000).optional(),
+      lead_id: z.string().max(64).optional(),
+      external_lead_id: z.string().max(64).optional(),
+      partner_id: z.string().max(64).optional(),
+      crm_channel: z.string().max(40).optional(),
+      form_variant: z.string().max(120).optional(),
+    })
+    .passthrough(),
+});
+
+export type WebsiteLeadIntakeInput = z.infer<typeof websiteLeadIntakeSchema>;
+
+export const websitePartnerIntakeSchema = z.object({
+  contactName: z.string().min(2).max(150),
+  phone: z.string().regex(/^[6-9]\d{9}$/),
+  email: z
+    .string()
+    .email()
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => (v ? v : undefined)),
+  businessName: z.string().max(200).optional(),
+  partnerTypeCode: z.string().min(2).max(20).optional().default('DSA'),
+  city: z.string().max(100).optional(),
+  state: z.string().max(100).optional(),
+  businessType: z.string().max(80).optional(),
+  experience: z.string().max(80).optional(),
+  message: z.string().max(5000).optional(),
+  pageUrl: z.string().max(500).optional(),
+  source: z.string().max(120).optional(),
+});
+
+export type WebsitePartnerIntakeInput = z.infer<typeof websitePartnerIntakeSchema>;
+
+/** Public website → KuberOne partner OTP login (mobile / email / partner code). */
+export const websitePartnerAuthSchema = z.object({
+  mode: z.enum(['otp_request', 'otp']),
+  identifier: z.string().min(3).max(150),
+  otp: z.string().length(6).optional(),
+});
+
+export type WebsitePartnerAuthInput = z.infer<typeof websitePartnerAuthSchema>;
+
+/** Public website → KuberOne visitor interest capture (city + optional contact). */
+export const websiteVisitorIntakeSchema = z.object({
+  city: z.string().min(2).max(100),
+  name: z
+    .string()
+    .max(200)
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => (v && v.trim().length >= 2 ? v.trim() : undefined)),
+  phone: z
+    .string()
+    .max(20)
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => (v ? v.trim() : undefined)),
+  email: z
+    .string()
+    .email()
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => (v ? v : undefined)),
+  page_url: z.string().max(500).optional(),
+  referrer: z.string().max(500).optional(),
+  utm_source: z.string().max(120).optional(),
+  utm_medium: z.string().max(120).optional(),
+  utm_campaign: z.string().max(120).optional(),
+  session_id: z.string().max(64).optional(),
+  external_visitor_id: z.string().max(64).optional(),
+});
+
+export type WebsiteVisitorIntakeInput = z.infer<typeof websiteVisitorIntakeSchema>;
+
+export const listWebsiteVisitorsQuerySchema = paginationSchema.extend({
+  search: z.string().optional(),
+  city: z.string().max(100).optional(),
+  fromDate: z.coerce.date().optional(),
+  toDate: z.coerce.date().optional(),
+  sortBy: z.enum(['createdAt', 'city', 'updatedAt']).default('createdAt'),
+});
+
+export type ListWebsiteVisitorsQuery = z.infer<typeof listWebsiteVisitorsQuerySchema>;
