@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ThemeAppearanceCard } from '@/components/ThemeAppearanceCard';
 import { Button, Card, Screen, StatusBadge } from '@/components/ui';
@@ -59,9 +59,16 @@ export function ProfileScreen() {
   const kycStatus = str(kyc.data?.overallStatus ?? customer.data?.kycStatus ?? 'NOT_STARTED');
 
   const confirmLogout = () => {
+    // Alert.alert is unreliable on web — confirm there, native Alert elsewhere
+    if (Platform.OS === 'web') {
+      const ok =
+        typeof window !== 'undefined' ? window.confirm('Are you sure you want to sign out?') : true;
+      if (ok) void logout();
+      return;
+    }
     Alert.alert('Logout', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: () => logout() },
+      { text: 'Logout', style: 'destructive', onPress: () => void logout() },
     ]);
   };
 

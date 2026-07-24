@@ -25,14 +25,15 @@ function createStyles(colors: AppColors) {
   return StyleSheet.create({
     container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     logo: {
-      width: 88,
-      height: 88,
+      width: 96,
+      height: 96,
+      borderRadius: 22,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 16,
-      backgroundColor: 'transparent',
+      backgroundColor: '#FFFFFF',
     },
-    logoImage: { width: 88, height: 88, resizeMode: 'contain' },
+    logoImage: { width: 72, height: 72, resizeMode: 'contain' },
     brand: { ...typography.h1, color: colors.text },
     tagline: { ...typography.caption, color: colors.textMuted, marginTop: 8 },
   });

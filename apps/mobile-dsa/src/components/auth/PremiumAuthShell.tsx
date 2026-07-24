@@ -1,20 +1,21 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import {
+  Animated,
   Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { radius, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
 
-/** Clear K1 mark — no white plate on dark auth screens */
 const logoK1 = require('../../../assets/logo-k1.png');
 
 export type PremiumAuthVariant = 'partner' | 'customer';
@@ -26,25 +27,28 @@ const COPY: Record<
     title: string;
     subtitle: string;
     badge: string;
-    highlights: string[];
-    trust: string[];
+    headline: string;
+    support: string;
+    points: string[];
   }
 > = {
   partner: {
     brand: 'KuberOne',
     title: 'Partner Sign In',
-    subtitle: 'Sign in with OTP after Admin approval. Same login as the Partner App.',
-    badge: 'DSA & Partner Access',
-    highlights: ['AI Branding Tools', 'Lead Management', 'Verified Profile'],
-    trust: ['RBI Regulated Partners', '100% Transparent', 'Secure OTP Login'],
+    subtitle: 'Secure OTP access for verified DSA partners.',
+    badge: 'Partner Portal',
+    headline: 'Grow with KuberOne',
+    support: 'Lead tools, branding, and payouts — one secure partner workspace.',
+    points: ['Verified partner profile', 'Lead & application desk', 'AI branding studio'],
   },
   customer: {
     brand: 'KuberOne',
     title: 'Customer Sign In',
     subtitle: 'Loans, insurance & financial services — trusted and transparent.',
     badge: 'Customer Portal',
-    highlights: ['Track Applications', 'EMI Calculator', 'Document Vault'],
-    trust: ['RBI Regulated', 'Data Protected', 'Secure OTP Login'],
+    headline: 'Finance, simplified',
+    support: 'Track applications, manage documents, and stay in control.',
+    points: ['Application tracking', 'EMI tools', 'Secure document vault'],
   },
 };
 
@@ -57,18 +61,77 @@ interface PremiumAuthShellProps {
 
 export function PremiumAuthShell({ variant, children, footer, contentStyle }: PremiumAuthShellProps) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const copy = COPY[variant];
-  const styles = useMemo(() => createStyles(variant), [variant]);
+  const isWide = Platform.OS === 'web' && width >= 920;
+  const styles = useMemo(() => createStyles(variant, isWide), [variant, isWide]);
+  const fade = useRef(new Animated.Value(0)).current;
+  const rise = useRef(new Animated.Value(18)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fade, { toValue: 1, duration: 520, useNativeDriver: true }),
+      Animated.timing(rise, { toValue: 0, duration: 520, useNativeDriver: true }),
+    ]).start();
+  }, [fade, rise]);
+
+  const brandPanel = (
+    <LinearGradient
+      colors={['#032820', '#0B5D4B', '#053d32']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.brandPanel}
+    >
+      <View style={styles.logoPlate}>
+        <Image source={logoK1} style={styles.logoHero} accessibilityLabel={copy.brand} />
+      </View>
+      <Text style={styles.brandName}>{copy.brand}</Text>
+      <View style={styles.badge}>
+        <Text style={styles.badgeText}>{copy.badge}</Text>
+      </View>
+      <Text style={styles.headline}>{copy.headline}</Text>
+      <Text style={styles.support}>{copy.support}</Text>
+      <View style={styles.pointList}>
+        {copy.points.map((item) => (
+          <View key={item} style={styles.pointRow}>
+            <View style={styles.pointDot} />
+            <Text style={styles.pointText}>{item}</Text>
+          </View>
+        ))}
+      </View>
+      <Text style={styles.footerBrand}>Powered by KuberFinserve</Text>
+    </LinearGradient>
+  );
+
+  const formPanel = (
+    <View style={[styles.formPanel, contentStyle]}>
+      {!isWide ? (
+        <View style={styles.mobileBrand}>
+          <View style={styles.logoPlateMobile}>
+            <Image source={logoK1} style={styles.logoMobile} accessibilityLabel={copy.brand} />
+          </View>
+          <Text style={styles.brandNameMobile}>{copy.brand}</Text>
+          <View style={[styles.badge, styles.badgeCenter]}>
+            <Text style={styles.badgeText}>{copy.badge}</Text>
+          </View>
+        </View>
+      ) : null}
+      <Text style={styles.formTitle}>{copy.title}</Text>
+      <Text style={styles.formSubtitle}>{copy.subtitle}</Text>
+      <View style={styles.formBody}>{children}</View>
+      {footer}
+    </View>
+  );
 
   return (
     <LinearGradient
-      colors={['#071a1f', '#0d2428', '#102b2e', '#071a1f']}
+      colors={['#F4F7F6', '#E8F5F0', '#F4F7F6']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.root}
     >
-      <View style={[styles.glowTop, variant === 'partner' ? styles.glowGold : styles.glowTeal]} />
-      <View style={styles.glowBottom} />
+      <View style={[styles.orb, styles.orbTop]} />
+      <View style={[styles.orb, styles.orbBottom]} />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -79,195 +142,242 @@ export function PremiumAuthShell({ variant, children, footer, contentStyle }: Pr
           contentContainerStyle={[
             styles.scroll,
             {
-              paddingTop: Math.max(insets.top, spacing.md) + spacing.sm,
-              paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.lg,
+              paddingTop: Math.max(insets.top, spacing.md),
+              paddingBottom: Math.max(insets.bottom, spacing.lg),
             },
           ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={[styles.card, contentStyle]}>
-            <View style={styles.brandBlock}>
-              <Image source={logoK1} style={styles.logoImage} accessibilityLabel={copy.brand} />
-              <Text style={styles.brandName}>{copy.brand}</Text>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{copy.badge}</Text>
-              </View>
-              <Text style={styles.title}>{copy.title}</Text>
-              <Text style={styles.subtitle}>{copy.subtitle}</Text>
-            </View>
-
-            <View style={styles.form}>{children}</View>
-          </View>
-
-          {footer}
-
-          <View style={styles.highlights}>
-            {copy.highlights.map((item) => (
-              <View key={item} style={styles.highlightPill}>
-                <Text style={styles.highlightText}>{item}</Text>
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.trustRow}>
-            {copy.trust.map((item) => (
-              <View key={item} style={styles.trustPill}>
-                <Text style={styles.trustText}>{item}</Text>
-              </View>
-            ))}
-          </View>
-
-          <Text style={styles.footerBrand}>Powered by KuberFinserve</Text>
+          <Animated.View
+            style={[
+              styles.stage,
+              isWide ? styles.stageWide : styles.stageNarrow,
+              { opacity: fade, transform: [{ translateY: rise }] },
+            ]}
+          >
+            {isWide ? brandPanel : null}
+            {formPanel}
+            {!isWide ? <Text style={styles.footerBrandMobile}>Powered by KuberFinserve</Text> : null}
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </LinearGradient>
   );
 }
 
-function createStyles(variant: PremiumAuthVariant) {
-  const accent = variant === 'partner' ? '#fcd34d' : '#22d3a6';
-  const accentBorder = variant === 'partner' ? 'rgba(245, 158, 11, 0.35)' : 'rgba(34, 211, 166, 0.35)';
-  const accentBg = variant === 'partner' ? 'rgba(245, 158, 11, 0.14)' : 'rgba(34, 211, 166, 0.12)';
+function createStyles(variant: PremiumAuthVariant, isWide: boolean) {
+  const accent = variant === 'partner' ? '#D4A017' : '#00C389';
+  const accentSoft = variant === 'partner' ? 'rgba(212, 160, 23, 0.18)' : 'rgba(0, 195, 137, 0.14)';
 
   return StyleSheet.create({
     root: { flex: 1 },
     flex: { flex: 1 },
-    glowTop: {
+    orb: {
       position: 'absolute',
-      top: -80,
-      right: -40,
-      width: 220,
-      height: 220,
-      borderRadius: 110,
-      opacity: 0.28,
+      borderRadius: 999,
     },
-    glowGold: { backgroundColor: '#f59e0b' },
-    glowTeal: { backgroundColor: '#22d3a6' },
-    glowBottom: {
-      position: 'absolute',
-      bottom: -100,
-      left: -60,
-      width: 260,
-      height: 260,
-      borderRadius: 130,
-      backgroundColor: '#0d9488',
-      opacity: 0.18,
+    orbTop: {
+      top: -140,
+      right: -90,
+      width: 340,
+      height: 340,
+      backgroundColor: '#00C389',
+      opacity: 0.12,
+    },
+    orbBottom: {
+      bottom: -160,
+      left: -110,
+      width: 380,
+      height: 380,
+      backgroundColor: '#0B5D4B',
+      opacity: 0.1,
     },
     scroll: {
       flexGrow: 1,
-      paddingHorizontal: spacing.lg,
       justifyContent: 'center',
-      gap: spacing.md,
+      paddingHorizontal: isWide ? 40 : spacing.lg,
     },
-    card: {
-      backgroundColor: 'rgba(16, 43, 46, 0.92)',
-      borderRadius: 20,
-      padding: spacing.lg,
+    stage: {
+      width: '100%',
+      maxWidth: isWide ? 1040 : 440,
+      alignSelf: 'center',
+    },
+    stageWide: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      minHeight: 560,
+      borderRadius: 28,
+      overflow: 'hidden',
       borderWidth: 1,
-      borderColor: 'rgba(34, 211, 166, 0.22)',
-      shadowColor: '#000',
-      shadowOpacity: 0.4,
+      borderColor: '#D7E5DF',
+      backgroundColor: '#FFFFFF',
+      shadowColor: '#032820',
+      shadowOpacity: 0.1,
       shadowRadius: 28,
       shadowOffset: { width: 0, height: 16 },
-      elevation: 12,
+      elevation: 8,
+    },
+    stageNarrow: {
       gap: spacing.lg,
     },
-    brandBlock: {
-      alignItems: 'center',
-      gap: spacing.sm,
+    brandPanel: {
+      flex: 1.05,
+      paddingVertical: 48,
+      paddingHorizontal: 44,
+      justifyContent: 'center',
+      gap: 10,
     },
-    logoImage: {
+    logoPlate: {
+      width: 96,
+      height: 96,
+      borderRadius: 22,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 8,
+    },
+    logoHero: {
       width: 72,
       height: 72,
       resizeMode: 'contain',
     },
+    logoPlateMobile: {
+      width: 76,
+      height: 76,
+      borderRadius: 18,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: '#D7E5DF',
+    },
     brandName: {
-      fontSize: 22,
+      fontSize: 34,
       fontWeight: '800',
       color: '#ffffff',
-      letterSpacing: -0.3,
-      marginTop: 2,
+      letterSpacing: -0.8,
     },
     badge: {
-      alignSelf: 'center',
-      backgroundColor: accentBg,
-      borderWidth: 1,
-      borderColor: accentBorder,
+      alignSelf: 'flex-start',
+      marginTop: 4,
+      marginBottom: 8,
       paddingHorizontal: 12,
       paddingVertical: 5,
-      borderRadius: radius.full,
-      marginTop: 2,
+      borderRadius: 999,
+      backgroundColor: accentSoft,
+    },
+    badgeCenter: {
+      alignSelf: 'center',
+      backgroundColor: 'rgba(0, 195, 137, 0.12)',
     },
     badgeText: {
-      ...typography.caption,
       color: accent,
+      fontSize: 11,
       fontWeight: '700',
+      letterSpacing: 1.1,
       textTransform: 'uppercase',
-      letterSpacing: 0.8,
-      fontSize: 10,
     },
-    title: {
-      fontSize: 24,
-      fontWeight: '800',
-      color: '#ffffff',
+    headline: {
+      marginTop: 12,
+      fontSize: 28,
+      lineHeight: 34,
+      fontWeight: '700',
+      color: 'rgba(255,255,255,0.98)',
       letterSpacing: -0.4,
-      textAlign: 'center',
-      marginTop: spacing.sm,
+      maxWidth: 360,
     },
-    subtitle: {
-      ...typography.bodySm,
-      color: 'rgba(199, 210, 217, 0.9)',
-      lineHeight: 20,
-      textAlign: 'center',
-      maxWidth: 320,
+    support: {
+      ...typography.body,
+      color: 'rgba(232, 245, 240, 0.88)',
+      lineHeight: 24,
+      maxWidth: 360,
+      marginTop: 4,
     },
-    form: {
-      gap: spacing.md,
+    pointList: {
+      marginTop: 22,
+      gap: 12,
     },
-    highlights: {
+    pointRow: {
       flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'center',
-      gap: spacing.sm,
+      alignItems: 'center',
+      gap: 10,
     },
-    highlightPill: {
-      backgroundColor: 'rgba(255,255,255,0.06)',
-      borderWidth: 1,
-      borderColor: 'rgba(34, 211, 166, 0.15)',
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: radius.full,
+    pointDot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+      backgroundColor: accent,
     },
-    highlightText: {
-      ...typography.caption,
-      color: 'rgba(255,255,255,0.85)',
-      fontWeight: '600',
-    },
-    trustRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'center',
-      gap: spacing.sm,
-    },
-    trustPill: {
-      backgroundColor: 'rgba(255,255,255,0.04)',
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.08)',
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: radius.full,
-    },
-    trustText: {
-      ...typography.caption,
-      color: 'rgba(255,255,255,0.55)',
+    pointText: {
+      fontSize: 14,
+      color: 'rgba(255, 255, 255, 0.92)',
       fontWeight: '500',
     },
     footerBrand: {
-      ...typography.caption,
+      marginTop: 28,
+      fontSize: 12,
+      color: 'rgba(255,255,255,0.45)',
+      letterSpacing: 0.2,
+    },
+    formPanel: {
+      flex: 1,
+      paddingVertical: isWide ? 44 : spacing.xl,
+      paddingHorizontal: isWide ? 40 : spacing.lg,
+      backgroundColor: '#FFFFFF',
+      borderRadius: isWide ? 0 : 24,
+      borderWidth: isWide ? 0 : 1,
+      borderColor: '#D7E5DF',
+      gap: spacing.md,
+      ...(isWide
+        ? {}
+        : {
+            shadowColor: '#032820',
+            shadowOpacity: 0.08,
+            shadowRadius: 20,
+            shadowOffset: { width: 0, height: 10 },
+            elevation: 4,
+          }),
+    },
+    mobileBrand: {
+      alignItems: 'center',
+      gap: 6,
+      marginBottom: 4,
+    },
+    logoMobile: {
+      width: 68,
+      height: 68,
+      resizeMode: 'contain',
+    },
+    brandNameMobile: {
+      fontSize: 24,
+      fontWeight: '800',
+      color: '#032820',
+      letterSpacing: -0.4,
+    },
+    formTitle: {
+      fontSize: isWide ? 26 : 22,
+      fontWeight: '800',
+      color: '#032820',
+      letterSpacing: -0.4,
+      textAlign: isWide ? 'left' : 'center',
+    },
+    formSubtitle: {
+      ...typography.bodySm,
+      color: '#3D5A52',
+      lineHeight: 21,
+      textAlign: isWide ? 'left' : 'center',
+      marginTop: -4,
+      marginBottom: 4,
+    },
+    formBody: {
+      gap: spacing.md,
+      marginTop: 4,
+    },
+    footerBrandMobile: {
       textAlign: 'center',
-      color: 'rgba(255,255,255,0.4)',
-      marginTop: spacing.xs,
+      fontSize: 12,
+      color: '#6B857C',
     },
   });
 }

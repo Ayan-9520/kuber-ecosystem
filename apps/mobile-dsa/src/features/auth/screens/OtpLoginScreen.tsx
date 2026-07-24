@@ -136,32 +136,12 @@ export function OtpLoginScreen() {
         </View>
       }
     >
-      <Text style={styles.cardTitle}>Sign in with OTP</Text>
-      <Text style={styles.cardSubtitle}>
-        Enter your registered mobile number. Login works after Admin approval (ACTIVE).
-      </Text>
-
       {error ? (
         <Text style={styles.error}>
           {/pending approval/i.test(error)
             ? 'Pending approval — wait for Admin to approve your partner application.'
             : error}
         </Text>
-      ) : null}
-
-      {SHOW_DEMO_LOGIN ? (
-        <>
-          <Text style={styles.devHint}>
-            Demo partner: {DEMO_DSA_PHONE} · OTP {DEV_OTP}
-          </Text>
-          <Button
-            title="Quick Demo Login"
-            variant="secondary"
-            fullWidth
-            loading={loading}
-            onPress={() => void demoLogin()}
-          />
-        </>
       ) : null}
 
       <Input
@@ -172,6 +152,7 @@ export function OtpLoginScreen() {
         value={phone}
         onChangeText={setPhone}
         editable={!otpSent}
+        onLightSurface
       />
 
       {otpSent && (
@@ -182,6 +163,7 @@ export function OtpLoginScreen() {
           maxLength={6}
           value={otp}
           onChangeText={setOtp}
+          onLightSurface
         />
       )}
 
@@ -203,47 +185,45 @@ export function OtpLoginScreen() {
           }}
         />
       )}
+
+      {SHOW_DEMO_LOGIN ? (
+        <Text style={styles.devLink} onPress={() => !loading && void demoLogin()}>
+          Try demo partner ({DEMO_DSA_PHONE})
+        </Text>
+      ) : null}
     </PremiumAuthShell>
   );
 }
 
 function createStyles() {
   return StyleSheet.create({
-    cardTitle: {
-      ...typography.h3,
-      color: '#ffffff',
-      fontWeight: '700',
-    },
-    cardSubtitle: {
-      ...typography.bodySm,
-      color: 'rgba(199, 210, 217, 0.85)',
-      marginTop: -spacing.sm,
-    },
     error: {
       ...typography.bodySm,
-      color: '#fecaca',
+      color: '#B91C1C',
       textAlign: 'center',
-      backgroundColor: 'rgba(220, 38, 38, 0.15)',
+      backgroundColor: 'rgba(220, 38, 38, 0.08)',
       borderWidth: 1,
-      borderColor: 'rgba(248, 113, 113, 0.35)',
+      borderColor: 'rgba(220, 38, 38, 0.25)',
       padding: spacing.sm,
       borderRadius: 10,
     },
-    devHint: {
+    devLink: {
       ...typography.caption,
-      color: 'rgba(148, 163, 184, 0.9)',
+      color: '#6B857C',
       textAlign: 'center',
+      marginTop: spacing.xs,
+      textDecorationLine: 'underline',
     },
     links: { alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs },
     link: {
       ...typography.bodySm,
-      color: '#22d3a6',
+      color: '#0B5D4B',
       fontWeight: '600',
       textAlign: 'center',
     },
     hint: {
       ...typography.caption,
-      color: 'rgba(255,255,255,0.55)',
+      color: '#6B857C',
       textAlign: 'center',
     },
   });

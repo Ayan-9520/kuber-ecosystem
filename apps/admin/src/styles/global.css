@@ -8,16 +8,17 @@
 :root,
 [data-theme='dark'] {
   color-scheme: dark;
-  --color-primary: #22d3a6;
-  --color-primary-hover: #1eb892;
+  /* Align with kuberfinserve.com brand greens */
+  --color-primary: #00c389;
+  --color-primary-hover: #22d3a6;
   --color-accent: #18c964;
-  --color-on-primary: #071a1f;
-  --color-bg: #071a1f;
-  --color-card: #102b2e;
-  --color-surface: #0d2428;
-  --color-surface-hover: #143338;
-  --color-border: #1a3d42;
-  --color-border-light: #234a50;
+  --color-on-primary: #032820;
+  --color-bg: #032820;
+  --color-card: #0a342c;
+  --color-surface: #0c3d34;
+  --color-surface-hover: #105043;
+  --color-border: #145544;
+  --color-border-light: #1a6654;
   --color-text: #ffffff;
   --color-text-secondary: #c7d2d9;
   --color-text-muted: #8b9aab;
@@ -25,15 +26,15 @@
   --color-warning: #f59e0b;
   --color-success: #18c964;
   --color-info: #38bdf8;
-  --color-overlay: rgba(7, 26, 31, 0.72);
+  --color-overlay: rgba(3, 40, 32, 0.72);
   --color-primary-subtle: color-mix(in srgb, var(--color-primary) 14%, transparent);
   --color-danger-subtle: color-mix(in srgb, var(--color-danger) 14%, transparent);
   --color-success-subtle: color-mix(in srgb, var(--color-success) 14%, transparent);
   --color-warning-subtle: color-mix(in srgb, var(--color-warning) 14%, transparent);
   --color-info-subtle: color-mix(in srgb, var(--color-info) 14%, transparent);
-  --color-chart-grid: #1a3d42;
-  --color-chart-tooltip-bg: #102b2e;
-  --color-chart-tooltip-border: #1a3d42;
+  --color-chart-grid: #0f4036;
+  --color-chart-tooltip-bg: #0a342c;
+  --color-chart-tooltip-border: #0f4036;
   --color-topbar-bg: color-mix(in srgb, var(--color-card) 94%, transparent);
   --color-nav-hover: color-mix(in srgb, var(--color-primary) 10%, transparent);
   --color-nav-active-bg: color-mix(in srgb, var(--color-primary) 16%, transparent);
@@ -53,32 +54,33 @@
 
 [data-theme='light'] {
   color-scheme: light;
-  --color-primary: #0d9488;
-  --color-primary-hover: #0f766e;
+  /* Align with kuberfinserve.com brand greens */
+  --color-primary: #00c389;
+  --color-primary-hover: #0b5d4b;
   --color-accent: #18c964;
   --color-on-primary: #ffffff;
-  --color-bg: #f8fafc;
+  --color-bg: #f4f7f6;
   --color-card: #ffffff;
-  --color-surface: #f1f5f9;
-  --color-surface-hover: #e2e8f0;
-  --color-border: #e2e8f0;
-  --color-border-light: #cbd5e1;
-  --color-text: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-muted: #64748b;
+  --color-surface: #eef5f2;
+  --color-surface-hover: #e2efea;
+  --color-border: #d7e5df;
+  --color-border-light: #c5d9d1;
+  --color-text: #032820;
+  --color-text-secondary: #3d5a52;
+  --color-text-muted: #6b857c;
   --color-danger: #dc2626;
   --color-warning: #d97706;
   --color-success: #16a34a;
   --color-info: #0284c7;
-  --color-overlay: rgba(15, 23, 42, 0.45);
+  --color-overlay: rgba(3, 40, 32, 0.45);
   --color-primary-subtle: color-mix(in srgb, var(--color-primary) 12%, transparent);
   --color-danger-subtle: color-mix(in srgb, var(--color-danger) 10%, transparent);
   --color-success-subtle: color-mix(in srgb, var(--color-success) 10%, transparent);
   --color-warning-subtle: color-mix(in srgb, var(--color-warning) 10%, transparent);
   --color-info-subtle: color-mix(in srgb, var(--color-info) 10%, transparent);
-  --color-chart-grid: #e2e8f0;
+  --color-chart-grid: #d7e5df;
   --color-chart-tooltip-bg: #ffffff;
-  --color-chart-tooltip-border: #e2e8f0;
+  --color-chart-tooltip-border: #d7e5df;
   --color-topbar-bg: color-mix(in srgb, var(--color-card) 96%, transparent);
   --color-nav-hover: color-mix(in srgb, var(--color-primary) 8%, transparent);
   --color-nav-active-bg: color-mix(in srgb, var(--color-primary) 12%, transparent);
@@ -91,8 +93,8 @@
   --color-stat-icon-bg: color-mix(in srgb, var(--color-primary) 10%, transparent);
   --color-auth-glow-1: color-mix(in srgb, var(--color-primary) 8%, transparent);
   --color-auth-glow-2: color-mix(in srgb, var(--color-primary) 5%, transparent);
-  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.08), 0 4px 16px rgba(15, 23, 42, 0.06);
-  --shadow-elevated: 0 8px 30px rgba(15, 23, 42, 0.12);
+  --shadow-card: 0 1px 3px rgba(3, 40, 32, 0.06), 0 4px 16px rgba(3, 40, 32, 0.05);
+  --shadow-elevated: 0 8px 30px rgba(3, 40, 32, 0.1);
   --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-primary) 28%, transparent);
 }
 

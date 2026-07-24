@@ -87,6 +87,12 @@ export function RootNavigator() {
   useEffect(() => {
     setSessionExpiredHandler(() => {
       dispatch(clearCredentials());
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined') {
+          window.alert('Session expired. Please sign in again.');
+        }
+        return;
+      }
       Alert.alert('Session expired', 'Please sign in again.');
     });
   }, [dispatch]);

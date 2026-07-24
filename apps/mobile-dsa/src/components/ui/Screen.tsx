@@ -1,10 +1,12 @@
 import { type ReactNode, useMemo } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   ScrollView,
   type ScrollViewProps,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,18 +24,32 @@ interface ScreenProps extends ScrollViewProps {
   padded?: boolean;
 }
 
-function createStyles(colors: AppColors) {
+function createStyles(colors: AppColors, isWide: boolean) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     flex: { flex: 1 },
     padded: { paddingHorizontal: spacing.md },
-    scrollContent: { paddingBottom: spacing.xxl },
+    scrollContent: {
+      paddingBottom: spacing.xxl,
+      width: '100%',
+      maxWidth: isWide ? 1100 : undefined,
+      alignSelf: 'center',
+    },
+    bodyShell: {
+      width: '100%',
+      maxWidth: isWide ? 1100 : undefined,
+      alignSelf: 'center',
+      flex: 1,
+    },
     header: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
+      width: '100%',
+      maxWidth: isWide ? 1100 : undefined,
+      alignSelf: 'center',
     },
     headerLeft: { flex: 1 },
     title: { ...typography.h1, color: colors.text, fontSize: 24 },
@@ -59,7 +75,9 @@ export function Screen({
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { width } = useWindowDimensions();
+  const isWide = Platform.OS === 'web' && width >= 920;
+  const styles = useMemo(() => createStyles(colors, isWide), [colors, isWide]);
 
   const header = (title || subtitle) && (
     <View style={styles.header}>
@@ -85,7 +103,7 @@ export function Screen({
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         {header}
-        <View style={[styles.flex, ...contentStyle]}>{body}</View>
+        <View style={[styles.bodyShell, ...contentStyle]}>{body}</View>
       </View>
     );
   }
@@ -115,7 +133,9 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { width } = useWindowDimensions();
+  const isWide = Platform.OS === 'web' && width >= 920;
+  const styles = useMemo(() => createStyles(colors, isWide), [colors, isWide]);
 
   return (
     <View style={styles.empty}>

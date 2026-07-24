@@ -27,7 +27,7 @@ export function RedocViewer({ spec }: RedocViewerProps) {
             jsonSampleExpandLevel: 2,
             theme: {
               colors: {
-                primary: { main: '#22d3a6' },
+                primary: { main: '#00c389' },
                 text: { primary: 'var(--color-text)', secondary: 'var(--color-text-secondary)' },
                 http: {
                   get: '#38bdf8',

@@ -27,16 +27,16 @@ export type ThemeTokens = {
 export const THEME_STORAGE_KEY = 'kuberone-theme-preference';
 
 export const darkThemeTokens: ThemeTokens = {
-  primary: '#22D3A6',
-  primaryHover: '#1EB892',
+  primary: '#00C389',
+  primaryHover: '#22D3A6',
   accent: '#18C964',
-  onPrimary: '#071A1F',
-  background: '#071A1F',
-  card: '#102B2E',
-  surface: '#0D2428',
-  surfaceHover: '#143338',
-  border: '#1A3D42',
-  borderLight: '#234A50',
+  onPrimary: '#032820',
+  background: '#032820',
+  card: '#0A342C',
+  surface: '#0C3D34',
+  surfaceHover: '#105043',
+  border: '#145544',
+  borderLight: '#1A6654',
   text: '#FFFFFF',
   textSecondary: '#C7D2D9',
   textMuted: '#8B9AAB',
@@ -44,37 +44,38 @@ export const darkThemeTokens: ThemeTokens = {
   warning: '#F59E0B',
   success: '#18C964',
   info: '#38BDF8',
-  overlay: 'rgba(7, 26, 31, 0.72)',
-  chartGrid: '#1A3D42',
-  chartTooltipBg: '#102B2E',
-  chartTooltipBorder: '#1A3D42',
+  overlay: 'rgba(3, 40, 32, 0.72)',
+  chartGrid: '#145544',
+  chartTooltipBg: '#0A342C',
+  chartTooltipBorder: '#145544',
 };
 
 export const lightThemeTokens: ThemeTokens = {
-  primary: '#0D9488',
-  primaryHover: '#0F766E',
+  // Align with kuberfinserve.com brand greens
+  primary: '#00C389',
+  primaryHover: '#0B5D4B',
   accent: '#18C964',
   onPrimary: '#FFFFFF',
-  background: '#F8FAFC',
+  background: '#F4F7F6',
   card: '#FFFFFF',
-  surface: '#F1F5F9',
-  surfaceHover: '#E2E8F0',
-  border: '#E2E8F0',
-  borderLight: '#CBD5E1',
-  text: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#64748B',
+  surface: '#EEF5F2',
+  surfaceHover: '#E2EFEA',
+  border: '#D7E5DF',
+  borderLight: '#C5D9D1',
+  text: '#032820',
+  textSecondary: '#3D5A52',
+  textMuted: '#6B857C',
   danger: '#DC2626',
   warning: '#D97706',
   success: '#16A34A',
   info: '#0284C7',
-  overlay: 'rgba(15, 23, 42, 0.45)',
-  chartGrid: '#E2E8F0',
+  overlay: 'rgba(3, 40, 32, 0.45)',
+  chartGrid: '#D7E5DF',
   chartTooltipBg: '#FFFFFF',
-  chartTooltipBorder: '#E2E8F0',
+  chartTooltipBorder: '#D7E5DF',
 };
 
-export const chartPalette = ['#22D3A6', '#18C964', '#38BDF8', '#F59E0B', '#8B9AAB', '#EF4444'] as const;
+export const chartPalette = ['#00C389', '#0B5D4B', '#18C964', '#38BDF8', '#F59E0B', '#EF4444'] as const;
 
 export function tokensFor(theme: ResolvedTheme): ThemeTokens {
   return theme === 'light' ? lightThemeTokens : darkThemeTokens;
