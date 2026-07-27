@@ -28,8 +28,25 @@ function isLocalDevHost(): boolean {
   return true;
 }
 
+function isHostedPartnerWebHostname(hostname: string): boolean {
+  return (
+    hostname === 'partner.kuberone.online' ||
+    hostname === 'dsa.kuberone.online' ||
+    hostname.endsWith('.vercel.app')
+  );
+}
+
 /** @see apps/mobile-customer/src/lib/api-config.ts */
 export function resolveApiBaseUrl(): string {
+  // Hosted Partner web (Vercel) → same-origin /api/v1 (vercel.json proxies to Cloudflare tunnel)
+  if (Platform.OS === 'web' && typeof globalThis !== 'undefined') {
+    const win = globalThis as typeof globalThis & { location?: { hostname?: string } };
+    const host = win.location?.hostname;
+    if (host && isHostedPartnerWebHostname(host)) {
+      return API_SUFFIX;
+    }
+  }
+
   const configured = readConfiguredUrl();
   if (configured) {
     return normalizeApiBaseUrl(configured);

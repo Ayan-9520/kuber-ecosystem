@@ -1,0 +1,21 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "cd ../.. && corepack enable && pnpm install --frozen-lockfile --ignore-scripts",
+  "buildCommand": "cd ../.. && pnpm --filter @kuberone/shared-types --filter @kuberone/shared-theme --filter @kuberone/shared-validation --filter @kuberone/shared-utils run build && pnpm --filter @kuberone/mobile-dsa run build:docker",
+  "outputDirectory": "dist",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://meditation-ordered-exploring-desired.trycloudflare.com/api/:path*"
+    },
+    {
+      "source": "/health/:path*",
+      "destination": "https://meditation-ordered-exploring-desired.trycloudflare.com/health/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
