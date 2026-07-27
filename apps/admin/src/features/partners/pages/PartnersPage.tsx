@@ -61,6 +61,18 @@ export function PartnersPage() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => partnersService.remove(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['partners'] });
+      setSelectedId(null);
+      setActionMessage(null);
+    },
+    onError: (err: Error) => {
+      setActionMessage(err.message || 'Could not remove partner.');
+    },
+  });
+
   const columns = [
     { key: 'partnerCode', header: 'Code', render: (r: Record<string, unknown>) => fieldStr(r, 'partnerCode') },
     {
@@ -166,7 +178,7 @@ export function PartnersPage() {
               <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
                 <Button
                   type="button"
-                  disabled={statusMutation.isPending}
+                  disabled={statusMutation.isPending || deleteMutation.isPending}
                   onClick={() => selectedId && statusMutation.mutate({ id: selectedId, status: 'ACTIVE' })}
                 >
                   {statusMutation.isPending ? 'Updating…' : 'Approve Partner'}
@@ -174,13 +186,33 @@ export function PartnersPage() {
                 <Button
                   type="button"
                   variant="secondary"
-                  disabled={statusMutation.isPending}
+                  disabled={statusMutation.isPending || deleteMutation.isPending}
                   onClick={() => selectedId && statusMutation.mutate({ id: selectedId, status: 'REJECTED' })}
                 >
                   Reject
                 </Button>
               </div>
             )}
+
+            {selectedId && fieldStr(detail, 'partnerCode') !== 'DSA-DEMO-001' ? (
+              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={deleteMutation.isPending || statusMutation.isPending}
+                  onClick={() => {
+                    if (!selectedId) return;
+                    const code = fieldStr(detail, 'partnerCode');
+                    const ok = window.confirm(
+                      `Remove partner ${code || selectedId}? They will leave the active network list (soft delete — real CRM style).`,
+                    );
+                    if (ok) deleteMutation.mutate(selectedId);
+                  }}
+                >
+                  {deleteMutation.isPending ? 'Removing…' : 'Remove Partner'}
+                </Button>
+              </div>
+            ) : null}
 
             {partnerStatus === 'ACTIVE' && (
               <Card title="Next step for partner">

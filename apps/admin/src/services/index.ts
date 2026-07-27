@@ -109,6 +109,7 @@ export const partnersService = {
   getById: (id: string) => apiGet<Record<string, unknown>>(`/partners/${id}`),
   create: (data: unknown) => apiPost<Record<string, unknown>>('/partners', data),
   update: (id: string, data: unknown) => apiPatch<Record<string, unknown>>(`/partners/${id}`, data),
+  remove: (id: string) => apiDelete<Record<string, unknown>>(`/partners/${id}`),
 };
 
 export const referralsService = {
