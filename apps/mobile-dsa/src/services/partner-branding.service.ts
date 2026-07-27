@@ -1,4 +1,4 @@
-import { api } from '@/lib/api';
+import { apiGet, apiPatch, apiPost } from '@/lib/api';
 
 export interface PartnerBrandProfile {
   slug: string;
@@ -15,26 +15,17 @@ export interface PartnerBrandProfile {
 }
 
 export const partnerBrandingService = {
-  getMyProfile: async () => {
-    const { data } = await api.get<{ data: PartnerBrandProfile }>('/partner-branding/me');
-    return data.data;
-  },
+  getMyProfile: () => apiGet<PartnerBrandProfile>('/partner-branding/me'),
 
-  updateMyProfile: async (payload: Record<string, unknown>) => {
-    const { data } = await api.patch<{ data: PartnerBrandProfile }>('/partner-branding/me', payload);
-    return data.data;
-  },
+  updateMyProfile: (payload: Record<string, unknown>) =>
+    apiPatch<PartnerBrandProfile>('/partner-branding/me', payload),
 
-  publish: async (publish: boolean) => {
-    const { data } = await api.post<{ data: PartnerBrandProfile }>('/partner-branding/me/publish', { publish });
-    return data.data;
-  },
+  publish: (publish: boolean) =>
+    apiPost<PartnerBrandProfile>('/partner-branding/me/publish', { publish }),
 
-  generateContent: async (type: string, prompt?: string) => {
-    const { data } = await api.post<{ data: { body: string; type: string } }>('/partner-branding/me/generate-content', {
+  generateContent: (type: string, prompt?: string) =>
+    apiPost<{ body: string; type: string }>('/partner-branding/me/generate-content', {
       type,
       prompt,
-    });
-    return data.data;
-  },
+    }),
 };

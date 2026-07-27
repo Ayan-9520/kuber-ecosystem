@@ -1,5 +1,7 @@
 import { type NavigatorScreenParams } from '@react-navigation/native';
 
+import type { AcademyModuleId } from '@/features/academy/data/academy';
+
 export type AuthStackParamList = {
   OtpLogin: { phone?: string; fromRegister?: boolean } | undefined;
   PartnerRegister: undefined;
@@ -12,6 +14,11 @@ export type HomeStackParamList = {
   CommunicationHistory: undefined;
   AiAdvisor: undefined;
   VoiceAi: undefined;
+};
+
+export type AcademyStackParamList = {
+  AcademyHome: undefined;
+  AcademyModule: { moduleId: AcademyModuleId };
 };
 
 export type LeadsStackParamList = {
@@ -29,6 +36,26 @@ export type ApplicationsStackParamList = {
 
 export type CommissionsStackParamList = {
   CommissionsHome: undefined;
+  EarningsDashboard: undefined;
+  CommissionTracker: undefined;
+  RaiseInvoice: undefined;
+  InvoiceTracker: undefined;
+  InvoiceTimeline: { invoiceId: string };
+  CommissionTimeline: { commissionId: string };
+  PartnerWallet: undefined;
+  CommissionByStatus: {
+    status: 'PENDING' | 'CALCULATED' | 'APPROVED' | 'PAID' | 'REJECTED' | 'RECOVERED';
+  };
+  PayoutHistory: undefined;
+  TdsCentre: undefined;
+  GstReports: undefined;
+  DownloadStatements: undefined;
+  IncentiveTracker: undefined;
+  BonusTracker: undefined;
+  ReferralIncome: undefined;
+  PartnerDrde: undefined;
+  PartnerBankRecon: undefined;
+  PartnerLoanCases: undefined;
   CommissionLedger: undefined;
   CommissionPayments: undefined;
   PendingCommissions: undefined;
@@ -58,6 +85,7 @@ export type ProfileStackParamList = {
 
 export type MainTabParamList = {
   Home: NavigatorScreenParams<HomeStackParamList>;
+  Academy: NavigatorScreenParams<AcademyStackParamList>;
   Leads: NavigatorScreenParams<LeadsStackParamList>;
   Applications: NavigatorScreenParams<ApplicationsStackParamList>;
   Commissions: NavigatorScreenParams<CommissionsStackParamList>;

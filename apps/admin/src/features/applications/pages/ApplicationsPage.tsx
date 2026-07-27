@@ -94,7 +94,7 @@ export function ApplicationsPage() {
               { key: 'applicationNumber', header: 'Application #', render: (r) => str(r.applicationNumber ?? r.id) },
               { key: 'customerName', header: 'Customer', render: (r) => customerDisplayName(r) },
               { key: 'productName', header: 'Product', render: (r) => productDisplayName(r) },
-              { key: 'partnerName', header: 'DSA / Partner', render: (r) => {
+              { key: 'partnerName', header: 'Financial Partner', render: (r) => {
                 const nested = r.partner as Record<string, unknown> | undefined;
                 return str(r.partnerName ?? nested?.businessName ?? '—');
               }},

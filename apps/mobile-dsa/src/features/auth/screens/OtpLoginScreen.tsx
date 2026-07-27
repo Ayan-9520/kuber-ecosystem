@@ -128,7 +128,7 @@ export function OtpLoginScreen() {
       footer={
         <View style={styles.links}>
           <Text style={styles.link} onPress={() => navigation.navigate('PartnerRegister')}>
-            New DSA partner? Register here
+            New Financial Partner? Register here
           </Text>
           <Text style={styles.hint}>
             Sign in with OTP using your registered partner mobile. Same login as kuberfinserve.com/partner-login

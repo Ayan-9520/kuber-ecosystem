@@ -39,6 +39,13 @@ import {
 
 const read = requireAnyPermission(RBAC_PERMISSIONS.COMMISSIONS_READ, 'commissions.read');
 const write = requireAnyPermission(RBAC_PERMISSIONS.COMMISSIONS_WRITE, 'commissions.write');
+/** Partners may request payout approval with read; admin write still accepted. */
+const requestApproval = requireAnyPermission(
+  RBAC_PERMISSIONS.COMMISSIONS_WRITE,
+  'commissions.write',
+  RBAC_PERMISSIONS.COMMISSIONS_READ,
+  'commissions.read',
+);
 const approve = requireAnyPermission(
   RBAC_PERMISSIONS.COMMISSIONS_APPROVE,
   'commissions.approve',
@@ -80,7 +87,12 @@ commissionLedgerRoutes.delete('/:id', write, validateMiddleware(uuidParamSchema,
 export const commissionApprovalRoutes = Router();
 commissionApprovalRoutes.use(authenticateWithSessionMiddleware);
 commissionApprovalRoutes.get('/', read, validateMiddleware(listCommissionApprovalsQuerySchema, 'query'), asyncHandler(commissionApprovalController.list));
-commissionApprovalRoutes.post('/', write, validateMiddleware(createCommissionApprovalSchema), asyncHandler(commissionApprovalController.request));
+commissionApprovalRoutes.post(
+  '/',
+  requestApproval,
+  validateMiddleware(createCommissionApprovalSchema),
+  asyncHandler(commissionApprovalController.request),
+);
 commissionApprovalRoutes.get('/:id', read, validateMiddleware(uuidParamSchema, 'params'), asyncHandler(commissionApprovalController.getById));
 commissionApprovalRoutes.post(
   '/:id/approve',

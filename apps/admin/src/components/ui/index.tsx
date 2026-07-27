@@ -141,16 +141,27 @@ export function EmptyState({
 }
 
 export function TableSkeleton({ rows = 5, cols = 5 }: { rows?: number; cols?: number }) {
+  const gridStyle = { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` };
+
   return (
-    <div>
-      {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="skeleton skeleton-text" style={{ width: `${60 + (i % 3) * 10}%` }} />
-      ))}
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '1rem', marginTop: '1rem' }}>
+    <div className="table-skeleton" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Loading records…</span>
+      <div className="table-skeleton-head" style={gridStyle}>
         {Array.from({ length: cols }).map((_, i) => (
-          <div key={i} className="skeleton skeleton-stat" />
+          <div key={i} className="skeleton skeleton-cell skeleton-cell--head" />
         ))}
       </div>
+      {Array.from({ length: rows }).map((_, r) => (
+        <div key={r} className="table-skeleton-row" style={gridStyle}>
+          {Array.from({ length: cols }).map((_, c) => (
+            <div
+              key={c}
+              className="skeleton skeleton-cell"
+              style={{ width: `${55 + ((r + c) % 4) * 12}%` }}
+            />
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
@@ -202,12 +213,12 @@ export function DataTable<T extends Record<string, unknown>>({
   emptyMessage = 'No records found',
 }: DataTableProps<T>) {
   if (data.length === 0) {
-    return <p className="text-muted">{emptyMessage}</p>;
+    return <EmptyState title={emptyMessage} description="Nothing to show here yet." />;
   }
 
   return (
-    <div className="data-table-wrapper">
-      <table className="data-table">
+    <div className="data-table-wrapper data-table-wrapper--stacked">
+      <table className="data-table data-table--stacked">
         <thead>
           <tr>
             {columns.map((col) => (
@@ -223,7 +234,7 @@ export function DataTable<T extends Record<string, unknown>>({
               onClick={() => onRowClick?.(row)}
             >
               {columns.map((col) => (
-                <td key={col.key}>
+                <td key={col.key} data-label={col.header ?? col.label ?? col.key}>
                   {col.render
                     ? col.render(row)
                     : formatCellValue(row[col.key], col.key, row)}

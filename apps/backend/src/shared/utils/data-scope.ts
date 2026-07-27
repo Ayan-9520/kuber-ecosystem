@@ -215,6 +215,33 @@ export function applyCommissionScope(
   }
 }
 
+/**
+ * Returns the partner id a request must be locked to, or undefined when the actor
+ * is allowed to query across partners. Use for endpoints whose validators accept an
+ * optional partnerId filter so a partner cannot omit it to read the whole book.
+ */
+export function requiredPartnerScopeId(actor: AuthenticatedUser): string | undefined {
+  if (actor.roles.includes('SUPER_ADMIN') || actor.roles.includes('ADMIN')) return undefined;
+  if (actor.userType === UserType.PARTNER) {
+    if (!actor.partnerId) throw new ForbiddenError('Partner context missing on session');
+    return actor.partnerId;
+  }
+  if (actor.dataScope === DataScope.OWN || actor.dataScope === DataScope.ASSIGNED) {
+    return actor.partnerId ?? undefined;
+  }
+  return undefined;
+}
+
+export function assertPartnerRecordAccess(
+  actor: AuthenticatedUser,
+  record: { partnerId?: string | null },
+): void {
+  const scopeId = requiredPartnerScopeId(actor);
+  if (scopeId && record.partnerId !== scopeId) {
+    throw new ForbiddenError('Insufficient access to commission record');
+  }
+}
+
 export function assertLeadAccess(actor: AuthenticatedUser, lead: BranchScopedRecord): void {
   if (actor.roles.includes('SUPER_ADMIN') || actor.roles.includes('ADMIN')) return;
 

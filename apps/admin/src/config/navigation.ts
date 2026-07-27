@@ -16,6 +16,7 @@ import {
   Apple,
   Gift,
   Headphones,
+  GraduationCap,
   LayoutDashboard,
   MapPin,
   Mail,
@@ -49,6 +50,9 @@ import {
   Briefcase,
   CloudUpload,
   ShieldAlert,
+  Wallet,
+  PieChart,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -69,14 +73,57 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/customers', label: 'Customers', icon: Users, permissions: ['customers.read'], section: 'CRM' },
   { path: '/kyc', label: 'KYC Center', icon: ShieldCheck, permissions: ['kyc.read', 'customers.read'], section: 'CRM' },
   { path: '/applications', label: 'Applications', icon: ClipboardList, permissions: ['applications.read'], section: 'CRM' },
+  {
+    path: '/loan-fulfillment',
+    label: 'Loan Fulfillment',
+    icon: Landmark,
+    permissions: ['loan_fulfillment.read', 'applications.read'],
+    section: 'Fulfillment',
+  },
+  {
+    path: '/loan-fulfillment/cases',
+    label: 'Loan Cases',
+    icon: Briefcase,
+    permissions: ['loan_fulfillment.read', 'applications.read'],
+    section: 'Fulfillment',
+  },
+  {
+    path: '/loan-fulfillment/revenue-rules',
+    label: 'Revenue Rules',
+    icon: Scale,
+    permissions: ['loan_fulfillment.configure', 'loan_fulfillment.write'],
+    section: 'Fulfillment',
+  },
   { path: '/documents', label: 'Documents', icon: FileText, permissions: ['documents.read'], section: 'CRM' },
   { path: '/eligibility', label: 'Eligibility Center', icon: Scale, permissions: ['eligibility.read'], section: 'CRM' },
   { path: '/emi', label: 'EMI Calculator', icon: Calculator, permissions: ['emi.read'], section: 'CRM' },
   { path: '/voice-ai', label: 'Voice AI Console', icon: Mic, permissions: ['eligibility.read', 'emi.read'], section: 'CRM' },
   { path: '/products', label: 'Products', icon: Package, permissions: ['products.read'], section: 'Catalog' },
   { path: '/partners', label: 'Partners', icon: Building2, permissions: ['partners.read'], section: 'Network' },
+  { path: '/academy', label: 'Partner Academy', icon: GraduationCap, permissions: ['partners.read'], section: 'Network' },
   { path: '/referrals', label: 'Referrals', icon: Gift, permissions: ['referrals.read'], section: 'Network' },
   { path: '/commissions', label: 'Commissions', icon: CreditCard, permissions: ['commissions.read'], section: 'Finance' },
+  {
+    path: '/earnings-finance',
+    label: 'Earnings & Finance',
+    icon: Wallet,
+    permissions: ['commissions.read', 'commissions.approve', 'commissions.pay'],
+    section: 'Finance',
+  },
+  {
+    path: '/drde',
+    label: 'Revenue Distribution',
+    icon: PieChart,
+    permissions: ['commissions.read', 'commissions.approve', 'commissions.write', 'commissions.pay'],
+    section: 'Finance',
+  },
+  {
+    path: '/bank-reconciliation',
+    label: 'Bank Reconciliation',
+    icon: FileSpreadsheet,
+    permissions: ['commissions.read', 'commissions.approve', 'commissions.write', 'commissions.pay'],
+    section: 'Finance',
+  },
   { path: '/notifications', label: 'Notifications', icon: Bell, permissions: ['notifications.read'], section: 'Communication' },
   { path: '/email', label: 'Email Platform', icon: Mail, permissions: ['emails.read', 'notifications.read'], section: 'Communication' },
   { path: '/sms', label: 'SMS Platform', icon: MessageSquare, permissions: ['sms.read', 'notifications.read'], section: 'Communication' },
@@ -96,7 +143,7 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/branch-analytics', label: 'Branch Analytics', icon: Building2, permissions: ['branch_analytics.read', 'analytics.read'], section: 'Insights' },
   { path: '/regional-analytics', label: 'Regional Analytics', icon: MapPin, permissions: ['regional_analytics.read', 'analytics.read'], section: 'Insights' },
   { path: '/users', label: 'Users & RBAC', icon: UserCog, permissions: ['users.read', 'roles.read'], section: 'Administration' },
-  { path: '/employees', label: 'Employees', icon: UserCheck, permissions: ['employees.read'], section: 'Administration' },
+  { path: '/employees', label: 'Financial Professionals', icon: UserCheck, permissions: ['employees.read'], section: 'Administration' },
   { path: '/branches', label: 'Branches', icon: Landmark, permissions: ['branches.read'], section: 'Administration' },
   { path: '/governance', label: 'Audit & Compliance', icon: Shield, permissions: ['audit.read', 'compliance.read', 'risk.read', 'security.read'], section: 'Administration' },
   { path: '/uat', label: 'UAT Signoff', icon: FlaskConical, permissions: ['uat.read'], section: 'Administration' },
@@ -123,9 +170,15 @@ export const NAV_ITEMS: NavItem[] = [
 export function filterNavByPermissions(permissions: string[], roles: string[]): NavItem[] {
   const isAdmin = roles.includes('SUPER_ADMIN') || roles.includes('ADMIN');
   if (isAdmin) return NAV_ITEMS;
+  const isFinance = roles.includes('FINANCE');
 
   return NAV_ITEMS.filter((item) => {
     if (!item.permissions?.length) return true;
+    if (isFinance && item.path === '/earnings-finance') return true;
+    if (isFinance && item.path === '/drde') return true;
+    if (isFinance && item.path === '/bank-reconciliation') return true;
+    if (isFinance && item.path === '/commissions') return true;
+    if (isFinance && item.path.startsWith('/loan-fulfillment')) return true;
     return item.permissions.some((p) => permissions.includes(p));
   });
 }

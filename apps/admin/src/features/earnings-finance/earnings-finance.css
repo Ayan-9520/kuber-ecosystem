@@ -1,0 +1,182 @@
+.earnings-finance {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.earnings-finance__role {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: var(--color-brand-50, #ecfdf5);
+  color: var(--color-brand-800, #065f46);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.earnings-finance__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.earnings-module-card {
+  text-align: left;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: var(--card-bg, #fff);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.earnings-module-card:hover,
+.earnings-module-card.is-active {
+  border-color: var(--color-brand-500, #10b981);
+  box-shadow: 0 8px 24px -12px rgba(5, 61, 50, 0.25);
+}
+
+.earnings-module-card__label {
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+  margin: 0 0 0.25rem;
+}
+
+.earnings-module-card__desc {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted, #64748b);
+  line-height: 1.4;
+}
+
+.earnings-finance__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.earnings-table-wrap {
+  overflow-x: auto;
+}
+
+.earnings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.earnings-table th,
+.earnings-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  text-align: left;
+  vertical-align: top;
+}
+
+.earnings-table th {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #64748b);
+}
+
+.earnings-detail-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 1rem;
+}
+
+.earnings-analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 960px) {
+  .earnings-detail-grid,
+  .earnings-analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .earnings-finance__grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .earnings-finance__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.earnings-timeline__title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+}
+
+.earnings-timeline__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.earnings-timeline__item {
+  position: relative;
+  display: flex;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+  padding-left: 0.25rem;
+}
+
+.earnings-timeline__dot {
+  position: relative;
+  z-index: 1;
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-top: 0.35rem;
+  border-radius: 999px;
+  background: var(--color-brand-600, #059669);
+  flex-shrink: 0;
+}
+
+.earnings-timeline__line {
+  position: absolute;
+  left: 0.52rem;
+  top: 1rem;
+  bottom: 0;
+  width: 2px;
+  background: var(--border-color, #e2e8f0);
+}
+
+.earnings-timeline__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.earnings-timeline__label {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.earnings-timeline__meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted, #64748b);
+}
+
+.earnings-timeline__comment {
+  margin: 0.4rem 0 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.5rem;
+  background: var(--surface-muted, #f8fafc);
+  font-size: 0.8rem;
+  color: var(--text-secondary, #334155);
+}

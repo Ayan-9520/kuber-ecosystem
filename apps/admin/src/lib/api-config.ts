@@ -18,7 +18,23 @@ export function normalizeApiBaseUrl(url: string): string {
   return trimmed;
 }
 
+function isHostedAdminHostname(hostname: string): boolean {
+  return (
+    hostname === 'kuberone.online' ||
+    hostname === 'www.kuberone.online' ||
+    hostname.endsWith('.vercel.app')
+  );
+}
+
+/**
+ * Hosted Admin (Vercel / kuberone.online) always uses same-origin `/api/v1`.
+ * Vercel rewrites proxy `/api/*` to the Cloudflare tunnel → local Docker backend.
+ * This avoids dead trycloudflare URLs baked into old Vercel env builds.
+ */
 export function resolveApiBaseUrl(): string {
+  if (typeof window !== 'undefined' && isHostedAdminHostname(window.location.hostname)) {
+    return API_SUFFIX;
+  }
   const configured = import.meta.env.VITE_API_BASE_URL;
   if (configured?.trim()) return normalizeApiBaseUrl(configured);
   return API_SUFFIX;

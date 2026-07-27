@@ -1,0 +1,440 @@
+/* Loan Fulfillment — scoped premium accents (do not leak into global theme) */
+.loan-fulfillment {
+  --lf-primary: #248396;
+  --lf-primary-hover: #1c6a7a;
+  --lf-secondary: #10662a;
+  --lf-accent: #b0e9b2;
+  --lf-accent-soft: color-mix(in srgb, var(--lf-accent) 35%, var(--color-card, #fff));
+  --lf-surface: var(--color-card, #ffffff);
+  --lf-surface-muted: color-mix(in srgb, var(--lf-primary) 4%, var(--color-card, #fff));
+  --lf-border: color-mix(in srgb, var(--lf-primary) 18%, var(--color-border, #e2e8f0));
+  --lf-muted: var(--color-text-muted, #64748b);
+  --lf-text: var(--color-text, #0f172a);
+  --lf-shadow: 0 10px 28px -16px color-mix(in srgb, var(--lf-primary) 45%, transparent);
+  --lf-radius: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.loan-fulfillment .lf-card {
+  background: var(--lf-surface);
+  border: 1px solid var(--lf-border);
+  border-radius: var(--lf-radius);
+  box-shadow: var(--lf-shadow);
+  padding: 1.15rem 1.25rem;
+}
+
+.loan-fulfillment .lf-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.85rem;
+}
+
+@media (max-width: 480px) {
+  .loan-fulfillment .lf-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+}
+
+.loan-fulfillment .lf-kpi-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.loan-fulfillment .lf-section-title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--lf-muted);
+}
+
+.loan-fulfillment .lf-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.loan-fulfillment .lf-kpi-grid .stat-card {
+  border-radius: var(--lf-radius);
+  border-color: var(--lf-border);
+  box-shadow: var(--lf-shadow);
+}
+
+.loan-fulfillment .lf-charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.loan-fulfillment .lf-charts > * {
+  min-width: 0;
+}
+
+.loan-fulfillment .lf-chart-wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 960px) {
+  .loan-fulfillment .lf-charts {
+    grid-template-columns: 1fr;
+  }
+}
+
+.loan-fulfillment .lf-stage-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  background: var(--lf-accent-soft);
+  color: var(--lf-secondary);
+  border: 1px solid color-mix(in srgb, var(--lf-accent) 55%, transparent);
+  white-space: nowrap;
+}
+
+.loan-fulfillment .lf-stage-pill--terminal {
+  background: color-mix(in srgb, #fecaca 40%, var(--lf-surface));
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.loan-fulfillment .lf-stage-pill--done {
+  background: color-mix(in srgb, var(--lf-secondary) 12%, var(--lf-surface));
+  color: var(--lf-secondary);
+}
+
+.loan-fulfillment .lf-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.loan-fulfillment .lf-filter-bar .search-input-wrapper,
+.loan-fulfillment .lf-filter-bar .form-group {
+  min-width: 160px;
+  flex: 1;
+}
+
+.loan-fulfillment .lf-filter-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+.loan-fulfillment .lf-filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 0.4rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--lf-primary);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.loan-fulfillment .lf-filter-advanced {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--lf-border);
+  border-radius: var(--lf-radius);
+  background: var(--lf-surface-muted, var(--lf-surface));
+}
+
+@media (max-width: 640px) {
+  .loan-fulfillment .lf-filter-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .loan-fulfillment .lf-filter-actions .btn {
+    flex: 1;
+  }
+
+  .loan-fulfillment .lf-filter-advanced {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 0.75rem;
+  }
+}
+
+.loan-fulfillment .lf-empty {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  border: 1px dashed var(--lf-border);
+  border-radius: var(--lf-radius);
+  background: color-mix(in srgb, var(--lf-accent) 12%, var(--lf-surface));
+}
+
+.loan-fulfillment .lf-empty .empty-state-icon {
+  color: var(--lf-primary);
+  margin-bottom: 0.5rem;
+}
+
+.loan-fulfillment .lf-inline-note {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--lf-muted);
+}
+
+/* Vertical journey timeline */
+.loan-fulfillment .lf-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.loan-fulfillment .lf-timeline::before {
+  content: '';
+  position: absolute;
+  left: 0.7rem;
+  top: 0.4rem;
+  bottom: 0.4rem;
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    var(--lf-primary),
+    color-mix(in srgb, var(--lf-accent) 70%, var(--lf-primary)),
+    var(--lf-border)
+  );
+  border-radius: 2px;
+}
+
+.loan-fulfillment .lf-timeline__item {
+  position: relative;
+  padding: 0 0 1.15rem 2.25rem;
+}
+
+.loan-fulfillment .lf-timeline__item:last-child {
+  padding-bottom: 0;
+}
+
+.loan-fulfillment .lf-timeline__dot {
+  position: absolute;
+  left: 0.35rem;
+  top: 0.2rem;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background: var(--lf-surface);
+  border: 2px solid var(--lf-border);
+  z-index: 1;
+}
+
+.loan-fulfillment .lf-timeline__item.is-done .lf-timeline__dot {
+  background: var(--lf-secondary);
+  border-color: var(--lf-secondary);
+}
+
+.loan-fulfillment .lf-timeline__item.is-current .lf-timeline__dot {
+  background: var(--lf-primary);
+  border-color: var(--lf-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--lf-primary) 22%, transparent);
+}
+
+.loan-fulfillment .lf-timeline__item.is-upcoming .lf-timeline__dot {
+  background: var(--lf-surface);
+  border-color: var(--lf-border);
+}
+
+.loan-fulfillment .lf-timeline__title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--lf-text);
+}
+
+.loan-fulfillment .lf-timeline__meta {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  color: var(--lf-muted);
+  line-height: 1.4;
+}
+
+.loan-fulfillment .lf-timeline__item.is-upcoming .lf-timeline__title {
+  color: var(--lf-muted);
+  font-weight: 600;
+}
+
+/* Distribution table */
+.loan-fulfillment .lf-dist-table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.loan-fulfillment .lf-dist-table th {
+  text-align: left;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--lf-muted);
+  border-bottom: 1px solid var(--lf-border);
+}
+
+.loan-fulfillment .lf-dist-table td {
+  padding: 0.5rem 0.65rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--lf-border) 70%, transparent);
+  vertical-align: middle;
+}
+
+.loan-fulfillment .lf-dist-table input {
+  width: 100%;
+  max-width: 110px;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--lf-border);
+  border-radius: 0.5rem;
+  background: var(--lf-surface);
+  color: var(--lf-text);
+  font-size: 0.85rem;
+}
+
+.loan-fulfillment .lf-dist-table input:focus {
+  outline: 2px solid color-mix(in srgb, var(--lf-primary) 35%, transparent);
+  border-color: var(--lf-primary);
+}
+
+.loan-fulfillment .lf-dist-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--lf-border);
+}
+
+.loan-fulfillment .lf-dist-total {
+  display: flex;
+  gap: 1.25rem;
+  font-size: 0.85rem;
+}
+
+.loan-fulfillment .lf-dist-total strong {
+  color: var(--lf-text);
+}
+
+.loan-fulfillment .lf-dist-ok {
+  color: var(--lf-secondary);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.loan-fulfillment .lf-dist-bad {
+  color: #b91c1c;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.loan-fulfillment .lf-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 720px) {
+  .loan-fulfillment .lf-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.loan-fulfillment .lf-form-section {
+  margin-bottom: 0.25rem;
+}
+
+.loan-fulfillment .lf-form-section h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  color: var(--lf-primary);
+  font-weight: 700;
+}
+
+.loan-fulfillment .lf-detail-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.loan-fulfillment .lf-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.85rem 1.25rem;
+}
+
+.loan-fulfillment .lf-info-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--lf-muted);
+  margin-bottom: 0.2rem;
+}
+
+.loan-fulfillment .lf-info-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--lf-text);
+  word-break: break-word;
+}
+
+.loan-fulfillment .lf-activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.loan-fulfillment .lf-activity-item {
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--lf-border);
+  background: color-mix(in srgb, var(--lf-accent) 8%, var(--lf-surface));
+}
+
+.loan-fulfillment .lf-activity-item strong {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.15rem;
+}
+
+.loan-fulfillment .lf-activity-item span {
+  font-size: 0.75rem;
+  color: var(--lf-muted);
+}
+
+.loan-fulfillment .btn-primary {
+  background: var(--lf-primary);
+  border-color: var(--lf-primary);
+}
+
+.loan-fulfillment .btn-primary:hover:not(:disabled) {
+  background: var(--lf-primary-hover);
+  border-color: var(--lf-primary-hover);
+}
+
+.loan-fulfillment .tab.active {
+  color: var(--lf-primary);
+  border-bottom-color: var(--lf-primary);
+}

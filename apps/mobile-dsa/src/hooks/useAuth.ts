@@ -17,7 +17,7 @@ export function useAuth() {
 
       if (me.userType !== 'PARTNER') {
         await clearTokens();
-        throw new Error('This app is for DSA partners only');
+        throw new Error('This app is for verified Financial Partners only');
       }
 
       dispatch(

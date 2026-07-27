@@ -441,6 +441,9 @@ const ROLE_PERMISSION_MATRIX: RoleMatrix = {
     'documents.write',
     'documents.download',
     'commissions.read',
+    // Allows partner to request payout approval only; approve/pay stay finance-only.
+    'commissions.write',
+    'loan_fulfillment.read',
     'referrals.read',
     'referrals.write',
     'notifications.read',

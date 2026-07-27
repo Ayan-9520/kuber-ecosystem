@@ -1,0 +1,225 @@
+// ── Loan Fulfillment Domain ──
+// Case IDs: KF-2026-000001. Soft FKs as Char(36) so migration can land
+// without rewriting every related domain model in the first cut.
+
+model LoanCase {
+  id                      String                 @id @default(uuid()) @db.Char(36)
+  caseNumber              String                 @unique @map("case_number") @db.VarChar(30)
+  stage                   LoanCaseStage          @default(LEAD_CREATED)
+  product                 LoanFulfillmentProduct
+  lenderName              String                 @map("lender_name") @db.VarChar(150)
+  lenderId                String?                @map("lender_id") @db.Char(36)
+  branchName              String?                @map("branch_name") @db.VarChar(150)
+  branchId                String?                @map("branch_id") @db.Char(36)
+  applicationId           String?                @map("application_id") @db.Char(36)
+  leadId                  String?                @map("lead_id") @db.Char(36)
+  customerId              String?                @map("customer_id") @db.Char(36)
+  partnerId               String?                @map("partner_id") @db.Char(36)
+  connectorId             String?                @map("connector_id") @db.Char(36)
+  relationshipManagerId   String?                @map("relationship_manager_id") @db.Char(36)
+  salesEmployeeId         String?                @map("sales_employee_id") @db.Char(36)
+  customerName            String                 @map("customer_name") @db.VarChar(150)
+  pan                     String?                @db.VarChar(10)
+  aadhaarMasked           String?                @map("aadhaar_masked") @db.VarChar(16)
+  mobile                  String                 @db.VarChar(15)
+  email                   String?                @db.VarChar(255)
+  occupation              String?                @db.VarChar(100)
+  employer                String?                @db.VarChar(150)
+  annualIncome            Decimal?               @map("annual_income") @db.Decimal(15, 2)
+  propertyAddress         String?                @map("property_address") @db.VarChar(500)
+  city                    String?                @db.VarChar(100)
+  state                   String?                @db.VarChar(100)
+  referralSource          String?                @map("referral_source") @db.VarChar(100)
+  projectName             String?                @map("project_name") @db.VarChar(200)
+  loanAmount              Decimal                @map("loan_amount") @db.Decimal(15, 2)
+  requestedAmount         Decimal                @map("requested_amount") @db.Decimal(15, 2)
+  eligibleAmount          Decimal?               @map("eligible_amount") @db.Decimal(15, 2)
+  sanctionAmount          Decimal?               @map("sanction_amount") @db.Decimal(15, 2)
+  disbursementAmount      Decimal?               @map("disbursement_amount") @db.Decimal(15, 2)
+  interestRate            Decimal?               @map("interest_rate") @db.Decimal(7, 4)
+  tenureMonths            Int?                   @map("tenure_months")
+  emiAmount               Decimal?               @map("emi_amount") @db.Decimal(15, 2)
+  bankApplicationNumber   String?                @map("bank_application_number") @db.VarChar(50)
+  loanAccountNumber       String?                @map("loan_account_number") @db.VarChar(50)
+  expectedSanctionDate    DateTime?              @map("expected_sanction_date") @db.Date
+  expectedDisbursementDate DateTime?             @map("expected_disbursement_date") @db.Date
+  expectedRevenue         Decimal?               @map("expected_revenue") @db.Decimal(15, 2)
+  expectedCommission      Decimal?               @map("expected_commission") @db.Decimal(15, 2)
+  revenueGenerated        Decimal?               @map("revenue_generated") @db.Decimal(15, 2)
+  gstAmount               Decimal?               @map("gst_amount") @db.Decimal(15, 2)
+  tdsAmount               Decimal?               @map("tds_amount") @db.Decimal(15, 2)
+  netRevenue              Decimal?               @map("net_revenue") @db.Decimal(15, 2)
+  approvalStatus          LoanCaseApprovalStatus @default(NOT_REQUIRED) @map("approval_status")
+  paymentStatus           LoanCasePaymentStatus  @default(NOT_DUE) @map("payment_status")
+  aiEligibilityScore      Decimal?               @map("ai_eligibility_score") @db.Decimal(5, 2)
+  aiRiskScore             Decimal?               @map("ai_risk_score") @db.Decimal(5, 2)
+  aiBankRecommendation    String?                @map("ai_bank_recommendation") @db.VarChar(200)
+  aiCaseSummary           String?                @map("ai_case_summary") @db.Text
+  remarks                 String?                @db.Text
+  internalNotes           String?                @map("internal_notes") @db.Text
+  metadata                Json?
+  version                 Int                    @default(1)
+  createdAt               DateTime               @default(now()) @map("created_at")
+  updatedAt               DateTime               @updatedAt @map("updated_at")
+  createdById             String?                @map("created_by") @db.Char(36)
+  updatedById             String?                @map("updated_by") @db.Char(36)
+  deletedAt               DateTime?              @map("deleted_at")
+  deletedById             String?                @map("deleted_by") @db.Char(36)
+
+  timeline     LoanCaseTimelineEvent[]
+  documents    LoanCaseDocument[]
+  stakeholders LoanCaseStakeholder[]
+  approvals    LoanCaseApproval[]
+  tasks        LoanCaseTask[]
+  activities   LoanCaseActivity[]
+
+  @@index([stage, createdAt])
+  @@index([partnerId, stage])
+  @@index([salesEmployeeId, stage])
+  @@index([mobile])
+  @@index([pan])
+  @@index([city, state])
+  @@index([deletedAt])
+  @@map("loan_cases")
+}
+
+model LoanCaseTimelineEvent {
+  id          String        @id @default(uuid()) @db.Char(36)
+  loanCaseId  String        @map("loan_case_id") @db.Char(36)
+  stage       LoanCaseStage
+  title       String        @db.VarChar(200)
+  description String?       @db.Text
+  performedBy String?       @map("performed_by") @db.VarChar(150)
+  performedById String?     @map("performed_by_id") @db.Char(36)
+  metadata    Json?
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  loanCase LoanCase @relation(fields: [loanCaseId], references: [id], onDelete: Cascade)
+
+  @@index([loanCaseId, createdAt])
+  @@map("loan_case_timeline_events")
+}
+
+model LoanCaseDocument {
+  id            String               @id @default(uuid()) @db.Char(36)
+  loanCaseId    String               @map("loan_case_id") @db.Char(36)
+  documentType  LoanCaseDocumentType @map("document_type")
+  fileName      String               @map("file_name") @db.VarChar(255)
+  storageKey    String               @map("storage_key") @db.VarChar(500)
+  mimeType      String?              @map("mime_type") @db.VarChar(100)
+  fileSizeBytes Int?                 @map("file_size_bytes")
+  version       Int                  @default(1)
+  uploadedById  String?              @map("uploaded_by") @db.Char(36)
+  uploadedByName String?             @map("uploaded_by_name") @db.VarChar(150)
+  verifiedAt    DateTime?            @map("verified_at")
+  verifiedById  String?              @map("verified_by") @db.Char(36)
+  createdAt     DateTime             @default(now()) @map("created_at")
+
+  loanCase LoanCase @relation(fields: [loanCaseId], references: [id], onDelete: Cascade)
+
+  @@index([loanCaseId, documentType])
+  @@map("loan_case_documents")
+}
+
+model LoanRevenueRule {
+  id            String                 @id @default(uuid()) @db.Char(36)
+  name          String                 @db.VarChar(200)
+  lenderName    String                 @map("lender_name") @db.VarChar(150)
+  lenderId      String?                @map("lender_id") @db.Char(36)
+  product       LoanFulfillmentProduct
+  revenuePercent Decimal               @map("revenue_percent") @db.Decimal(7, 4)
+  gstPercent    Decimal                @default(18) @map("gst_percent") @db.Decimal(7, 4)
+  tdsPercent    Decimal                @default(5) @map("tds_percent") @db.Decimal(7, 4)
+  platformSharePercent Decimal         @default(0) @map("platform_share_percent") @db.Decimal(7, 4)
+  partnerSharePercent  Decimal         @default(0) @map("partner_share_percent") @db.Decimal(7, 4)
+  employeeSharePercent Decimal         @default(0) @map("employee_share_percent") @db.Decimal(7, 4)
+  teamSharePercent     Decimal         @default(0) @map("team_share_percent") @db.Decimal(7, 4)
+  managerSharePercent  Decimal         @default(0) @map("manager_share_percent") @db.Decimal(7, 4)
+  companySharePercent  Decimal         @default(0) @map("company_share_percent") @db.Decimal(7, 4)
+  isActive      Boolean                @default(true) @map("is_active")
+  effectiveFrom DateTime               @map("effective_from") @db.Date
+  effectiveTo   DateTime?              @map("effective_to") @db.Date
+  createdAt     DateTime               @default(now()) @map("created_at")
+  updatedAt     DateTime               @updatedAt @map("updated_at")
+  createdById   String?                @map("created_by") @db.Char(36)
+
+  @@index([lenderName, product, isActive])
+  @@map("loan_revenue_rules")
+}
+
+model LoanCaseStakeholder {
+  id              String                @id @default(uuid()) @db.Char(36)
+  loanCaseId      String                @map("loan_case_id") @db.Char(36)
+  stakeholderType LoanStakeholderType   @map("stakeholder_type")
+  stakeholderName String                @map("stakeholder_name") @db.VarChar(150)
+  stakeholderRefId String?              @map("stakeholder_ref_id") @db.Char(36)
+  sharePercent    Decimal               @map("share_percent") @db.Decimal(7, 4)
+  amount          Decimal               @db.Decimal(15, 2)
+  approvalStatus  LoanCaseApprovalStatus @default(PENDING) @map("approval_status")
+  paymentStatus   LoanCasePaymentStatus  @default(PENDING) @map("payment_status")
+  paidAt          DateTime?             @map("paid_at")
+  transactionRef  String?               @map("transaction_ref") @db.VarChar(100)
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  loanCase LoanCase @relation(fields: [loanCaseId], references: [id], onDelete: Cascade)
+
+  @@index([loanCaseId])
+  @@index([stakeholderRefId, paymentStatus])
+  @@map("loan_case_stakeholders")
+}
+
+model LoanCaseApproval {
+  id          String                 @id @default(uuid()) @db.Char(36)
+  loanCaseId  String                 @map("loan_case_id") @db.Char(36)
+  step        String                 @db.VarChar(50)
+  status      LoanCaseApprovalStatus @default(PENDING)
+  comment     String?                @db.Text
+  actedById   String?                @map("acted_by") @db.Char(36)
+  actedByName String?                @map("acted_by_name") @db.VarChar(150)
+  actedAt     DateTime?              @map("acted_at")
+  createdAt   DateTime               @default(now()) @map("created_at")
+
+  loanCase LoanCase @relation(fields: [loanCaseId], references: [id], onDelete: Cascade)
+
+  @@index([loanCaseId, createdAt])
+  @@map("loan_case_approvals")
+}
+
+model LoanCaseTask {
+  id           String               @id @default(uuid()) @db.Char(36)
+  loanCaseId   String               @map("loan_case_id") @db.Char(36)
+  title        String               @db.VarChar(200)
+  description  String?              @db.Text
+  priority     LoanCaseTaskPriority @default(MEDIUM)
+  status       LoanCaseTaskStatus   @default(OPEN)
+  dueAt        DateTime?            @map("due_at")
+  assignedToId String?              @map("assigned_to") @db.Char(36)
+  assignedToName String?            @map("assigned_to_name") @db.VarChar(150)
+  completedAt  DateTime?            @map("completed_at")
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+
+  loanCase LoanCase @relation(fields: [loanCaseId], references: [id], onDelete: Cascade)
+
+  @@index([loanCaseId, status])
+  @@index([assignedToId, status])
+  @@map("loan_case_tasks")
+}
+
+model LoanCaseActivity {
+  id          String   @id @default(uuid()) @db.Char(36)
+  loanCaseId  String   @map("loan_case_id") @db.Char(36)
+  action      String   @db.VarChar(100)
+  detail      String?  @db.Text
+  userId      String?  @map("user_id") @db.Char(36)
+  userName    String?  @map("user_name") @db.VarChar(150)
+  ipAddress   String?  @map("ip_address") @db.VarChar(64)
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  loanCase LoanCase @relation(fields: [loanCaseId], references: [id], onDelete: Cascade)
+
+  @@index([loanCaseId, createdAt])
+  @@map("loan_case_activities")
+}

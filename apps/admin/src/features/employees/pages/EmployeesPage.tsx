@@ -166,7 +166,7 @@ export function EmployeesPage() {
   return (
     <div className="page-container">
       <PageHeader
-        title="Employees"
+        title="Financial Professionals"
         subtitle="Manage employee records and branch assignments"
         actions={
           <Button

@@ -23,6 +23,16 @@ import { BranchAnalyticsHubPage } from '@/features/branch-analytics';
 import { BranchesPage } from '@/features/branches';
 import { CampaignsPage, CampaignDetailPage } from '@/features/campaigns';
 import { CommissionsPage } from '@/features/commissions';
+import { EarningsFinancePage } from '@/features/earnings-finance';
+import { DrdePage } from '@/features/drde';
+import { BankReconciliationPage } from '@/features/bank-reconciliation';
+import {
+  CreateLoanCasePage,
+  LoanCaseDetailPage,
+  LoanCasesPage,
+  LoanFulfillmentDashboardPage,
+  RevenueRulesPage,
+} from '@/features/loan-fulfillment';
 import { NotFoundPage } from '@/features/common/pages/NotFoundPage';
 import { ContentHubPage, ContentStudioPage } from '@/features/content';
 import {
@@ -67,6 +77,7 @@ import { MonitoringHubPage } from '@/features/monitoring';
 import { NotificationsPage } from '@/features/notifications';
 import { ObservabilityHubPage } from '@/features/observability';
 import { PartnersPage } from '@/features/partners';
+import { PartnerAcademyPage } from '@/features/academy';
 import { PlayStoreHubPage } from '@/features/play-store';
 import { ProductionHubPage } from '@/features/production';
 import { ProductsPage } from '@/features/products';
@@ -137,6 +148,27 @@ export function AppRoutes() {
           <Route path="applications" element={withPermission('applications', <ApplicationsPage />)} />
           <Route path="applications/:id" element={withPermission('applications', <ApplicationDetailPage />)} />
 
+          <Route
+            path="loan-fulfillment"
+            element={withPermission('loan-fulfillment', <LoanFulfillmentDashboardPage />)}
+          />
+          <Route
+            path="loan-fulfillment/cases"
+            element={withPermission('loan-fulfillment-cases', <LoanCasesPage />)}
+          />
+          <Route
+            path="loan-fulfillment/cases/new"
+            element={withPermission('loan-fulfillment-create', <CreateLoanCasePage />)}
+          />
+          <Route
+            path="loan-fulfillment/cases/:id"
+            element={withPermission('loan-fulfillment-cases', <LoanCaseDetailPage />)}
+          />
+          <Route
+            path="loan-fulfillment/revenue-rules"
+            element={withPermission('loan-fulfillment-revenue-rules', <RevenueRulesPage />)}
+          />
+
           <Route path="documents" element={withPermission('documents', <DocumentsPage />)} />
           <Route path="documents/:id" element={withPermission('documents', <DocumentDetailPage />)} />
 
@@ -146,8 +178,18 @@ export function AppRoutes() {
 
           <Route path="products" element={withPermission('products', <ProductsPage />)} />
           <Route path="partners" element={withPermission('partners', <PartnersPage />)} />
+          <Route path="academy" element={withPermission('academy', <PartnerAcademyPage />)} />
           <Route path="referrals" element={withPermission('referrals', <ReferralsPage />)} />
           <Route path="commissions" element={withPermission('commissions', <CommissionsPage />)} />
+          <Route
+            path="earnings-finance"
+            element={withPermission('earnings-finance', <EarningsFinancePage />)}
+          />
+          <Route path="drde" element={withPermission('drde', <DrdePage />)} />
+          <Route
+            path="bank-reconciliation"
+            element={withPermission('bank-reconciliation', <BankReconciliationPage />)}
+          />
           <Route path="notifications" element={withPermission('notifications', <NotificationsPage />)} />
           <Route path="email" element={withPermission('email', <EmailPage />)} />
           <Route path="sms" element={withPermission('sms', <SmsPage />)} />

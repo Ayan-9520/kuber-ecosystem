@@ -39,7 +39,7 @@ const CHANNEL_OPTIONS = [
 const AUDIENCE_OPTIONS = [
   { value: 'ALL_CUSTOMERS', label: 'All Customers' },
   { value: 'LEADS', label: 'Leads' },
-  { value: 'DSA_PARTNERS', label: 'DSA Partners' },
+  { value: 'DSA_PARTNERS', label: 'Financial Partners' },
   { value: 'BRANCH_CUSTOMERS', label: 'Branch Customers' },
   { value: 'CUSTOM_SEGMENT', label: 'Custom Segment' },
 ];

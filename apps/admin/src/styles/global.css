@@ -1,6 +1,7 @@
 @import './ui.css';
 @import './api-docs.css';
 @import '../features/support/support.css';
+@import '../features/loan-fulfillment/loan-fulfillment.css';
 
 /* ── KuberOne Enterprise Design System ── */
 /* Tokens: use CSS variables only — no hardcoded colors in components */

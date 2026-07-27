@@ -2,7 +2,14 @@ import { recommendationsService } from './recommendations.service';
 import { supportService } from './support.service';
 
 import { normalizeCommissionAnalytics, normalizeLeadAnalytics } from '@/lib/analytics-helpers';
-import { apiDownload, apiGet, apiGetPaginated, apiPatch, apiPost, apiDelete } from '@/lib/api';
+import { apiDownload, apiGet, apiGetPaginated, apiPatch, apiPost, apiPut, apiDelete } from '@/lib/api';
+
+import type {
+  CreateLoanCaseInput,
+  LoanCase,
+  LoanFulfillmentDashboard,
+  LoanRevenueRule,
+} from '@/features/loan-fulfillment/data/types';
 
 export { copilotService } from './copilot.service';
 export type { CopilotLeadAnalysis, CopilotApplicationAnalysis, CopilotAnalytics } from './copilot.service';
@@ -120,6 +127,8 @@ export const commissionsService = {
   rules: (params?: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/commission-rules', params ?? {}),
   analytics: async (params?: Record<string, unknown>) =>
     normalizeCommissionAnalytics(await apiGet<Record<string, unknown>>('/commission-analytics', params)),
+  requestApproval: (data: { ledgerId: string; notes?: string }) =>
+    apiPost<Record<string, unknown>>('/commission-approvals', data),
   approveApproval: (id: string, data?: unknown) =>
     apiPost<Record<string, unknown>>(`/commission-approvals/${id}/approve`, data ?? {}),
   rejectApproval: (id: string, data?: unknown) =>
@@ -250,4 +259,192 @@ export const dashboardService = {
   recentLeads: () => leadsService.list({ page: 1, limit: 5, sortBy: 'createdAt', sortOrder: 'desc' }),
   recentApplications: () => applicationsService.list({ page: 1, limit: 5, sortBy: 'createdAt', sortOrder: 'desc' }),
   pendingDocuments: () => documentsService.list({ page: 1, limit: 5, status: 'PENDING_VERIFICATION' }),
+};
+
+export const loanFulfillmentService = {
+  dashboard: async () => {
+    const raw = await apiGet<Record<string, unknown>>('/loan-fulfillment/dashboard');
+    const kpis = (raw.kpis ?? raw) as Record<string, unknown>;
+    const charts = (raw.charts ?? {}) as Record<string, unknown>;
+    const casesByStage = (charts.casesByStage as Array<Record<string, unknown>> | undefined) ?? [];
+    const casesByProduct = (charts.casesByProduct as Array<Record<string, unknown>> | undefined) ?? [];
+    const monthly = (charts.monthlyVolume as Array<Record<string, unknown>> | undefined) ?? [];
+    const slices = (key: string) =>
+      ((charts[key] as Array<Record<string, unknown>> | undefined) ?? []).map((r) => ({
+        name: String(r.name ?? ''),
+        amount: Number(r.amount ?? 0),
+      }));
+
+    return {
+      totalCases: Number(kpis.totalCases ?? 0),
+      activeCases: Number(kpis.activeCases ?? 0),
+      sanctionedCount: Number(kpis.sanctionedCases ?? kpis.sanctionedCount ?? 0),
+      disbursedCount: Number(kpis.disbursedCases ?? kpis.disbursedCount ?? 0),
+      completedCount: Number(kpis.completedCases ?? kpis.completedCount ?? 0),
+      rejectedCount: Number(kpis.rejectedCases ?? kpis.rejectedCount ?? 0),
+      totalPipelineValue: Number(kpis.totalLoanAmount ?? kpis.totalPipelineValue ?? 0),
+      totalSanctionedValue: Number(kpis.totalSanctionAmount ?? kpis.totalSanctionedValue ?? 0),
+      totalDisbursedValue: Number(kpis.totalDisbursementAmount ?? kpis.totalDisbursedValue ?? 0),
+      expectedRevenue: Number(kpis.totalExpectedRevenue ?? kpis.expectedRevenue ?? 0),
+      revenueGenerated: Number(
+        kpis.totalRevenueGenerated ??
+          kpis.revenueGenerated ??
+          monthly.reduce((s, m) => s + Number(m.revenue ?? 0), 0),
+      ),
+      pendingPayouts: Number(kpis.pendingPayoutAmount ?? kpis.pendingPayouts ?? 0),
+      paidPayouts: Number(kpis.paidPayoutAmount ?? 0),
+      pendingApprovals: Number(kpis.pendingApprovals ?? 0),
+      pendingDocumentCases: Number(kpis.pendingDocumentCases ?? 0),
+      openTasks: Number(kpis.openTasks ?? 0),
+      overdueTasks: Number(kpis.overdueTasks ?? 0),
+      avgCycleDays: Number(kpis.avgCycleDays ?? 0),
+      todayLeads: Number(kpis.todayLeads ?? 0),
+      todayLogins: Number(kpis.todayLogins ?? 0),
+      todaySanctions: Number(kpis.todaySanctions ?? 0),
+      todayDisbursements: Number(kpis.todayDisbursements ?? 0),
+      pipeline: casesByStage.map((row) => ({
+        stage: String(row.stage) as LoanCase['stage'],
+        label: String(row.label ?? row.stage),
+        count: Number(row.count ?? 0),
+        amount: Number(row.amount ?? 0),
+      })),
+      monthlyVolume: monthly.map((row) => ({
+        month: String(row.month ?? ''),
+        cases: Number(row.cases ?? 0),
+        disbursement: Number(row.disbursement ?? 0),
+        revenue: Number(row.revenue ?? 0),
+      })),
+      revenueByBank: slices('revenueByBank'),
+      revenueByPartner: slices('revenueByPartner'),
+      revenueByEmployee: slices('revenueByEmployee'),
+      loanTypeDistribution: casesByProduct.map((row) => ({
+        name: String(row.product ?? row.name),
+        amount: Number(row.count ?? row.amount ?? 0),
+      })),
+    } satisfies LoanFulfillmentDashboard;
+  },
+  listCases: (params: Record<string, unknown>) =>
+    apiGetPaginated<LoanCase>('/loan-fulfillment/cases', params),
+  getCase: (id: string) => apiGet<LoanCase>(`/loan-fulfillment/cases/${id}`),
+  createCase: (data: CreateLoanCaseInput) => apiPost<LoanCase>('/loan-fulfillment/cases', data),
+  updateCase: (id: string, data: Record<string, unknown>) =>
+    apiPatch<LoanCase>(`/loan-fulfillment/cases/${id}`, data),
+  advanceStage: (id: string, data: Record<string, unknown>) =>
+    apiPost<LoanCase>(`/loan-fulfillment/cases/${id}/advance-stage`, data),
+  setStakeholders: (id: string, data: Record<string, unknown>) =>
+    apiPut<LoanCase>(`/loan-fulfillment/cases/${id}/stakeholders`, data),
+  addDocument: (id: string, data: Record<string, unknown>) =>
+    apiPost(`/loan-fulfillment/cases/${id}/documents`, data),
+  addTask: (id: string, data: Record<string, unknown>) =>
+    apiPost(`/loan-fulfillment/cases/${id}/tasks`, data),
+  updateTask: (id: string, taskId: string, data: Record<string, unknown>) =>
+    apiPatch<LoanCase>(`/loan-fulfillment/cases/${id}/tasks/${taskId}`, data),
+  verifyDocument: (id: string, documentId: string) =>
+    apiPost<LoanCase>(`/loan-fulfillment/cases/${id}/documents/${documentId}/verify`, {}),
+  decideApproval: (id: string, approvalId: string, data: Record<string, unknown>) =>
+    apiPost(`/loan-fulfillment/cases/${id}/approvals/${approvalId}/decide`, data),
+  listRevenueRules: (params?: Record<string, unknown>) =>
+    apiGetPaginated<LoanRevenueRule>('/loan-fulfillment/revenue-rules', params ?? {}),
+  getRevenueRule: (id: string) => apiGet<LoanRevenueRule>(`/loan-fulfillment/revenue-rules/${id}`),
+  createRevenueRule: (data: Record<string, unknown>) =>
+    apiPost<LoanRevenueRule>('/loan-fulfillment/revenue-rules', data),
+  updateRevenueRule: (id: string, data: Record<string, unknown>) =>
+    apiPatch<LoanRevenueRule>(`/loan-fulfillment/revenue-rules/${id}`, data),
+};
+
+export const revenueDistributionService = {
+  summary: async () => {
+    const raw = await apiGet<Record<string, unknown>>('/revenue-distribution/summary');
+    return {
+      totalRules: Number(raw.totalRules ?? 0),
+      activeRules: Number(raw.activeRules ?? 0),
+      inactiveRules: Number(raw.inactiveRules ?? 0),
+      totalRuns: Number(raw.totalRuns ?? 0),
+      completedRuns: Number(raw.completedRuns ?? 0),
+      pendingRuns: Number(raw.pendingRuns ?? 0),
+      totalDistributed: Number(raw.totalDistributed ?? 0),
+      totalGrossRevenue: Number(raw.totalGrossRevenue ?? 0),
+      totalGst: Number(raw.totalGst ?? 0),
+      totalTds: Number(raw.totalTds ?? 0),
+      uniqueStakeholderTypes: Number(raw.uniqueStakeholderTypes ?? 0),
+      stakeholderCount: Number(raw.stakeholderCount ?? 0),
+    };
+  },
+  listRules: (params?: Record<string, unknown>) =>
+    apiGetPaginated<import('@/features/drde/data/types').DistributionRule>(
+      '/revenue-distribution/rules',
+      params ?? {},
+    ),
+  getRule: (id: string) =>
+    apiGet<import('@/features/drde/data/types').DistributionRule>(`/revenue-distribution/rules/${id}`),
+  createRule: (data: Record<string, unknown>) =>
+    apiPost<import('@/features/drde/data/types').DistributionRule>('/revenue-distribution/rules', data),
+  updateRule: (id: string, data: Record<string, unknown>) =>
+    apiPatch<import('@/features/drde/data/types').DistributionRule>(
+      `/revenue-distribution/rules/${id}`,
+      data,
+    ),
+  deleteRule: (id: string) =>
+    apiDelete<import('@/features/drde/data/types').DistributionRule>(`/revenue-distribution/rules/${id}`),
+  simulate: (data: Record<string, unknown>) =>
+    apiPost<import('@/features/drde/data/types').SimulationResult>('/revenue-distribution/simulate', data),
+  createRun: (data: Record<string, unknown>) =>
+    apiPost<import('@/features/drde/data/types').DistributionRun>('/revenue-distribution/runs', data),
+  listRuns: (params?: Record<string, unknown>) =>
+    apiGetPaginated<import('@/features/drde/data/types').DistributionRun>(
+      '/revenue-distribution/runs',
+      params ?? {},
+    ),
+  getRun: (id: string) =>
+    apiGet<import('@/features/drde/data/types').DistributionRun>(`/revenue-distribution/runs/${id}`),
+  listAudit: (params?: Record<string, unknown>) =>
+    apiGetPaginated<import('@/features/drde/data/types').DistributionAuditEvent>(
+      '/revenue-distribution/audit',
+      params ?? {},
+    ),
+};
+
+export const bankReconciliationService = {
+  summary: async () => {
+    const raw = await apiGet<Record<string, unknown>>('/bank-reconciliation/summary');
+    return {
+      totalStatements: Number(raw.totalStatements ?? 0),
+      reconciledStatements: Number(raw.reconciledStatements ?? 0),
+      totalReceived: Number(raw.totalReceived ?? 0),
+      totalExpected: Number(raw.totalExpected ?? 0),
+      totalVariance: Number(raw.totalVariance ?? 0),
+      shortPaymentCount: Number(raw.shortPaymentCount ?? 0),
+      shortPaymentAmount: Number(raw.shortPaymentAmount ?? 0),
+      excessCount: Number(raw.excessCount ?? 0),
+      excessAmount: Number(raw.excessAmount ?? 0),
+      matchedCount: Number(raw.matchedCount ?? 0),
+      probableCount: Number(raw.probableCount ?? 0),
+      unmatchedCount: Number(raw.unmatchedCount ?? 0),
+      matchedPercent: Number(raw.matchedPercent ?? 0),
+      pendingReviewCount: Number(raw.pendingReviewCount ?? 0),
+      openDisputes: Number(raw.openDisputes ?? 0),
+      acceptedCount: Number(raw.acceptedCount ?? 0),
+      writtenOffCount: Number(raw.writtenOffCount ?? 0),
+    };
+  },
+  listStatements: (params?: Record<string, unknown>) =>
+    apiGetPaginated<Record<string, unknown>>('/bank-reconciliation/statements', params ?? {}),
+  getStatement: (id: string) =>
+    apiGet<Record<string, unknown>>(`/bank-reconciliation/statements/${id}`),
+  createStatement: (data: unknown) =>
+    apiPost<Record<string, unknown>>('/bank-reconciliation/statements', data),
+  reconcileStatement: (id: string) =>
+    apiPost<Record<string, unknown>>(`/bank-reconciliation/statements/${id}/reconcile`),
+  listMatches: (params?: Record<string, unknown>) =>
+    apiGetPaginated<Record<string, unknown>>('/bank-reconciliation/matches', params ?? {}),
+  reviewMatch: (id: string, data: unknown) =>
+    apiPatch<Record<string, unknown>>(`/bank-reconciliation/matches/${id}`, data),
+  createDispute: (id: string, data: unknown) =>
+    apiPost<Record<string, unknown>>(`/bank-reconciliation/matches/${id}/dispute`, data),
+  listDisputes: (params?: Record<string, unknown>) =>
+    apiGetPaginated<Record<string, unknown>>('/bank-reconciliation/disputes', params ?? {}),
+  updateDispute: (id: string, data: unknown) =>
+    apiPatch<Record<string, unknown>>(`/bank-reconciliation/disputes/${id}`, data),
+  listAudit: (params?: Record<string, unknown>) =>
+    apiGetPaginated<Record<string, unknown>>('/bank-reconciliation/audit', params ?? {}),
 };

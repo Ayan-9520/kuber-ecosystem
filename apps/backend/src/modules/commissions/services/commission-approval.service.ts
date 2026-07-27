@@ -1,9 +1,11 @@
+import type { AuthenticatedUser } from '@kuberone/shared-types';
 import type {
   CreateCommissionApprovalInput,
   ListCommissionApprovalsQuery,
 } from '@kuberone/shared-validation';
 
 import { AppError, NotFoundError } from '../../../shared/errors/app-error.js';
+import { assertPartnerRecordAccess, requiredPartnerScopeId } from '../../../shared/utils/data-scope.js';
 import { authAuditRepository } from '../../auth/repositories/audit.repository.js';
 import {
   commissionApprovalRepository,
@@ -15,10 +17,12 @@ import { auditCommissionMutation, buildPaginationMeta, generateApprovalNumber } 
 import { commissionLedgerService } from './commission-ledger.service.js';
 
 export const commissionApprovalService = {
-  async list(query: ListCommissionApprovalsQuery) {
+  async list(actor: AuthenticatedUser, query: ListCommissionApprovalsQuery) {
+    const partnerScopeId = requiredPartnerScopeId(actor);
     const where = {
       ...(query.ledgerId ? { ledgerId: query.ledgerId } : {}),
       ...(query.status ? { status: query.status as never } : {}),
+      ...(partnerScopeId ? { ledger: { partnerId: partnerScopeId } } : {}),
     };
     const skip = (query.page - 1) * query.limit;
     const orderBy = { [query.sortBy]: query.sortOrder };
@@ -31,14 +35,18 @@ export const commissionApprovalService = {
     return { items, meta: buildPaginationMeta(query.page, query.limit, total) };
   },
 
-  async getById(id: string) {
+  async getById(id: string, actor?: AuthenticatedUser) {
     const item = await commissionApprovalRepository.findById(id);
     if (!item) throw new NotFoundError('CommissionApproval', id);
+    if (actor) {
+      const ledger = await commissionLedgerRepository.findById(item.ledgerId);
+      assertPartnerRecordAccess(actor, { partnerId: ledger?.partnerId ?? null });
+    }
     return item;
   },
 
-  async request(input: CreateCommissionApprovalInput, ctx: RequestContext) {
-    const ledger = await commissionLedgerService.getById(input.ledgerId);
+  async request(input: CreateCommissionApprovalInput, ctx: RequestContext, actor?: AuthenticatedUser) {
+    const ledger = await commissionLedgerService.getById(input.ledgerId, actor);
     if (ledger.status !== 'CALCULATED' && ledger.status !== 'PENDING') {
       throw new AppError(400, 'INVALID_LEDGER_STATUS', 'Only calculated commissions can be submitted for approval');
     }

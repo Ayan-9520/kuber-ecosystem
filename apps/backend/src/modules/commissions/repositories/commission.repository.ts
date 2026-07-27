@@ -166,6 +166,9 @@ export const commissionPaymentRepository = {
   findById(id: string) {
     return prisma.commissionPayment.findUnique({ where: { id }, include: paymentInclude });
   },
+  findFirst(where: Prisma.CommissionPaymentWhereInput) {
+    return prisma.commissionPayment.findFirst({ where, include: paymentInclude });
+  },
   getLastPaymentNumber() {
     return prisma.commissionPayment.findFirst({ orderBy: { paymentNumber: 'desc' }, select: { paymentNumber: true } });
   },

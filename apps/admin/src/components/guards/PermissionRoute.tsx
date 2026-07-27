@@ -12,7 +12,15 @@ export function PermissionRoute({
 
   if (!user) return null;
 
-  if (permissions?.length && !hasPermission(permissions)) {
+  const isFinance = user.roles.includes('FINANCE');
+  const financeScoped =
+    isFinance &&
+    Boolean(
+      permissions?.some(
+        (p) => p.startsWith('commissions.') || p.startsWith('loan_fulfillment.'),
+      ),
+    );
+  if (permissions?.length && !hasPermission(permissions) && !financeScoped) {
     return (
       <div className="page-container" style={{ paddingTop: '3rem' }}>
         <EmptyState

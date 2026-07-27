@@ -7,7 +7,7 @@ import type {
 } from '@kuberone/shared-validation';
 
 import { NotFoundError } from '../../../shared/errors/app-error.js';
-import { applyCommissionScope } from '../../../shared/utils/data-scope.js';
+import { applyCommissionScope, assertPartnerRecordAccess } from '../../../shared/utils/data-scope.js';
 import { authAuditRepository } from '../../auth/repositories/audit.repository.js';
 import { DEFAULT_CURRENCY } from '../constants/commissions.constants.js';
 import { commissionLedgerRepository } from '../repositories/commission.repository.js';
@@ -73,9 +73,10 @@ export const commissionLedgerService = {
     return ledgerToCsv(items);
   },
 
-  async getById(id: string) {
+  async getById(id: string, actor?: AuthenticatedUser) {
     const item = await commissionLedgerRepository.findById(id);
     if (!item || item.deletedAt) throw new NotFoundError('CommissionLedger', id);
+    if (actor) assertPartnerRecordAccess(actor, item);
     return item;
   },
 

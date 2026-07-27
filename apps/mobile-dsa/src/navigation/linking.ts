@@ -13,6 +13,7 @@ function webDevPrefixes(port: string): string[] {
 
 export const linking: LinkingOptions<RootStackParamList> = {
   prefixes: [
+    'kuberone://',
     'kuberone-dsa://',
     'https://dsa.kuberone.com',
     ...webDevPrefixes('8082'),
@@ -23,6 +24,13 @@ export const linking: LinkingOptions<RootStackParamList> = {
       Onboarding: 'Onboarding',
       Main: {
         screens: {
+          Academy: {
+            path: 'academy',
+            screens: {
+              AcademyHome: '',
+              AcademyModule: ':moduleId',
+            },
+          },
           Leads: {
             screens: {
               LeadDetail: 'leads/:id',
@@ -31,6 +39,22 @@ export const linking: LinkingOptions<RootStackParamList> = {
           Applications: {
             screens: {
               ApplicationDetail: 'applications/:id',
+            },
+          },
+          Commissions: {
+            path: 'earnings',
+            screens: {
+              CommissionsHome: '',
+              PartnerLoanCases: 'loan-cases',
+              RaiseInvoice: 'raise-invoice',
+              InvoiceTracker: 'invoices',
+              PayoutHistory: 'payouts',
+              CommissionLedger: 'ledger',
+              CommissionTracker: 'tracker',
+              EarningsDashboard: 'dashboard',
+              // Legacy URLs redirect inside the screens
+              PartnerBankRecon: 'bank-reconciliation',
+              PartnerDrde: 'revenue-distribution',
             },
           },
           Profile: {

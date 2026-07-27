@@ -282,6 +282,61 @@
   border-radius: var(--radius-lg);
 }
 
+/* Table skeleton mirrors the real table shape so lists don't jump on load. */
+.table-skeleton {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-card);
+}
+
+.table-skeleton-head,
+.table-skeleton-row {
+  display: grid;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table-skeleton-head {
+  background: var(--color-surface);
+}
+
+.table-skeleton-row:last-child {
+  border-bottom: none;
+}
+
+.skeleton-cell {
+  height: 0.85rem;
+  border-radius: 999px;
+}
+
+.skeleton-cell--head {
+  height: 0.7rem;
+  width: 70%;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 640px) {
+  .table-skeleton-head,
+  .table-skeleton-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0.6rem;
+  }
+}
+
 /* Empty state */
 .empty-state {
   display: flex;
@@ -378,6 +433,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .stat-card--clickable {
@@ -407,10 +463,13 @@
 }
 
 .stat-card-value {
-  font-size: 1.75rem;
+  /* Scales down so long currency values never overflow a narrow card. */
+  font-size: clamp(1.25rem, 1rem + 1vw, 1.75rem);
   font-weight: 700;
   color: var(--color-text);
   line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 .stat-card-change {
@@ -1517,12 +1576,91 @@
   }
 
   .stat-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .stat-card {
+    padding: 0.85rem;
+  }
+
+  .stat-card-value {
+    font-size: 1.15rem;
   }
 
   .deployment-warnings-banner {
     margin: 0 0.5rem 0.5rem;
     max-width: calc(100% - 1rem);
+  }
+}
+
+/*
+ * Phone tables render as stacked cards instead of a horizontally scrolling grid.
+ * Header text comes from the data-label attribute set by DataTable.
+ */
+@media (max-width: 560px) {
+  .data-table-wrapper--stacked {
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+
+  .card > .data-table--stacked,
+  .card .data-table--stacked,
+  .data-table--stacked {
+    display: block;
+    width: 100%;
+    overflow-x: visible;
+    font-size: 0.875rem;
+  }
+
+  .data-table--stacked thead {
+    display: none;
+  }
+
+  .data-table--stacked tbody,
+  .data-table--stacked tr,
+  .data-table--stacked td {
+    display: block;
+    width: 100%;
+  }
+
+  .data-table--stacked tbody tr {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-card);
+    margin-bottom: 0.75rem;
+    padding: 0.35rem 0.9rem;
+  }
+
+  .data-table--stacked tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .data-table--stacked td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.55rem 0;
+    text-align: right;
+    border-bottom: 1px dashed var(--color-border);
+  }
+
+  .data-table--stacked td::before {
+    content: attr(data-label);
+    flex: 0 0 42%;
+    text-align: left;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+  }
+
+  .data-table--stacked tbody tr td:last-child {
+    border-bottom: none;
   }
 }
 

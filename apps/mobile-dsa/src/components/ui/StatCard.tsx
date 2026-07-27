@@ -93,6 +93,10 @@ export function StatCard({ label, value, icon, trend, accent, onPress }: StatCar
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
+  // Long currency values would otherwise clip inside the 45%-wide card.
+  const text = String(value);
+  const valueFontSize = text.length > 13 ? 16 : text.length > 10 ? 18 : text.length > 8 ? 20 : 22;
+
   const content = (
     <>
       {icon && (
@@ -100,9 +104,17 @@ export function StatCard({ label, value, icon, trend, accent, onPress }: StatCar
           <Ionicons name={icon} size={20} color={colors.primary} />
         </View>
       )}
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
-      {trend && <Text style={styles.trend}>{trend}</Text>}
+      <Text style={styles.label} numberOfLines={2}>
+        {label}
+      </Text>
+      <Text style={[styles.value, { fontSize: valueFontSize }]} numberOfLines={1} adjustsFontSizeToFit>
+        {text}
+      </Text>
+      {trend && (
+        <Text style={styles.trend} numberOfLines={1}>
+          {trend}
+        </Text>
+      )}
     </>
   );
 

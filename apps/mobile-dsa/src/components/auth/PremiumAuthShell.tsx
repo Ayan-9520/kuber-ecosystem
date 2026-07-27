@@ -35,7 +35,7 @@ const COPY: Record<
   partner: {
     brand: 'KuberOne',
     title: 'Partner Sign In',
-    subtitle: 'Secure OTP access for verified DSA partners.',
+    subtitle: 'Secure OTP access for verified Financial Partners.',
     badge: 'Partner Portal',
     headline: 'Grow with KuberOne',
     support: 'Lead tools, branding, and payouts — one secure partner workspace.',

@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 
 import { paginatedResponse, successResponse } from '../../../shared/responses/success-response.js';
+import { requiredPartnerScopeId } from '../../../shared/utils/data-scope.js';
 import { commissionAdjustmentService } from '../services/commission-adjustment.service.js';
 import { commissionAnalyticsService } from '../services/commission-analytics.service.js';
 import { commissionApprovalService } from '../services/commission-approval.service.js';
@@ -17,6 +18,14 @@ function ctx(req: Request): RequestContext {
     userAgent: req.headers['user-agent'],
     requestId: req.requestId,
   };
+}
+
+/** Locks list/summary queries to the caller's partner when they aren't org-wide readers. */
+function scopedQuery(req: Request): Record<string, unknown> {
+  const query = { ...(req.query as Record<string, unknown>) };
+  const partnerId = requiredPartnerScopeId(req.user!);
+  if (partnerId) query.partnerId = partnerId;
+  return query;
 }
 
 export const commissionRuleController = {
@@ -50,7 +59,9 @@ export const commissionLedgerController = {
     res.send(csv);
   },
   getById: async (req: Request, res: Response) => {
-    res.json(successResponse(await commissionLedgerService.getById(req.params.id as string)));
+    res.json(
+      successResponse(await commissionLedgerService.getById(req.params.id as string, req.user!)),
+    );
   },
   calculate: async (req: Request, res: Response) => {
     res.status(201).json(successResponse(await commissionLedgerService.calculate(req.body, ctx(req))));
@@ -62,14 +73,18 @@ export const commissionLedgerController = {
 
 export const commissionApprovalController = {
   list: async (req: Request, res: Response) => {
-    const result = await commissionApprovalService.list(req.query as never);
+    const result = await commissionApprovalService.list(req.user!, req.query as never);
     res.json(paginatedResponse(result.items, result.meta));
   },
   getById: async (req: Request, res: Response) => {
-    res.json(successResponse(await commissionApprovalService.getById(req.params.id as string)));
+    res.json(
+      successResponse(await commissionApprovalService.getById(req.params.id as string, req.user!)),
+    );
   },
   request: async (req: Request, res: Response) => {
-    res.status(201).json(successResponse(await commissionApprovalService.request(req.body, ctx(req))));
+    res
+      .status(201)
+      .json(successResponse(await commissionApprovalService.request(req.body, ctx(req), req.user!)));
   },
   approve: async (req: Request, res: Response) => {
     res.json(
@@ -85,11 +100,15 @@ export const commissionApprovalController = {
 
 export const commissionPaymentController = {
   list: async (req: Request, res: Response) => {
-    const result = await commissionPaymentService.list(req.query as never);
+    const result = await commissionPaymentService.list(req.user!, req.query as never);
     res.json(paginatedResponse(result.items, result.meta));
   },
   getById: async (req: Request, res: Response) => {
-    res.json(successResponse(await commissionPaymentService.getById(req.params.id as string)));
+    res.json(
+      successResponse(
+        await commissionPaymentService.getByIdForActor(req.user!, req.params.id as string),
+      ),
+    );
   },
   create: async (req: Request, res: Response) => {
     res.status(201).json(successResponse(await commissionPaymentService.createPayout(req.body, ctx(req))));
@@ -105,13 +124,14 @@ export const commissionPaymentController = {
     );
   },
   report: async (req: Request, res: Response) => {
-    const { partnerId, fromDate, toDate } = req.query as { partnerId: string; fromDate?: string; toDate?: string };
+    const query = req.query as { partnerId: string; fromDate?: string; toDate?: string };
+    const partnerId = req.user!.partnerId ?? query.partnerId;
     res.json(
       successResponse(
         await commissionPaymentService.getReport(
           partnerId,
-          fromDate ? new Date(fromDate) : undefined,
-          toDate ? new Date(toDate) : undefined,
+          query.fromDate ? new Date(query.fromDate) : undefined,
+          query.toDate ? new Date(query.toDate) : undefined,
         ),
       ),
     );
@@ -123,7 +143,7 @@ export const commissionPaymentController = {
 
 export const commissionAdjustmentController = {
   list: async (req: Request, res: Response) => {
-    const result = await commissionAdjustmentService.list(req.query as never);
+    const result = await commissionAdjustmentService.list(scopedQuery(req) as never);
     res.json(paginatedResponse(result.items, result.meta));
   },
   getById: async (req: Request, res: Response) => {
@@ -145,7 +165,7 @@ export const commissionAdjustmentController = {
 
 export const commissionRecoveryController = {
   list: async (req: Request, res: Response) => {
-    const result = await commissionRecoveryService.list(req.query as never);
+    const result = await commissionRecoveryService.list(scopedQuery(req) as never);
     res.json(paginatedResponse(result.items, result.meta));
   },
   getById: async (req: Request, res: Response) => {
@@ -167,6 +187,6 @@ export const commissionRecoveryController = {
 
 export const commissionAnalyticsController = {
   summary: async (req: Request, res: Response) => {
-    res.json(successResponse(await commissionAnalyticsService.getSummary(req.query as never)));
+    res.json(successResponse(await commissionAnalyticsService.getSummary(scopedQuery(req) as never)));
   },
 };

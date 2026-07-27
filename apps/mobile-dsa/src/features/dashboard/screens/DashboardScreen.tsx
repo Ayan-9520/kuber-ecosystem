@@ -2,9 +2,10 @@ import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Card, DashboardHeader, EmptyState, QuickAction, Screen, StatCard, StatusBadge } from '@/components/ui';
+import { ACADEMY_LEVELS } from '@/features/academy/data/academy';
 import { useAuth } from '@/hooks';
 import { formatCurrency, str } from '@/lib/utils';
 import type { HomeStackParamList } from '@/navigation/types';
@@ -107,6 +108,30 @@ export function DashboardScreen() {
   const referralEarnings =
     referrals.data?.items.reduce((s, r) => s + Number(r.rewardAmount ?? 0), 0) ?? 0;
 
+  /** Backend commissionAnalyticsService.getSummary() shape. */
+  const commissionTotals = commissions.data as
+    | { totals?: { totalCommission?: number }; paidCommissions?: number }
+    | undefined;
+  const commissionEarned = Number(commissionTotals?.totals?.totalCommission ?? 0);
+
+  const refreshing =
+    leads.isRefetching ||
+    applications.isRefetching ||
+    commissions.isRefetching ||
+    notifications.isRefetching;
+
+  const refreshAll = () => {
+    void leads.refetch();
+    void hotLeads.refetch();
+    void applications.refetch();
+    void sanctions.refetch();
+    void disbursements.refetch();
+    void commissions.refetch();
+    void referrals.refetch();
+    void pendingDocs.refetch();
+    void notifications.refetch();
+  };
+
   const tabNav = navigation.getParent();
 
   const openLead = (id: string) => {
@@ -155,10 +180,10 @@ export function DashboardScreen() {
 
   if (leads.isError) {
     return (
-      <Screen title="Dashboard" subtitle="DSA partner command center">
+      <Screen title="Dashboard" subtitle="Grow your financial business today">
         <EmptyState
-          title="Failed to load dashboard"
-          description="Check network and API URL in Settings."
+          title="Couldn't load your business dashboard"
+          description="Check network and API URL in Settings, then try again."
           action={
             <Pressable onPress={() => void leads.refetch()}>
               <Text style={{ color: colors.primary, fontWeight: '600' }}>Retry</Text>
@@ -170,7 +195,13 @@ export function DashboardScreen() {
   }
 
   return (
-    <Screen scroll padded={false}>
+    <Screen
+      scroll
+      padded={false}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={refreshAll} tintColor={colors.primary} />
+      }
+    >
       <DashboardHeader
         name={name}
         unreadCount={notifications.data?.meta.total ?? 0}
@@ -179,27 +210,67 @@ export function DashboardScreen() {
       />
 
       <View style={styles.sectionHead}>
-        <Text style={styles.sectionTitle}>Quick actions</Text>
-        <Text style={styles.sectionSub}>Tools for your pipeline</Text>
+        <Text style={styles.sectionTitle}>What should I do today?</Text>
+        <Text style={styles.sectionSub}>Quick actions to grow your business</Text>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.actions}>
         <QuickAction
-          label="New Lead"
+          label="New Customer"
           icon="person-add"
           onPress={() => tabNav?.navigate('Leads', { screen: 'CreateLead' })}
+        />
+        <QuickAction
+          label="Academy"
+          icon="school"
+          onPress={() => tabNav?.navigate('Academy', { screen: 'AcademyHome' })}
         />
         <QuickAction
           label="Analytics"
           icon="bar-chart"
           onPress={goLeadAnalytics}
         />
-        <QuickAction label="Commissions" icon="wallet" onPress={goCommissions} />
-        <QuickAction label="AI Advisor" icon="sparkles" onPress={() => navigation.navigate('AiAdvisor')} />
+        <QuickAction label="Earnings" icon="wallet" onPress={goCommissions} />
+        <QuickAction label="AI Coach" icon="sparkles" onPress={() => navigation.navigate('AiAdvisor')} />
         <QuickAction label="Voice AI" icon="mic" onPress={() => navigation.navigate('VoiceAi')} />
         <QuickAction label="Alerts" icon="notifications" onPress={goNotifications} />
         <QuickAction label="Referrals" icon="gift" onPress={goReferrals} />
       </ScrollView>
+
+      <View style={styles.section}>
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionTitle}>Kuber Academy</Text>
+          <Text style={styles.sectionSub}>Learn · Certify · Rank — grow as a financial entrepreneur</Text>
+        </View>
+        <View style={styles.statRow}>
+          <StatCard
+            label="Learning tracks"
+            value={ACADEMY_LEVELS.length}
+            icon="school"
+            accent
+            onPress={() => tabNav?.navigate('Academy', { screen: 'AcademyHome' })}
+          />
+          <StatCard
+            label="Certifications"
+            value="Bronze → Diamond"
+            icon="ribbon"
+            onPress={() =>
+              tabNav?.navigate('Academy', {
+                screen: 'AcademyModule',
+                params: { moduleId: 'certifications' },
+              })
+            }
+          />
+        </View>
+        <Card
+          title="Start learning"
+          subtitle="Product training, compliance and business growth paths"
+          elevated
+          onPress={() => tabNav?.navigate('Academy', { screen: 'AcademyHome' })}
+        >
+          <Text style={{ color: colors.primary, fontWeight: '700' }}>Open Academy →</Text>
+        </Card>
+      </View>
 
       <View style={styles.section}>
         <View style={styles.sectionHead}>
@@ -238,7 +309,7 @@ export function DashboardScreen() {
           />
           <StatCard
             label="Commission ₹"
-            value={formatCurrency(Number(commissions.data?.totalEarned ?? commissions.data?.totalAmount ?? 0))}
+            value={commissions.isError ? '—' : formatCurrency(commissionEarned)}
             icon="trending-up"
             onPress={goCommissionAnalytics}
           />

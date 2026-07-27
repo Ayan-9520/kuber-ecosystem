@@ -1,9 +1,12 @@
+import type { Prisma } from '@kuberone/database';
+import type { AuthenticatedUser } from '@kuberone/shared-types';
 import type {
   CreateCommissionPaymentInput,
   ListCommissionPaymentsQuery,
 } from '@kuberone/shared-validation';
 
 import { AppError, NotFoundError } from '../../../shared/errors/app-error.js';
+import { applyCommissionScope } from '../../../shared/utils/data-scope.js';
 import { authAuditRepository } from '../../auth/repositories/audit.repository.js';
 import { DEFAULT_CURRENCY } from '../constants/commissions.constants.js';
 import { commissionPaymentRepository } from '../repositories/commission.repository.js';
@@ -12,21 +15,33 @@ import { auditCommissionMutation, buildPaginationMeta, generatePaymentNumber } f
 
 import { commissionPayoutEngineService } from './commission-payout-engine.service.js';
 
+function paymentWhere(
+  actor: AuthenticatedUser,
+  query: ListCommissionPaymentsQuery,
+): Prisma.CommissionPaymentWhereInput {
+  const ledgerScope = applyCommissionScope(actor);
+
+  return {
+    ...(query.includeDeleted ? {} : { deletedAt: null }),
+    ...(query.partnerId ? { partnerId: query.partnerId } : {}),
+    ...(query.status ? { status: query.status as never } : {}),
+    ...(query.fromDate || query.toDate
+      ? {
+          createdAt: {
+            ...(query.fromDate ? { gte: query.fromDate } : {}),
+            ...(query.toDate ? { lte: query.toDate } : {}),
+          },
+        }
+      : {}),
+    // Scope through payment items so Partner/branch users cannot enumerate another
+    // partner's payouts by changing partnerId in the query string.
+    items: { some: { ledger: ledgerScope } },
+  };
+}
+
 export const commissionPaymentService = {
-  async list(query: ListCommissionPaymentsQuery) {
-    const where = {
-      ...(query.includeDeleted ? {} : { deletedAt: null }),
-      ...(query.partnerId ? { partnerId: query.partnerId } : {}),
-      ...(query.status ? { status: query.status as never } : {}),
-      ...(query.fromDate || query.toDate
-        ? {
-            createdAt: {
-              ...(query.fromDate ? { gte: query.fromDate } : {}),
-              ...(query.toDate ? { lte: query.toDate } : {}),
-            },
-          }
-        : {}),
-    };
+  async list(actor: AuthenticatedUser, query: ListCommissionPaymentsQuery) {
+    const where = paymentWhere(actor, query);
     const skip = (query.page - 1) * query.limit;
     const orderBy = { [query.sortBy]: query.sortOrder };
 
@@ -41,6 +56,16 @@ export const commissionPaymentService = {
   async getById(id: string) {
     const item = await commissionPaymentRepository.findById(id);
     if (!item || item.deletedAt) throw new NotFoundError('CommissionPayment', id);
+    return item;
+  },
+
+  async getByIdForActor(actor: AuthenticatedUser, id: string) {
+    const item = await commissionPaymentRepository.findFirst({
+      id,
+      deletedAt: null,
+      items: { some: { ledger: applyCommissionScope(actor) } },
+    });
+    if (!item) throw new NotFoundError('CommissionPayment', id);
     return item;
   },
 

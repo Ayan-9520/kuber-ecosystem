@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import type {
+  AcademyStackParamList,
   ApplicationsStackParamList,
   CommissionsStackParamList,
   HomeStackParamList,
@@ -12,6 +13,8 @@ import type {
 } from './types';
 
 import { AiAdvisorScreen } from '@/features/ai-advisor/screens/AiAdvisorScreen';
+import { AcademyHubScreen } from '@/features/academy/screens/AcademyHubScreen';
+import { AcademyModuleScreen } from '@/features/academy/screens/AcademyModuleScreen';
 import { ApplicationDetailScreen } from '@/features/applications/screens/ApplicationDetailScreen';
 import { ApplicationsListScreen } from '@/features/applications/screens/ApplicationsListScreen';
 import { CommissionAnalyticsScreen } from '@/features/commissions/screens/CommissionAnalyticsScreen';
@@ -20,6 +23,26 @@ import { CommissionPaymentsScreen } from '@/features/commissions/screens/Commiss
 import { CommissionRecoveriesScreen } from '@/features/commissions/screens/CommissionRecoveriesScreen';
 import { CommissionsHomeScreen } from '@/features/commissions/screens/CommissionsHomeScreen';
 import { PendingCommissionsScreen } from '@/features/commissions/screens/PendingCommissionsScreen';
+import {
+  BonusTrackerScreen,
+  CommissionByStatusScreen,
+  CommissionTimelineScreen,
+  CommissionTrackerScreen,
+  DownloadStatementsScreen,
+  EarningsDashboardScreen,
+  GstReportsScreen,
+  IncentiveTrackerScreen,
+  InvoiceTimelineScreen,
+  InvoiceTrackerScreen,
+  PartnerWalletScreen,
+  PayoutHistoryScreen,
+  RaiseInvoiceScreen,
+  ReferralIncomeScreen,
+  TdsCentreScreen,
+} from '@/features/earnings-finance/screens/EarningsScreens';
+import { PartnerDrdeScreen } from '@/features/earnings-finance/screens/PartnerDrdeScreen';
+import { PartnerBankReconScreen } from '@/features/earnings-finance/screens/PartnerBankReconScreen';
+import { PartnerLoanCasesScreen } from '@/features/loan-fulfillment';
 import { DashboardScreen } from '@/features/dashboard/screens/DashboardScreen';
 import { CreateLeadScreen } from '@/features/leads/screens/CreateLeadScreen';
 import { EditLeadScreen } from '@/features/leads/screens/EditLeadScreen';
@@ -52,6 +75,7 @@ import { useAppTheme } from '@/theme/ThemeProvider';
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
+const AcademyStack = createNativeStackNavigator<AcademyStackParamList>();
 const LeadsStack = createNativeStackNavigator<LeadsStackParamList>();
 const AppsStack = createNativeStackNavigator<ApplicationsStackParamList>();
 const CommissionsStack = createNativeStackNavigator<CommissionsStackParamList>();
@@ -82,6 +106,24 @@ function HomeStackNavigator() {
         options={{ title: 'Communications' }}
       />
     </HomeStack.Navigator>
+  );
+}
+
+function AcademyStackNavigator() {
+  const screenOptions = useStackScreenOptions();
+  return (
+    <AcademyStack.Navigator screenOptions={screenOptions}>
+      <AcademyStack.Screen
+        name="AcademyHome"
+        component={AcademyHubScreen}
+        options={{ title: 'Partner Academy', headerShown: false }}
+      />
+      <AcademyStack.Screen
+        name="AcademyModule"
+        component={AcademyModuleScreen}
+        options={{ title: 'Academy Module' }}
+      />
+    </AcademyStack.Navigator>
   );
 }
 
@@ -119,29 +161,31 @@ function CommissionsStackNavigator() {
       <CommissionsStack.Screen
         name="CommissionsHome"
         component={CommissionsHomeScreen}
-        options={{ title: 'Commissions' }}
+        options={{ title: 'Earnings & Finance' }}
       />
+      <CommissionsStack.Screen name="EarningsDashboard" component={EarningsDashboardScreen} options={{ title: 'Earnings Dashboard' }} />
+      <CommissionsStack.Screen name="PartnerDrde" component={PartnerDrdeScreen} options={{ title: 'Revenue Distribution' }} />
+      <CommissionsStack.Screen name="PartnerBankRecon" component={PartnerBankReconScreen} options={{ title: 'Bank Reconciliation' }} />
+      <CommissionsStack.Screen name="PartnerLoanCases" component={PartnerLoanCasesScreen} options={{ title: 'My Loan Cases' }} />
+      <CommissionsStack.Screen name="CommissionTracker" component={CommissionTrackerScreen} options={{ title: 'Commission Tracker' }} />
+      <CommissionsStack.Screen name="RaiseInvoice" component={RaiseInvoiceScreen} options={{ title: 'Raise Invoice' }} />
+      <CommissionsStack.Screen name="InvoiceTracker" component={InvoiceTrackerScreen} options={{ title: 'Track Invoice' }} />
+      <CommissionsStack.Screen name="InvoiceTimeline" component={InvoiceTimelineScreen} options={{ title: 'Invoice Timeline' }} />
+      <CommissionsStack.Screen name="CommissionTimeline" component={CommissionTimelineScreen} options={{ title: 'Commission Timeline' }} />
+      <CommissionsStack.Screen name="PartnerWallet" component={PartnerWalletScreen} options={{ title: 'Wallet' }} />
+      <CommissionsStack.Screen name="CommissionByStatus" component={CommissionByStatusScreen} options={{ title: 'Commissions' }} />
+      <CommissionsStack.Screen name="PayoutHistory" component={PayoutHistoryScreen} options={{ title: 'Payout History' }} />
+      <CommissionsStack.Screen name="TdsCentre" component={TdsCentreScreen} options={{ title: 'TDS Centre' }} />
+      <CommissionsStack.Screen name="GstReports" component={GstReportsScreen} options={{ title: 'GST Reports' }} />
+      <CommissionsStack.Screen name="DownloadStatements" component={DownloadStatementsScreen} options={{ title: 'Statements' }} />
+      <CommissionsStack.Screen name="IncentiveTracker" component={IncentiveTrackerScreen} options={{ title: 'Incentives' }} />
+      <CommissionsStack.Screen name="BonusTracker" component={BonusTrackerScreen} options={{ title: 'Bonuses' }} />
+      <CommissionsStack.Screen name="ReferralIncome" component={ReferralIncomeScreen} options={{ title: 'Referral Income' }} />
       <CommissionsStack.Screen name="CommissionLedger" component={CommissionLedgerScreen} options={{ title: 'Ledger' }} />
-      <CommissionsStack.Screen
-        name="CommissionPayments"
-        component={CommissionPaymentsScreen}
-        options={{ title: 'Payments' }}
-      />
-      <CommissionsStack.Screen
-        name="PendingCommissions"
-        component={PendingCommissionsScreen}
-        options={{ title: 'Pending' }}
-      />
-      <CommissionsStack.Screen
-        name="CommissionRecoveries"
-        component={CommissionRecoveriesScreen}
-        options={{ title: 'Recoveries' }}
-      />
-      <CommissionsStack.Screen
-        name="CommissionAnalytics"
-        component={CommissionAnalyticsScreen}
-        options={{ title: 'Analytics' }}
-      />
+      <CommissionsStack.Screen name="CommissionPayments" component={CommissionPaymentsScreen} options={{ title: 'Payments' }} />
+      <CommissionsStack.Screen name="PendingCommissions" component={PendingCommissionsScreen} options={{ title: 'Pending' }} />
+      <CommissionsStack.Screen name="CommissionRecoveries" component={CommissionRecoveriesScreen} options={{ title: 'Recoveries' }} />
+      <CommissionsStack.Screen name="CommissionAnalytics" component={CommissionAnalyticsScreen} options={{ title: 'Analytics' }} />
     </CommissionsStack.Navigator>
   );
 }
@@ -201,6 +245,7 @@ export function MainTabNavigator() {
         tabBarIcon: ({ color, focused }) => {
           const icons: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
             Home: { active: 'home', inactive: 'home-outline' },
+            Academy: { active: 'school', inactive: 'school-outline' },
             Leads: { active: 'people', inactive: 'people-outline' },
             Applications: { active: 'document-text', inactive: 'document-text-outline' },
             Commissions: { active: 'wallet', inactive: 'wallet-outline' },
@@ -212,6 +257,7 @@ export function MainTabNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeStackNavigator} options={{ title: 'Home' }} />
+      <Tab.Screen name="Academy" component={AcademyStackNavigator} options={{ title: 'Academy' }} />
       <Tab.Screen name="Leads" component={LeadsStackNavigator} options={{ title: 'Leads' }} />
       <Tab.Screen name="Applications" component={ApplicationsStackNavigator} options={{ title: 'Apps' }} />
       <Tab.Screen name="Commissions" component={CommissionsStackNavigator} options={{ title: 'Earnings' }} />

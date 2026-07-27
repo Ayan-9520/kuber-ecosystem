@@ -9,8 +9,8 @@ describe('normalizeApiBaseUrl', () => {
   });
 
   it('appends /api/v1 to tunnel root', () => {
-    expect(normalizeApiBaseUrl('https://font-movements-district-poem.trycloudflare.com')).toBe(
-      'https://font-movements-district-poem.trycloudflare.com/api/v1',
+    expect(normalizeApiBaseUrl('https://example.trycloudflare.com')).toBe(
+      'https://example.trycloudflare.com/api/v1',
     );
   });
 

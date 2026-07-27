@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import {
+  Award,
+  BookOpen,
   ClipboardList,
   FileText,
+  GraduationCap,
   Target,
   TrendingUp,
   Users,
@@ -32,6 +35,7 @@ import {
   StatusBadge,
   TableSkeleton,
 } from '@/components/ui';
+import { ACADEMY_DASHBOARD_STATS, ACADEMY_MODULES } from '@/features/academy';
 import { CHART_COLORS, CHART_GRID, CHART_TICK, CHART_TOOLTIP } from '@/lib/chart-theme';
 import { customerDisplayName, documentTypeDisplay } from '@/lib/entity-display';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
@@ -103,7 +107,7 @@ export function DashboardPage() {
           : 'Some metrics could not be loaded. Check API connection.';
     return (
       <div className="page-container">
-        <PageHeader title="Dashboard" subtitle="Real-time overview of leads, applications, and commissions" />
+        <PageHeader title="Dashboard" subtitle="What needs attention today — pipeline, payouts, and partner growth" />
         <EmptyState
           title="Failed to load dashboard"
           description={errorDetail.includes('Network') || errorDetail.includes('ECONNREFUSED')
@@ -194,7 +198,7 @@ export function DashboardPage() {
     <div className="page-container">
       <PageHeader
         title="Dashboard"
-        subtitle="Real-time overview of leads, applications, and commissions"
+        subtitle="What needs attention — loan fulfillment, payouts, Academy, and partner growth"
       />
 
       <div className="stat-grid">
@@ -241,6 +245,47 @@ export function DashboardPage() {
           icon={<TrendingUp size={20} />}
           onClick={() => navigate('/recommendations/analytics')}
         />
+        <StatCard
+          label="Academy Learners"
+          value={ACADEMY_DASHBOARD_STATS.activeLearners}
+          icon={<GraduationCap size={20} />}
+          change={`${ACADEMY_DASHBOARD_STATS.certificatesIssued} certs`}
+          onClick={() => navigate('/academy')}
+        />
+        <StatCard
+          label="Academy Progress"
+          value={`${ACADEMY_DASHBOARD_STATS.avgProgressPercent}%`}
+          icon={<BookOpen size={20} />}
+          change="Avg partner"
+          onClick={() => navigate('/academy')}
+        />
+        <StatCard
+          label="Certificates"
+          value={ACADEMY_DASHBOARD_STATS.certificatesIssued}
+          icon={<Award size={20} />}
+          onClick={() => navigate('/academy')}
+        />
+      </div>
+
+      <div style={{ marginBottom: '1.5rem' }}>
+        <Card title="Partner Academy — activated modules">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            {ACADEMY_MODULES.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                className="btn btn-secondary"
+                style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem' }}
+                onClick={() => navigate('/academy')}
+              >
+                {m.title}
+              </button>
+            ))}
+          </div>
+          <button type="button" className="btn btn-primary" onClick={() => navigate('/academy')}>
+            Open Partner Academy Hub
+          </button>
+        </Card>
       </div>
 
       <div className="grid-2" style={{ marginBottom: '1.5rem' }}>

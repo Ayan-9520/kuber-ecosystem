@@ -62,6 +62,9 @@ import { createKnowledgeBaseModule } from '../modules/knowledge-base/knowledge-b
 import { createKycModule } from '../modules/kyc/kyc.module.js';
 import { createLeadScoringModule } from '../modules/lead-scoring/lead-scoring.module.js';
 import { createLeadsModule, createLeadSourcesModule, createLeadScoresModule, createLeadAssignmentsModule, createLeadActivitiesModule, createLeadNotesModule, createLeadFollowUpsModule, createLeadTimelineModule, createLeadAnalyticsModule, createPublicWebsiteIntakeModule } from '../modules/leads/leads.module.js';
+import { createLoanFulfillmentModule } from '../modules/loan-fulfillment/loan-fulfillment.module.js';
+import { createBankReconciliationModule } from '../modules/bank-reconciliation/bank-reconciliation.module.js';
+import { createRevenueDistributionModule } from '../modules/revenue-distribution/revenue-distribution.module.js';
 import { createMobileReleaseModule } from '../modules/mobile-release/mobile-release.module.js';
 import { createMonitoringModule } from '../modules/monitoring/monitoring.module.js';
 import {
@@ -149,6 +152,9 @@ apiRouter.use('/lenders', createLendersModule());
 apiRouter.use('/lender-policies', createLenderPoliciesModule());
 apiRouter.use('/product-lender-mappings', createProductLenderMappingsModule());
 apiRouter.use('/leads', createLeadsModule());
+apiRouter.use('/loan-fulfillment', createLoanFulfillmentModule());
+apiRouter.use('/revenue-distribution', createRevenueDistributionModule());
+apiRouter.use('/bank-reconciliation', createBankReconciliationModule());
 apiRouter.use('/lead-sources', createLeadSourcesModule());
 apiRouter.use('/lead-scores', createLeadScoresModule());
 apiRouter.use('/lead-assignments', createLeadAssignmentsModule());

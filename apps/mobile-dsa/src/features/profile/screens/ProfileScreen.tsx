@@ -63,6 +63,19 @@ export function ProfileScreen() {
 
       <ThemeAppearanceCard />
 
+      <Card title="Partner Academy">
+        <Pressable
+          style={styles.menuRow}
+          onPress={() =>
+            navigation.getParent()?.navigate('Academy', { screen: 'AcademyHome' })
+          }
+        >
+          <Ionicons name="school" size={20} color={colors.primary} />
+          <Text style={styles.menuLabel}>Open Academy Hub</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </Pressable>
+      </Card>
+
       <Card title="Account">
         {MENU.map((item) => (
           <Pressable

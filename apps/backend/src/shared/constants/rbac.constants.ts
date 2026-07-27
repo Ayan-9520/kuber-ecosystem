@@ -177,6 +177,12 @@ export const RBAC_PERMISSIONS = {
   HYPERCARE_READ: 'hypercare.read',
   HYPERCARE_MANAGE: 'hypercare.manage',
   HYPERCARE_RESOLVE: 'hypercare.resolve',
+
+  LOAN_FULFILLMENT_READ: 'loan_fulfillment.read',
+  LOAN_FULFILLMENT_WRITE: 'loan_fulfillment.write',
+  LOAN_FULFILLMENT_APPROVE: 'loan_fulfillment.approve',
+  LOAN_FULFILLMENT_PAY: 'loan_fulfillment.pay',
+  LOAN_FULFILLMENT_CONFIGURE: 'loan_fulfillment.configure',
 } as const;
 
 export const SUPER_ADMIN_ROLE = 'SUPER_ADMIN';
