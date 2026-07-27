@@ -4,6 +4,12 @@
   "buildCommand": "cd ../.. && pnpm --filter @kuberone/shared-types --filter @kuberone/shared-theme --filter @kuberone/shared-validation --filter @kuberone/shared-utils run build && pnpm --filter @kuberone/mobile-dsa run build:docker",
   "outputDirectory": "dist",
   "framework": null,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",
@@ -14,7 +20,7 @@
       "destination": "https://meditation-ordered-exploring-desired.trycloudflare.com/health/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!_expo|assets|favicon|icon|.*\\..*).*)",
       "destination": "/index.html"
     }
   ]
