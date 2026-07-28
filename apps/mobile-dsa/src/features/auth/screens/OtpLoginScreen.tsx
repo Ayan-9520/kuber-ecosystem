@@ -41,6 +41,12 @@ export function OtpLoginScreen() {
     }
   }, [route.params?.phone]);
 
+  // Drop stale session tokens on the login screen so bootstrap /auth/me does not 401-spam.
+  useEffect(() => {
+    setMemoryAccessToken(null);
+    void clearTokens();
+  }, []);
+
   // Warm Cloudflare / Vercel proxy so first OTP / login is less likely to 502.
   useEffect(() => {
     const controller = new AbortController();

@@ -61,6 +61,22 @@ export function PartnersPage() {
     },
   });
 
+  const kycMutation = useMutation({
+    mutationFn: ({ id, kycStatus }: { id: string; kycStatus: 'VERIFIED' | 'REJECTED' | 'IN_PROGRESS' }) =>
+      partnersService.update(id, { kycStatus }),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: ['partners'] });
+      setActionMessage(
+        vars.kycStatus === 'VERIFIED'
+          ? 'KYC verified. Partner can use full app and publish public profile.'
+          : `KYC set to ${vars.kycStatus}.`,
+      );
+    },
+    onError: (err: Error) => {
+      setActionMessage(err.message || 'Could not update KYC status.');
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => partnersService.remove(id),
     onSuccess: () => {
@@ -178,7 +194,7 @@ export function PartnersPage() {
               <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
                 <Button
                   type="button"
-                  disabled={statusMutation.isPending || deleteMutation.isPending}
+                  disabled={statusMutation.isPending || deleteMutation.isPending || kycMutation.isPending}
                   onClick={() => selectedId && statusMutation.mutate({ id: selectedId, status: 'ACTIVE' })}
                 >
                   {statusMutation.isPending ? 'Updating…' : 'Approve Partner'}
@@ -186,13 +202,25 @@ export function PartnersPage() {
                 <Button
                   type="button"
                   variant="secondary"
-                  disabled={statusMutation.isPending || deleteMutation.isPending}
+                  disabled={statusMutation.isPending || deleteMutation.isPending || kycMutation.isPending}
                   onClick={() => selectedId && statusMutation.mutate({ id: selectedId, status: 'REJECTED' })}
                 >
                   Reject
                 </Button>
               </div>
             )}
+
+            {partnerStatus === 'ACTIVE' && fieldStr(detail, 'kycStatus') !== 'VERIFIED' ? (
+              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <Button
+                  type="button"
+                  disabled={kycMutation.isPending || statusMutation.isPending || deleteMutation.isPending}
+                  onClick={() => selectedId && kycMutation.mutate({ id: selectedId, kycStatus: 'VERIFIED' })}
+                >
+                  {kycMutation.isPending ? 'Verifying…' : 'Approve KYC'}
+                </Button>
+              </div>
+            ) : null}
 
             {selectedId && fieldStr(detail, 'partnerCode') !== 'DSA-DEMO-001' ? (
               <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
