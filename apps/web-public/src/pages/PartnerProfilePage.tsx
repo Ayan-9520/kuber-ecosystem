@@ -496,43 +496,83 @@ export function PartnerProfilePage() {
         {/* Section 11: Consultation */}
         <section className="section consultation-section" id="consultation">
           <div className="container">
-            <h2 className="section-title">Book Consultation</h2>
-            <div className="glass-card consultation-card">
-              <div className="grid-2">
-                <div>
-                  <p>Connect directly for personalized financial guidance.</p>
-                  <div className="consultation-links">
-                    {profile.contact.whatsapp ? (
-                      <a href={`https://wa.me/91${profile.contact.whatsapp}`} className="btn btn-primary" target="_blank" rel="noreferrer">
-                        <MessageCircle size={16} /> WhatsApp
-                      </a>
-                    ) : null}
-                    {profile.contact.phone ? (
-                      <a href={`tel:${profile.contact.phone}`} className="btn btn-secondary">
-                        <Phone size={16} /> {profile.contact.phone}
-                      </a>
-                    ) : null}
-                    {profile.contact.email ? (
-                      <a href={`mailto:${profile.contact.email}`} className="btn btn-secondary">
-                        <Mail size={16} /> Email
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="consultation-cta">
-                  {profile.contact.calendarUrl ? (
-                    <a href={profile.contact.calendarUrl} className="btn btn-primary" target="_blank" rel="noreferrer">
-                      <Calendar size={16} /> Schedule Appointment
-                    </a>
-                  ) : null}
-                  {profile.contact.applyLoanUrl ? (
-                    <a href={profile.contact.applyLoanUrl} className="btn btn-secondary" target="_blank" rel="noreferrer">
-                      Apply Now — Loan
-                    </a>
-                  ) : null}
-                </div>
+            <div className="consultation-panel">
+              <div className="consultation-panel__copy">
+                <p className="consultation-panel__eyebrow">Private consultation</p>
+                <h2 className="consultation-panel__title">Book a conversation with {profile.displayName}</h2>
+                <p className="consultation-panel__text">
+                  Get personalized guidance on loans, insurance, and financial planning — directly from a
+                  Kuber Verified Professional.
+                </p>
+                {profile.location.label ? (
+                  <p className="consultation-panel__location">Serving {profile.location.label}</p>
+                ) : null}
               </div>
-              <p className="powered-footer">
+
+              <div className="consultation-panel__actions">
+                {profile.contact.whatsapp ? (
+                  <a
+                    href={`https://wa.me/91${profile.contact.whatsapp}`}
+                    className="consultation-tile consultation-tile--primary"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <MessageCircle size={20} />
+                    <span>
+                      <strong>WhatsApp</strong>
+                      <em>Fastest response</em>
+                    </span>
+                  </a>
+                ) : null}
+                {profile.contact.phone ? (
+                  <a href={`tel:${profile.contact.phone}`} className="consultation-tile">
+                    <Phone size={20} />
+                    <span>
+                      <strong>Call now</strong>
+                      <em>{profile.contact.phone}</em>
+                    </span>
+                  </a>
+                ) : null}
+                {profile.contact.email ? (
+                  <a href={`mailto:${profile.contact.email}`} className="consultation-tile">
+                    <Mail size={20} />
+                    <span>
+                      <strong>Email</strong>
+                      <em>Send your requirement</em>
+                    </span>
+                  </a>
+                ) : null}
+                {profile.contact.calendarUrl ? (
+                  <a
+                    href={profile.contact.calendarUrl}
+                    className="consultation-tile"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Calendar size={20} />
+                    <span>
+                      <strong>Schedule</strong>
+                      <em>Pick a slot</em>
+                    </span>
+                  </a>
+                ) : null}
+                {profile.contact.applyLoanUrl ? (
+                  <a
+                    href={profile.contact.applyLoanUrl}
+                    className="consultation-tile"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <FileText size={20} />
+                    <span>
+                      <strong>Apply loan</strong>
+                      <em>Start application</em>
+                    </span>
+                  </a>
+                ) : null}
+              </div>
+
+              <p className="consultation-panel__powered">
                 <Globe size={14} /> Powered by {profile.poweredBy}
               </p>
             </div>
