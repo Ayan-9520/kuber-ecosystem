@@ -12,7 +12,7 @@ import { clearTokens, setTokens } from '@/lib/storage';
 import { getApiErrorMessage, normalizePhone } from '@/lib/utils';
 import { validateIndianMobile, validateOtp } from '@/lib/validation';
 import type { AuthStackParamList } from '@/navigation/types';
-import { authService, partnersService } from '@/services';
+import { authService, partnersService, partnerBrandingService } from '@/services';
 import { setRequiresPartnerKyc } from '@/store/slices/authSlice';
 import { spacing, typography } from '@/theme';
 
@@ -98,6 +98,9 @@ export function OtpLoginScreen() {
     dispatch(setRequiresPartnerKyc(needsKyc));
     // Setting credentials remounts navigator to Main or PartnerKyc — no manual navigate needed.
     await login(tokens.accessToken, tokens.refreshToken, me);
+
+    // Auto-create Verified Professional draft profile (same template; partner fills content later).
+    void partnerBrandingService.getMyProfile().catch(() => undefined);
   };
 
   const demoLogin = async () => {

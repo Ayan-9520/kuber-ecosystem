@@ -35,32 +35,26 @@ function formatCurrency(amount: number) {
 }
 
 function ProfileHero({ profile }: { profile: PartnerProfile }) {
+  const verified = profile.badges[0];
+
   return (
     <section className="profile-hero">
       <div
         className="profile-hero__cover"
         style={profile.coverImageUrl ? { backgroundImage: `url(${profile.coverImageUrl})` } : undefined}
       />
-      <div className="container profile-hero__body">
-        <div className="profile-hero__card glass-card">
-          <div className="profile-hero__top">
-            {profile.photoUrl ? (
-              <img src={profile.photoUrl} alt={profile.displayName} className="profile-hero__photo" />
+      <div className="profile-hero__body">
+        <div className="profile-hero__layout">
+          <div className="profile-hero__copy">
+            {verified ? (
+              <p className="profile-hero__eyebrow">
+                <BadgeCheck size={14} /> {verified.label} · Kuber Verified
+              </p>
             ) : (
-              <div className="profile-hero__photo profile-hero__photo--placeholder">{profile.displayName.charAt(0)}</div>
+              <p className="profile-hero__eyebrow">
+                <BadgeCheck size={14} /> Kuber Verified Professional™
+              </p>
             )}
-            {profile.companyLogoUrl ? (
-              <img src={profile.companyLogoUrl} alt={profile.companyName ?? ''} className="profile-hero__logo" />
-            ) : null}
-          </div>
-          <div className="profile-hero__info">
-            <div className="profile-hero__badges">
-              {profile.badges.slice(0, 4).map((b) => (
-                <span key={b.type} className="badge badge-gold">
-                  <BadgeCheck size={12} /> {b.label}
-                </span>
-              ))}
-            </div>
             <h1>{profile.displayName}</h1>
             <p className="profile-hero__designation">{profile.designation}</p>
             {profile.companyName ? (
@@ -68,15 +62,30 @@ function ProfileHero({ profile }: { profile: PartnerProfile }) {
                 <Building2 size={16} /> {profile.companyName}
               </p>
             ) : null}
-            <p className="profile-hero__associated">Associated with {profile.associatedWith}</p>
+            {profile.tagline ? <p className="profile-hero__tagline">{profile.tagline}</p> : null}
             <div className="profile-hero__meta">
-              {profile.experienceYears ? <span>{profile.experienceYears}+ years experience</span> : null}
-              {profile.languages.length ? <span>{profile.languages.join(' · ')}</span> : null}
+              {profile.experienceYears ? <span>{profile.experienceYears}+ years</span> : null}
               {profile.location.label ? <span>{profile.location.label}</span> : null}
-              {profile.businessSince ? <span>Business since {profile.businessSince}</span> : null}
+              {profile.languages.length ? <span>{profile.languages.slice(0, 3).join(' · ')}</span> : null}
+              {profile.businessSince ? <span>Since {profile.businessSince}</span> : null}
+            </div>
+            <ProfileActions profile={profile} />
+          </div>
+
+          <div className="profile-hero__visual">
+            <div className="profile-hero__photo-wrap">
+              {profile.photoUrl ? (
+                <img src={profile.photoUrl} alt={profile.displayName} className="profile-hero__photo" />
+              ) : (
+                <div className="profile-hero__photo profile-hero__photo--placeholder">
+                  {profile.displayName.charAt(0)}
+                </div>
+              )}
+              {profile.companyLogoUrl ? (
+                <img src={profile.companyLogoUrl} alt={profile.companyName ?? ''} className="profile-hero__logo" />
+              ) : null}
             </div>
           </div>
-          <ProfileActions profile={profile} />
         </div>
       </div>
     </section>
@@ -194,8 +203,8 @@ export function PartnerProfilePage() {
         <ProfileHero profile={profile} />
 
         <div className="container profile-powered">
-          <span>{profile.companyName}</span>
-          <span className="profile-powered__plus">+</span>
+          <span>Associated with {profile.associatedWith}</span>
+          <span className="profile-powered__plus">·</span>
           <span className="profile-powered__kuber">Powered by {profile.poweredBy}</span>
         </div>
 

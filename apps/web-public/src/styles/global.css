@@ -21,12 +21,13 @@
   --glass-blur: 18px;
   --shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
   --shadow-lg: 0 30px 80px rgba(15, 23, 42, 0.12);
-  --gradient-hero: linear-gradient(135deg, #0d9488 0%, #134e4a 50%, #0f172a 100%);
+  --gradient-hero: linear-gradient(135deg, #064e3b 0%, #0f766e 42%, #115e59 72%, #042f2e 100%);
   --gradient-gold: linear-gradient(135deg, #f59e0b, #d97706);
   --radius: 16px;
   --radius-lg: 24px;
   --radius-full: 9999px;
-  --font: 'Inter', system-ui, -apple-system, sans-serif;
+  --font: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'Fraunces', Georgia, serif;
 }
 
 [data-theme='dark'] {
@@ -70,6 +71,14 @@ body {
   color: var(--text);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }
 
 a {

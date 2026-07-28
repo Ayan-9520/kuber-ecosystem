@@ -29,7 +29,7 @@ x-api-env: &api-env
   JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-7d}
   CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173,http://localhost:5174,http://localhost:8081,http://localhost:8082,http://localhost:5175,http://127.0.0.1:5175,https://kuberone.online,https://www.kuberone.online,https://partner.kuberone.online,https://kuberfinserve.com,https://www.kuberfinserve.com}
   WEBSITE_INTAKE_API_KEY: ${WEBSITE_INTAKE_API_KEY:-kuber-website-intake-local-key}
-  PUBLIC_PROFILE_BASE_URL: ${PUBLIC_PROFILE_BASE_URL:-http://localhost:5174}
+  PUBLIC_PROFILE_BASE_URL: ${PUBLIC_PROFILE_BASE_URL:-https://pro.kuberone.online}
   DOCUMENT_STORAGE_PATH: ${DOCUMENT_STORAGE_PATH:-/app/apps/backend/storage/documents}
   AWS_REGION: ${AWS_REGION:-ap-south-1}
   AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
