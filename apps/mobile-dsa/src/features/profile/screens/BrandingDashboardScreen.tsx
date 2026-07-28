@@ -22,6 +22,7 @@ export function BrandingDashboardScreen() {
 
   const [displayName, setDisplayName] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [tagline, setTagline] = useState('');
   const [biography, setBiography] = useState('');
   const [city, setCity] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
@@ -37,6 +38,7 @@ export function BrandingDashboardScreen() {
       partnerBrandingService.updateMyProfile({
         displayName: displayName || profile.data?.displayName,
         companyName: companyName || profile.data?.companyName,
+        tagline: tagline || profile.data?.tagline,
         biography: biography || profile.data?.biography,
         city: city || undefined,
       }),
@@ -102,6 +104,10 @@ export function BrandingDashboardScreen() {
       </Card>
 
       <Card title="Edit Profile">
+        <Text style={styles.muted}>
+          Starter content is auto-filled from your partner role and products. Edit About anytime — your public
+          page updates after Save.
+        </Text>
         <Text style={styles.label}>Display Name</Text>
         <TextInput
           style={styles.input}
@@ -118,6 +124,14 @@ export function BrandingDashboardScreen() {
           placeholder="Your company"
           placeholderTextColor={colors.textMuted}
         />
+        <Text style={styles.label}>Tagline</Text>
+        <TextInput
+          style={styles.input}
+          defaultValue={data?.tagline ?? ''}
+          onChangeText={setTagline}
+          placeholder="One-line promise to customers"
+          placeholderTextColor={colors.textMuted}
+        />
         <Text style={styles.label}>City</Text>
         <TextInput
           style={styles.input}
@@ -126,7 +140,7 @@ export function BrandingDashboardScreen() {
           placeholder="e.g. Delhi NCR"
           placeholderTextColor={colors.textMuted}
         />
-        <Text style={styles.label}>Biography</Text>
+        <Text style={styles.label}>About / Biography</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           defaultValue={data?.biography ?? ''}
@@ -140,7 +154,9 @@ export function BrandingDashboardScreen() {
       </Card>
 
       <Card title="Publish">
-        <Text style={styles.muted}>Make your profile public and shareable on LinkedIn, WhatsApp, and Google.</Text>
+        <Text style={styles.muted}>
+          After KYC verification your page goes live automatically. You can still unpublish or re-publish here.
+        </Text>
         <View style={styles.row}>
           <Button
             title={data?.isPublished ? 'Unpublish' : 'Publish Profile'}

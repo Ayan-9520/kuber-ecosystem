@@ -158,6 +158,20 @@ export const partnerService = {
       await partnerRepository.updateUserStatus(partner.userId, userStatus);
     }
 
+    // Real marketplace flow: KYC verified → public professional website goes live with starter content
+    if (input.kycStatus === 'VERIFIED') {
+      try {
+        const { partnerBrandService } = await import(
+          '../../partner-branding/services/partner-brand.service.js'
+        );
+        const baseUrl =
+          process.env.PUBLIC_PROFILE_BASE_URL?.replace(/\/$/, '') || 'https://pro.kuberone.online';
+        await partnerBrandService.ensurePublishedAfterKyc(id, baseUrl);
+      } catch {
+        /* branding is best-effort — partner can open Branding Dashboard to retry */
+      }
+    }
+
     return toPartnerResponse(partner);
   },
 

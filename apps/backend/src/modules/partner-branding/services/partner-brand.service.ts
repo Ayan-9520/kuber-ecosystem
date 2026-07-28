@@ -70,6 +70,135 @@ const CONTENT_PROMPTS: Record<string, string> = {
   INSURANCE_AWARENESS: 'Write an insurance awareness post on protection and planning.',
 };
 
+/** Role / partner-type based starter pack — marketplace-style defaults partners can edit later. */
+const ROLE_STARTERS: Record<
+  string,
+  {
+    designation: string;
+    companyCategory: string;
+    expertises: string[];
+    workingAreas: string[];
+    tagline: string;
+  }
+> = {
+  DSA: {
+    designation: 'Executive Partner — Financial Solutions',
+    companyCategory: 'Financial Services',
+    expertises: ['HOME_LOAN', 'BUSINESS_LOAN', 'PERSONAL_LOAN', 'INSURANCE', 'CREDIT_CARDS'],
+    workingAreas: ['Home Loans', 'Business Loans', 'Personal Loans', 'Insurance', 'Credit Cards'],
+    tagline: 'Trusted guidance for loans, insurance, and financial growth',
+  },
+  BUILDER: {
+    designation: 'Builder Alliance Partner',
+    companyCategory: 'Real Estate & Housing Finance',
+    expertises: ['HOME_LOAN', 'BUILDER_FUNDING', 'PROJECT_FINANCE', 'LOAN_AGAINST_PROPERTY'],
+    workingAreas: ['Home Loans', 'Project Finance', 'Builder Funding', 'LAP'],
+    tagline: 'End-to-end home finance for projects and homebuyers',
+  },
+  PROPERTY_DEALER: {
+    designation: 'Property Finance Advisor',
+    companyCategory: 'Property & Mortgage Advisory',
+    expertises: ['HOME_LOAN', 'LOAN_AGAINST_PROPERTY', 'BUSINESS_LOAN'],
+    workingAreas: ['Home Loans', 'Loan Against Property', 'Resale Finance'],
+    tagline: 'Property deals backed by the right finance options',
+  },
+  CA: {
+    designation: 'Chartered Advisor Partner',
+    companyCategory: 'Tax, Audit & Finance Advisory',
+    expertises: ['BUSINESS_LOAN', 'WORKING_CAPITAL', 'MSME_FINANCE', 'PERSONAL_LOAN'],
+    workingAreas: ['Business Loans', 'Working Capital', 'MSME Finance', 'Tax-linked Planning'],
+    tagline: 'Finance solutions aligned with tax and business clarity',
+  },
+  BROKER: {
+    designation: 'Loan & Insurance Broker Partner',
+    companyCategory: 'Brokerage — Loans & Insurance',
+    expertises: ['HOME_LOAN', 'PERSONAL_LOAN', 'VEHICLE_LOAN', 'INSURANCE', 'CREDIT_CARDS'],
+    workingAreas: ['Home Loans', 'Personal Loans', 'Vehicle Loans', 'Insurance'],
+    tagline: 'Compare, advise, and close the right product for every customer',
+  },
+  CORPORATE: {
+    designation: 'Corporate Channel Partner',
+    companyCategory: 'Corporate Financial Solutions',
+    expertises: ['BUSINESS_LOAN', 'WORKING_CAPITAL', 'PROJECT_FINANCE', 'INSURANCE'],
+    workingAreas: ['Corporate Loans', 'Working Capital', 'Employee Benefits'],
+    tagline: 'Institutional-grade finance access for teams and enterprises',
+  },
+  CHANNEL_PARTNER: {
+    designation: 'Channel Partner — Kuber Network',
+    companyCategory: 'Financial Services',
+    expertises: ['HOME_LOAN', 'BUSINESS_LOAN', 'PERSONAL_LOAN', 'INSURANCE'],
+    workingAreas: ['Loans', 'Insurance', 'Customer Advisory'],
+    tagline: 'Your neighbourhood partner for trusted financial products',
+  },
+  REFERRAL: {
+    designation: 'Referral Partner',
+    companyCategory: 'Financial Referrals',
+    expertises: ['HOME_LOAN', 'PERSONAL_LOAN', 'INSURANCE'],
+    workingAreas: ['Loan Referrals', 'Insurance Referrals'],
+    tagline: 'Connecting customers to verified financial solutions',
+  },
+};
+
+type PartnerSeedRow = {
+  contactName: string;
+  businessName: string | null;
+  phone: string;
+  email: string | null;
+  createdAt: Date;
+  kycStatus: string;
+  partnerType?: { code: string; name: string } | null;
+};
+
+function roleStarter(partnerTypeCode?: string | null) {
+  const code = (partnerTypeCode ?? 'DSA').toUpperCase();
+  return ROLE_STARTERS[code] ?? ROLE_STARTERS.DSA!;
+}
+
+function buildStarterBiography(partner: PartnerSeedRow, starter: ReturnType<typeof roleStarter>): string {
+  const name = partner.contactName;
+  const company = partner.businessName || name;
+  const role = partner.partnerType?.name || 'Financial Partner';
+  const products = starter.workingAreas.slice(0, 3).join(', ');
+  const first = name.split(' ')[0] || name;
+
+  return [
+    `${name} is a Kuber Verified Financial Business Professional associated with ${company}. As a ${role} in the Kuber Finserve network, ${first} helps individuals and businesses access the right loan and insurance solutions with clarity and trust.`,
+    `Core focus areas include ${products}, with end-to-end support from eligibility guidance and documentation to lender coordination and disbursement follow-up. Customers get practical advice — not product pressure.`,
+    `Powered by Kuber Finserve technology and a pan-India product network, this practice combines local relationship strength with institutional process discipline. Reach out for a consultation tailored to your goals.`,
+  ].join('\n\n');
+}
+
+function buildStarterProfileFields(partner: PartnerSeedRow) {
+  const starter = roleStarter(partner.partnerType?.code);
+  const company = partner.businessName || partner.contactName;
+  const year = partner.createdAt.getFullYear();
+
+  return {
+    displayName: partner.contactName,
+    designation: starter.designation,
+    companyName: company,
+    companyCategory: starter.companyCategory,
+    tagline: starter.tagline,
+    biography: buildStarterBiography(partner, starter),
+    mission: 'Help every customer secure fair, suitable finance with transparent guidance and timely support.',
+    vision:
+      'Become the most trusted neighbourhood financial practice — backed by Kuber Finserve verification and technology.',
+    languages: ['English', 'Hindi'] as string[],
+    workingAreas: starter.workingAreas,
+    citiesServed: [] as string[],
+    founderName: partner.contactName,
+    establishedYear: year,
+    phone: partner.phone,
+    whatsapp: partner.phone,
+    email: partner.email,
+    partnerSince: partner.createdAt,
+    seoTitle: `${partner.contactName} | Kuber Verified Professional`,
+    seoDescription: `${partner.contactName} — ${starter.tagline}. Associated with ${company}. Powered by Kuber Finserve.`,
+    seoKeywords: ['Kuber Verified Professional', ...starter.workingAreas, company],
+    expertises: starter.expertises,
+  };
+}
+
 export function slugifyName(name: string): string {
   return name
     .toLowerCase()
@@ -387,23 +516,104 @@ export const partnerBrandService = {
 
   getMyProfile: async (partnerId: string, baseUrl: string) => {
     let profile = await partnerBrandRepository.findByPartnerId(partnerId);
-    if (!profile) {
-      const partner = await partnerBrandRepository.getPartner(partnerId);
-      if (!partner) throw new NotFoundError('Partner not found');
+    const partner = await partnerBrandRepository.getPartner(partnerId);
+    if (!partner) throw new NotFoundError('Partner not found');
 
+    if (!profile) {
+      const starter = buildStarterProfileFields(partner);
       const slug = await ensureUniqueSlug(slugifyName(partner.contactName));
+      const { expertises, ...scalar } = starter;
       profile = await partnerBrandRepository.create({
         partner: { connect: { id: partnerId } },
         slug,
-        displayName: partner.contactName,
-        designation: 'Executive Partner',
-        companyName: partner.businessName,
-        phone: partner.phone,
-        email: partner.email,
-        partnerSince: partner.createdAt,
+        displayName: scalar.displayName,
+        designation: scalar.designation,
+        companyName: scalar.companyName,
+        companyCategory: scalar.companyCategory,
+        tagline: scalar.tagline,
+        biography: scalar.biography,
+        mission: scalar.mission,
+        vision: scalar.vision,
+        languages: scalar.languages,
+        workingAreas: scalar.workingAreas,
+        citiesServed: scalar.citiesServed,
+        founderName: scalar.founderName,
+        establishedYear: scalar.establishedYear,
+        phone: scalar.phone,
+        whatsapp: scalar.whatsapp,
+        email: scalar.email,
+        partnerSince: scalar.partnerSince,
+        seoTitle: scalar.seoTitle,
+        seoDescription: scalar.seoDescription,
+        seoKeywords: scalar.seoKeywords,
+        isPublished: partner.kycStatus === 'VERIFIED',
+        publishedAt: partner.kycStatus === 'VERIFIED' ? new Date() : null,
       });
+      await partnerBrandRepository.replaceExpertises(profile.id, expertises);
       await syncBadges(profile.id, profile);
       profile = (await partnerBrandRepository.findByPartnerId(partnerId))!;
+    } else {
+      // Backfill thin drafts (created before starter content existed)
+      const needsContent = !profile.biography || profile.expertises.length === 0 || !profile.tagline;
+      if (needsContent) {
+        const starter = buildStarterProfileFields(partner);
+        await partnerBrandRepository.update(profile.id, {
+          ...(profile.biography ? {} : { biography: starter.biography }),
+          ...(profile.tagline ? {} : { tagline: starter.tagline }),
+          ...(profile.mission ? {} : { mission: starter.mission }),
+          ...(profile.vision ? {} : { vision: starter.vision }),
+          ...(profile.designation && profile.designation !== 'Executive Partner'
+            ? {}
+            : { designation: starter.designation }),
+          ...(profile.companyCategory ? {} : { companyCategory: starter.companyCategory }),
+          ...(profile.founderName ? {} : { founderName: starter.founderName }),
+          ...(profile.establishedYear ? {} : { establishedYear: starter.establishedYear }),
+          ...(parseJsonArray(profile.languages).length
+            ? {}
+            : { languages: starter.languages }),
+          ...(parseJsonArray(profile.workingAreas).length
+            ? {}
+            : { workingAreas: starter.workingAreas }),
+          ...(profile.seoTitle ? {} : { seoTitle: starter.seoTitle }),
+          ...(profile.seoDescription ? {} : { seoDescription: starter.seoDescription }),
+          ...(parseJsonArray(profile.seoKeywords).length
+            ? {}
+            : { seoKeywords: starter.seoKeywords }),
+          ...(profile.whatsapp ? {} : { whatsapp: starter.whatsapp }),
+        });
+        if (profile.expertises.length === 0) {
+          await partnerBrandRepository.replaceExpertises(profile.id, starter.expertises);
+        }
+        profile = (await partnerBrandRepository.findByPartnerId(partnerId))!;
+      }
+
+      // Real flow: KYC verified → public website goes live automatically
+      if (partner.kycStatus === 'VERIFIED' && !profile.isPublished) {
+        await partnerBrandRepository.update(profile.id, {
+          isPublished: true,
+          publishedAt: new Date(),
+        });
+        profile = (await partnerBrandRepository.findByPartnerId(partnerId))!;
+      }
+
+      await syncBadges(profile.id, profile);
+      profile = (await partnerBrandRepository.findByPartnerId(partnerId))!;
+    }
+
+    return toPublicProfile(profile, baseUrl);
+  },
+
+  /** Called when Admin verifies KYC — ensure public site exists and is live. */
+  ensurePublishedAfterKyc: async (partnerId: string, baseUrl: string) => {
+    await partnerBrandService.getMyProfile(partnerId, baseUrl);
+    const profile = await partnerBrandRepository.findByPartnerId(partnerId);
+    if (!profile) return null;
+    if (!profile.isPublished) {
+      const updated = await partnerBrandRepository.update(profile.id, {
+        isPublished: true,
+        publishedAt: new Date(),
+      });
+      return toPublicProfile(updated, baseUrl);
     }
     return toPublicProfile(profile, baseUrl);
   },

@@ -7,6 +7,7 @@ export interface PartnerBrandProfile {
   displayName: string;
   designation: string;
   companyName: string | null;
+  tagline: string | null;
   biography: string | null;
   location: { city: string | null; state: string | null; label: string };
   seo: { title: string; description: string };
