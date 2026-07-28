@@ -46,13 +46,22 @@ export function PartnersPage() {
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: 'ACTIVE' | 'REJECTED' }) =>
-      partnersService.update(id, { status }),
+    mutationFn: ({
+      id,
+      status,
+      kycStatus,
+    }: {
+      id: string;
+      status: 'ACTIVE' | 'REJECTED';
+      kycStatus?: 'VERIFIED' | 'REJECTED';
+    }) => partnersService.update(id, { status, ...(kycStatus ? { kycStatus } : {}) }),
     onSuccess: (_data, vars) => {
       void queryClient.invalidateQueries({ queryKey: ['partners'] });
       setActionMessage(
         vars.status === 'ACTIVE'
-          ? 'Partner approved (ACTIVE). They can login with mobile / email / Partner Code + OTP.'
+          ? vars.kycStatus === 'VERIFIED'
+            ? 'Partner approved + KYC verified. They can login and skip the KYC wall; public profile can go live.'
+            : 'Partner approved (ACTIVE). They can login with mobile / email / Partner Code + OTP.'
           : 'Partner rejected.',
       );
     },
@@ -195,9 +204,12 @@ export function PartnersPage() {
                 <Button
                   type="button"
                   disabled={statusMutation.isPending || deleteMutation.isPending || kycMutation.isPending}
-                  onClick={() => selectedId && statusMutation.mutate({ id: selectedId, status: 'ACTIVE' })}
+                  onClick={() =>
+                    selectedId &&
+                    statusMutation.mutate({ id: selectedId, status: 'ACTIVE', kycStatus: 'VERIFIED' })
+                  }
                 >
-                  {statusMutation.isPending ? 'Updating…' : 'Approve Partner'}
+                  {statusMutation.isPending ? 'Updating…' : 'Approve Partner + KYC'}
                 </Button>
                 <Button
                   type="button"
@@ -212,6 +224,9 @@ export function PartnersPage() {
 
             {partnerStatus === 'ACTIVE' && fieldStr(detail, 'kycStatus') !== 'VERIFIED' ? (
               <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <p style={{ width: '100%', fontSize: '0.85rem', color: 'var(--color-text-secondary)', margin: 0 }}>
+                  Partner can login, but KYC screen still shows until verified.
+                </p>
                 <Button
                   type="button"
                   disabled={kycMutation.isPending || statusMutation.isPending || deleteMutation.isPending}
