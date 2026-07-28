@@ -69,9 +69,10 @@ export function PremiumAuthShell({ variant, children, footer, contentStyle }: Pr
   const rise = useRef(new Animated.Value(18)).current;
 
   useEffect(() => {
+    const useNativeDriver = Platform.OS !== 'web';
     Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 520, useNativeDriver: true }),
-      Animated.timing(rise, { toValue: 0, duration: 520, useNativeDriver: true }),
+      Animated.timing(fade, { toValue: 1, duration: 520, useNativeDriver }),
+      Animated.timing(rise, { toValue: 0, duration: 520, useNativeDriver }),
     ]).start();
   }, [fade, rise]);
 
