@@ -36,12 +36,14 @@ function formatCurrency(amount: number) {
 
 function ProfileHero({ profile }: { profile: PartnerProfile }) {
   const verified = profile.badges[0];
+  const rating = profile.statistics?.customerRating;
+  const customers = profile.statistics?.customersServed;
 
   const photo = profile.photoUrl ? (
     <img src={profile.photoUrl} alt={profile.displayName} className="profile-hero__photo" />
   ) : (
     <div className="profile-hero__photo profile-hero__photo--placeholder" aria-hidden>
-      {profile.displayName.charAt(0)}
+      <span>{profile.displayName.charAt(0)}</span>
     </div>
   );
 
@@ -69,13 +71,6 @@ function ProfileHero({ profile }: { profile: PartnerProfile }) {
               <div className="profile-hero__visual profile-hero__visual--mobile">
                 <div className="profile-hero__photo-wrap">
                   {photo}
-                  {profile.companyLogoUrl ? (
-                    <img
-                      src={profile.companyLogoUrl}
-                      alt={profile.companyName ?? ''}
-                      className="profile-hero__logo"
-                    />
-                  ) : null}
                 </div>
               </div>
               <div className="profile-hero__titles">
@@ -99,14 +94,25 @@ function ProfileHero({ profile }: { profile: PartnerProfile }) {
             <ProfileActions profile={profile} />
           </div>
 
-          <div className="profile-hero__visual profile-hero__visual--desktop">
-            <div className="profile-hero__photo-wrap">
-              {photo}
-              {profile.companyLogoUrl ? (
-                <img src={profile.companyLogoUrl} alt={profile.companyName ?? ''} className="profile-hero__logo" />
-              ) : null}
+          <aside className="profile-hero__visual profile-hero__visual--desktop">
+            <div className="profile-hero__portrait">
+              <div className="profile-hero__photo-wrap">
+                {photo}
+                {profile.companyLogoUrl ? (
+                  <img src={profile.companyLogoUrl} alt={profile.companyName ?? ''} className="profile-hero__logo" />
+                ) : null}
+              </div>
+              <div className="profile-hero__portrait-meta">
+                <strong>{profile.displayName}</strong>
+                <span>{profile.companyName || profile.designation}</span>
+                <div className="profile-hero__portrait-stats">
+                  {profile.experienceYears ? <em>{profile.experienceYears}+ yrs</em> : null}
+                  {rating ? <em>{rating.toFixed(1)} ★</em> : null}
+                  {customers ? <em>{customers.toLocaleString()}+ clients</em> : null}
+                </div>
+              </div>
             </div>
-          </div>
+          </aside>
         </div>
       </div>
     </section>
