@@ -1,0 +1,21 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "cd ../.. && corepack enable && pnpm install --frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm --filter @kuberone/web-public... build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://physical-screens-shoe-permanent.trycloudflare.com/api/:path*"
+    },
+    {
+      "source": "/health/:path*",
+      "destination": "https://physical-screens-shoe-permanent.trycloudflare.com/health/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
