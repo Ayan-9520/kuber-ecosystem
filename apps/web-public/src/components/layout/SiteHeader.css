@@ -5,12 +5,13 @@
   border-radius: 0;
   border: none;
   border-bottom: 1px solid var(--border);
-  background: rgba(248, 250, 252, 0.88);
+  background: color-mix(in srgb, var(--background) 88%, transparent);
   backdrop-filter: blur(16px);
 }
 
 [data-theme='dark'] .site-header {
-  background: rgba(7, 26, 31, 0.88);
+  background: rgba(7, 26, 31, 0.9);
+  border-bottom-color: rgba(34, 211, 166, 0.12);
 }
 
 .site-header__inner {
@@ -39,6 +40,7 @@
   font-size: 0.98rem;
   font-weight: 600;
   line-height: 1.2;
+  color: var(--text);
 }
 
 .site-header__brand span {
@@ -66,6 +68,11 @@
 
 .site-header__theme {
   padding: 0.45rem;
+  color: var(--text-secondary);
+}
+
+.site-header__theme:hover {
+  color: var(--primary);
 }
 
 @media (max-width: 720px) {

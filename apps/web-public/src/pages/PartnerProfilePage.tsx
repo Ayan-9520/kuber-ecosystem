@@ -51,18 +51,96 @@ function expertiseIcon(type: string) {
   return CreditCard;
 }
 
-function ProfileHero({ profile }: { profile: PartnerProfile }) {
-  const verified = profile.badges[0];
-  const rating = profile.statistics?.customerRating;
-  const customers = profile.statistics?.customersServed;
-
-  const photo = profile.photoUrl ? (
-    <img src={profile.photoUrl} alt={profile.displayName} className="profile-hero__photo" />
-  ) : (
-    <div className="profile-hero__photo profile-hero__photo--placeholder" aria-hidden>
+function ProfileAvatar({
+  profile,
+  className,
+}: {
+  profile: PartnerProfile;
+  className?: string;
+}) {
+  if (profile.photoUrl) {
+    return <img src={profile.photoUrl} alt={profile.displayName} className={className} />;
+  }
+  return (
+    <div className={`${className ?? ''} profile-hero__photo--placeholder`} aria-hidden>
       <span>{profile.displayName.charAt(0)}</span>
     </div>
   );
+}
+
+function HeroCredentialCard({ profile }: { profile: PartnerProfile }) {
+  const rating = profile.statistics?.customerRating;
+  const customers = profile.statistics?.customersServed;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(profile.profileUrl)}`;
+
+  return (
+    <div className="hero-id-card">
+      <div className="hero-id-card__ribbon">
+        <BadgeCheck size={14} />
+        <span>Kuber Verified Credential</span>
+      </div>
+
+      <div className="hero-id-card__body">
+        <div className="hero-id-card__identity">
+          <div className="hero-id-card__avatar-wrap">
+            <ProfileAvatar profile={profile} className="hero-id-card__avatar" />
+            {profile.companyLogoUrl ? (
+              <img src={profile.companyLogoUrl} alt="" className="hero-id-card__logo" />
+            ) : null}
+          </div>
+          <div className="hero-id-card__who">
+            <strong>{profile.displayName}</strong>
+            <span>{profile.designation}</span>
+            {profile.companyName ? <em>{profile.companyName}</em> : null}
+          </div>
+        </div>
+
+        <div className="hero-id-card__stats">
+          {profile.experienceYears ? (
+            <div>
+              <strong>{profile.experienceYears}+</strong>
+              <span>Years</span>
+            </div>
+          ) : null}
+          {rating ? (
+            <div>
+              <strong>{rating.toFixed(1)}</strong>
+              <span>Rating</span>
+            </div>
+          ) : null}
+          {customers ? (
+            <div>
+              <strong>{customers >= 1000 ? `${Math.round(customers / 100) / 10}k` : customers}</strong>
+              <span>Clients</span>
+            </div>
+          ) : (
+            <div>
+              <strong>{profile.businessSince || '—'}</strong>
+              <span>Since</span>
+            </div>
+          )}
+        </div>
+
+        <div className="hero-id-card__qr-row">
+          <img src={qrUrl} alt="Profile QR" width={72} height={72} className="hero-id-card__qr" />
+          <div>
+            <strong>Scan to connect</strong>
+            <span>{profile.location.label || 'Verified professional profile'}</span>
+            <a href={profile.profileUrl}>{profile.slug ? `pro.kuberone.online/partner/${profile.slug}` : 'Open profile'}</a>
+          </div>
+        </div>
+
+        <div className="hero-id-card__foot">
+          <Shield size={13} />
+          Powered by {profile.poweredBy}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileHero({ profile }: { profile: PartnerProfile }) {
+  const verified = profile.badges[0];
 
   return (
     <section className="profile-hero">
@@ -71,6 +149,7 @@ function ProfileHero({ profile }: { profile: PartnerProfile }) {
         style={profile.coverImageUrl ? { backgroundImage: `url(${profile.coverImageUrl})` } : undefined}
       />
       <div className="profile-hero__glow" aria-hidden />
+      <div className="profile-hero__mesh" aria-hidden />
       <div className="profile-hero__body">
         <div className="profile-hero__layout">
           <div className="profile-hero__copy">
@@ -87,7 +166,7 @@ function ProfileHero({ profile }: { profile: PartnerProfile }) {
             <div className="profile-hero__identity">
               <div className="profile-hero__visual profile-hero__visual--mobile">
                 <div className="profile-hero__photo-wrap">
-                  {photo}
+                  <ProfileAvatar profile={profile} className="profile-hero__photo" />
                 </div>
               </div>
               <div className="profile-hero__titles">
@@ -112,23 +191,7 @@ function ProfileHero({ profile }: { profile: PartnerProfile }) {
           </div>
 
           <aside className="profile-hero__visual profile-hero__visual--desktop">
-            <div className="profile-hero__portrait">
-              <div className="profile-hero__photo-wrap">
-                {photo}
-                {profile.companyLogoUrl ? (
-                  <img src={profile.companyLogoUrl} alt={profile.companyName ?? ''} className="profile-hero__logo" />
-                ) : null}
-              </div>
-              <div className="profile-hero__portrait-meta">
-                <strong>{profile.displayName}</strong>
-                <span>{profile.companyName || profile.designation}</span>
-                <div className="profile-hero__portrait-stats">
-                  {profile.experienceYears ? <em>{profile.experienceYears}+ yrs</em> : null}
-                  {rating ? <em>{rating.toFixed(1)} ★</em> : null}
-                  {customers ? <em>{customers.toLocaleString()}+ clients</em> : null}
-                </div>
-              </div>
-            </div>
+            <HeroCredentialCard profile={profile} />
           </aside>
         </div>
       </div>

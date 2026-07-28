@@ -9,6 +9,13 @@
   border-top: 1px solid rgba(253, 230, 138, 0.18);
 }
 
+[data-theme='dark'] .site-footer {
+  background:
+    radial-gradient(ellipse 60% 80% at 0% 0%, rgba(45, 212, 191, 0.1), transparent 55%),
+    linear-gradient(160deg, #021c1b 0%, #042f2e 40%, #071a1f 100%);
+  border-top-color: rgba(34, 211, 166, 0.2);
+}
+
 .site-footer__glow {
   position: absolute;
   width: 420px;
@@ -161,9 +168,19 @@
   .site-footer__grid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
+    padding: 2rem 0 1.5rem;
+  }
+
+  .site-footer__cta {
+    text-align: center;
+  }
+
+  .site-footer__cta-btn {
+    width: 100%;
   }
 
   .site-footer__bottom-inner {
     flex-direction: column;
+    text-align: center;
   }
 }
