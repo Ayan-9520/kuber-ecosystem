@@ -8,6 +8,8 @@ import {
   NotFoundError,
   ValidationError,
 } from '../../../shared/errors/app-error.js';
+import { prisma } from '../../../config/database.js';
+import { commissionLedgerService } from '../../commissions/services/commission-ledger.service.js';
 import {
   APPROVAL_CHAIN_STEPS,
   CASE_JOURNEY,
@@ -216,6 +218,62 @@ function mapStakeholders(
     createdAt: ts,
     updatedAt: ts,
   }));
+}
+
+/**
+ * Bridge case journey → real commission ledger so partner can Request Payout.
+ * Idempotent via metadata.commissionLedgerId. Skips fake/demo partner IDs not in DB.
+ */
+async function syncCommissionLedgerFromCase(
+  loanCase: LoanCase,
+  ctx: RequestContext,
+): Promise<{ ledgerId?: string; amount?: number; skipped?: string }> {
+  const meta = (loanCase.metadata ?? {}) as Record<string, unknown>;
+  if (typeof meta.commissionLedgerId === 'string' && meta.commissionLedgerId) {
+    return { ledgerId: meta.commissionLedgerId, amount: loanCase.expectedCommission ?? undefined };
+  }
+
+  const partnerId = loanCase.partnerId;
+  if (!partnerId) return { skipped: 'No partner on case' };
+
+  const partner = await prisma.partner.findUnique({ where: { id: partnerId }, select: { id: true } });
+  if (!partner) return { skipped: 'Partner not found in database (demo seed id?)' };
+
+  const baseAmount =
+    loanCase.disbursementAmount ?? loanCase.sanctionAmount ?? loanCase.loanAmount ?? 0;
+  if (baseAmount <= 0) return { skipped: 'No disbursement/loan amount' };
+
+  const partnerStake = loanCase.stakeholders.find((s) => s.stakeholderType === 'PARTNER');
+  const ledger = await commissionLedgerService.calculate(
+    {
+      partnerId,
+      commissionType: 'DISBURSEMENT',
+      baseAmount,
+      applicationId: loanCase.applicationId ?? undefined,
+      leadId: loanCase.leadId ?? undefined,
+      branchId: loanCase.branchId ?? undefined,
+      lenderId: loanCase.lenderId ?? undefined,
+      notes: `Auto from loan case ${loanCase.caseNumber} @ COMMISSION_GENERATED`,
+    },
+    ctx,
+  );
+
+  const amount = Number(ledger.commissionAmount);
+  loanCase.expectedCommission = amount;
+  if (partnerStake) {
+    partnerStake.amount = amount;
+    partnerStake.paymentStatus = 'PENDING';
+    partnerStake.approvalStatus = 'PENDING';
+    partnerStake.updatedAt = new Date().toISOString();
+  }
+  loanCase.metadata = {
+    ...meta,
+    commissionLedgerId: ledger.id,
+    commissionLedgerNumber: ledger.ledgerNumber,
+    commissionGeneratedAt: new Date().toISOString(),
+  };
+
+  return { ledgerId: ledger.id, amount };
 }
 
 function monthKey(iso: string): string {
@@ -696,7 +754,7 @@ export const loanFulfillmentService = {
     return presentCase(loanCase, user);
   },
 
-  advanceStage(
+  async advanceStage(
     user: AuthenticatedUser,
     id: string,
     body: { stage?: LoanCaseStage; comment?: string },
@@ -753,16 +811,41 @@ export const loanFulfillmentService = {
       loanCase.gstAmount = dist.gstAmount;
       loanCase.tdsAmount = dist.tdsAmount;
       loanCase.netRevenue = dist.netRevenue;
+
+      // Refresh stakeholder amounts from distribution net revenue
+      if (loanCase.stakeholders.length) {
+        for (const s of loanCase.stakeholders) {
+          s.amount = round2((dist.netRevenue * s.sharePercent) / 100);
+          s.updatedAt = new Date().toISOString();
+        }
+        loanCase.expectedCommission =
+          loanCase.stakeholders.find((s) => s.stakeholderType === 'PARTNER')?.amount ?? null;
+      }
+    }
+
+    let commissionNote = '';
+    if (target === 'COMMISSION_GENERATED') {
+      try {
+        const synced = await syncCommissionLedgerFromCase(loanCase, ctx);
+        if (synced.ledgerId) {
+          commissionNote = ` · Ledger ${synced.ledgerId.slice(0, 8)}… ₹${synced.amount ?? 0}`;
+        } else if (synced.skipped) {
+          commissionNote = ` · Ledger skipped: ${synced.skipped}`;
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Ledger sync failed';
+        commissionNote = ` · Ledger sync error: ${message}`;
+      }
     }
 
     pushTimeline(loanCase, {
       stage: target,
       title: STAGE_LABELS[target],
-      description: body.comment ?? `Advanced to ${STAGE_LABELS[target]}`,
+      description: (body.comment ?? `Advanced to ${STAGE_LABELS[target]}`) + commissionNote,
       performedBy: actorName(user),
       performedById: user.id,
     });
-    pushActivity(loanCase, 'STAGE_ADVANCED', body.comment ?? `Stage → ${target}`, {
+    pushActivity(loanCase, 'STAGE_ADVANCED', (body.comment ?? `Stage → ${target}`) + commissionNote, {
       ...ctx,
       actorName: actorName(user),
     });
