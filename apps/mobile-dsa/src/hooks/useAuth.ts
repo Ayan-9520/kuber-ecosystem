@@ -2,7 +2,8 @@ import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { clearTokens, getRefreshToken, setTokens } from '@/lib/storage';
-import { authService } from '@/services';
+import { setMemoryAccessToken } from '@/lib/api';
+import { authService, type MeUser } from '@/services/auth.service';
 import type { RootState } from '@/store';
 import { clearCredentials, setCredentials } from '@/store/slices/authSlice';
 
@@ -11,11 +12,13 @@ export function useAuth() {
   const auth = useSelector((s: RootState) => s.auth);
 
   const login = useCallback(
-    async (accessToken: string, refreshToken: string) => {
+    async (accessToken: string, refreshToken: string, prefetchedMe?: MeUser) => {
+      setMemoryAccessToken(accessToken);
       await setTokens(accessToken, refreshToken);
-      const me = await authService.me();
+      const me = prefetchedMe ?? (await authService.me());
 
       if (me.userType !== 'PARTNER') {
+        setMemoryAccessToken(null);
         await clearTokens();
         throw new Error('This app is for verified Financial Partners only');
       }
@@ -37,6 +40,8 @@ export function useAuth() {
           },
         }),
       );
+
+      return me;
     },
     [dispatch],
   );
@@ -50,6 +55,7 @@ export function useAuth() {
         /* ignore */
       }
     }
+    setMemoryAccessToken(null);
     await clearTokens();
     dispatch(clearCredentials());
   }, [dispatch]);

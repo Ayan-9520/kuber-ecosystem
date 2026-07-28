@@ -1,4 +1,4 @@
-export { authService } from './auth.service';
+export { authService, type MeUser } from './auth.service';
 export { pushService } from './push.service';
 export { aiAdvisorService } from './ai-advisor.service';
 export { voiceService } from './voice.service';

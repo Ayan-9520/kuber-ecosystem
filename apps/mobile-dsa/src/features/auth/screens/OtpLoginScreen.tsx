@@ -1,4 +1,4 @@
-import { CommonActions, useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useEffect, useState, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -7,6 +7,8 @@ import { useDispatch } from 'react-redux';
 import { PremiumAuthShell } from '@/components/auth/PremiumAuthShell';
 import { Button, Input } from '@/components/ui';
 import { useAuth } from '@/hooks';
+import { API_BASE_URL, setMemoryAccessToken } from '@/lib/api';
+import { clearTokens, setTokens } from '@/lib/storage';
 import { getApiErrorMessage, normalizePhone } from '@/lib/utils';
 import { validateIndianMobile, validateOtp } from '@/lib/validation';
 import type { AuthStackParamList } from '@/navigation/types';
@@ -39,6 +41,15 @@ export function OtpLoginScreen() {
     }
   }, [route.params?.phone]);
 
+  // Warm Cloudflare / Vercel proxy so first OTP / login is less likely to 502.
+  useEffect(() => {
+    const controller = new AbortController();
+    const base = API_BASE_URL.replace(/\/api\/v1\/?$/, '') || '';
+    const healthUrl = base ? `${base}/health` : '/health';
+    void fetch(healthUrl, { method: 'GET', signal: controller.signal }).catch(() => undefined);
+    return () => controller.abort();
+  }, []);
+
   const sendOtp = async () => {
     const phoneErr = validateIndianMobile(phone);
     if (phoneErr) {
@@ -57,31 +68,36 @@ export function OtpLoginScreen() {
     }
   };
 
-  const goToAppHome = () => {
-    navigation.getParent()?.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      }),
-    );
-  };
-
+  /**
+   * Resolve KYC *before* setting Redux auth.
+   * RootNavigator remounts on isAuthenticated — setting KYC first avoids bounce / double login.
+   */
   const completeLogin = async (normalizedPhone: string, otpCode: string) => {
     const tokens = await authService.partnerLogin(normalizedPhone, otpCode);
-    await login(tokens.accessToken, tokens.refreshToken);
+
+    setMemoryAccessToken(tokens.accessToken);
+    await setTokens(tokens.accessToken, tokens.refreshToken);
 
     const me = await authService.me();
+    if (me.userType !== 'PARTNER') {
+      setMemoryAccessToken(null);
+      await clearTokens();
+      throw new Error('This app is for verified Financial Partners only');
+    }
+
+    let needsKyc = false;
     if (me.partnerId) {
-      const partner = await partnersService.getById(me.partnerId);
-      if (String(partner.kycStatus) !== 'VERIFIED') {
-        dispatch(setRequiresPartnerKyc(true));
-        navigation.replace('PartnerKyc');
-        return;
+      try {
+        const partner = await partnersService.getById(me.partnerId);
+        needsKyc = String(partner.kycStatus) !== 'VERIFIED';
+      } catch {
+        needsKyc = false;
       }
     }
 
-    dispatch(setRequiresPartnerKyc(false));
-    goToAppHome();
+    dispatch(setRequiresPartnerKyc(needsKyc));
+    // Setting credentials remounts navigator to Main or PartnerKyc — no manual navigate needed.
+    await login(tokens.accessToken, tokens.refreshToken, me);
   };
 
   const demoLogin = async () => {
@@ -198,33 +214,35 @@ export function OtpLoginScreen() {
 function createStyles() {
   return StyleSheet.create({
     error: {
-      ...typography.bodySm,
-      color: '#B91C1C',
-      textAlign: 'center',
-      backgroundColor: 'rgba(220, 38, 38, 0.08)',
-      borderWidth: 1,
-      borderColor: 'rgba(220, 38, 38, 0.25)',
-      padding: spacing.sm,
-      borderRadius: 10,
-    },
-    devLink: {
       ...typography.caption,
-      color: '#6B857C',
-      textAlign: 'center',
-      marginTop: spacing.xs,
-      textDecorationLine: 'underline',
+      color: '#B91C1C',
+      marginBottom: spacing.sm,
     },
-    links: { alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs },
+    links: {
+      gap: spacing.sm,
+      alignItems: 'center',
+    },
     link: {
-      ...typography.bodySm,
-      color: '#0B5D4B',
+      ...typography.caption,
+      color: '#0D6B57',
       fontWeight: '600',
       textAlign: 'center',
     },
     hint: {
       ...typography.caption,
-      color: '#6B857C',
+      color: '#64748B',
       textAlign: 'center',
+      lineHeight: 18,
+      paddingHorizontal: spacing.md,
+    },
+    devLink: {
+      ...typography.caption,
+      color: '#0D6B57',
+      fontWeight: '700',
+      textAlign: 'center',
+      marginTop: spacing.md,
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
     },
   });
 }

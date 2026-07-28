@@ -17,12 +17,32 @@ export const apiClient = axios.create({
 let refreshPromise: Promise<string | null> | null = null;
 let onSessionExpired: (() => void) | null = null;
 
+/** In-memory token so /auth/me right after login never races storage. */
+let memoryAccessToken: string | null = null;
+
+export function setMemoryAccessToken(token: string | null): void {
+  memoryAccessToken = token;
+}
+
 export function setSessionExpiredHandler(handler: () => void): void {
   onSessionExpired = handler;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableGatewayError(error: AxiosError): boolean {
+  const status = error.response?.status;
+  if (status === 502 || status === 503 || status === 504) return true;
+  if (!error.response && (error.code === 'ERR_NETWORK' || error.message === 'Network Error')) {
+    return true;
+  }
+  return false;
+}
+
 apiClient.interceptors.request.use(async (config) => {
-  const token = await getAccessToken();
+  const token = memoryAccessToken ?? (await getAccessToken());
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -32,6 +52,7 @@ apiClient.interceptors.request.use(async (config) => {
 async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = await getRefreshToken();
   if (!refreshToken) {
+    memoryAccessToken = null;
     await clearTokens();
     return null;
   }
@@ -43,9 +64,11 @@ async function refreshAccessToken(): Promise<string | null> {
       { headers: { 'Content-Type': 'application/json' } },
     );
     const tokens = data.data;
+    memoryAccessToken = tokens.accessToken;
     await setTokens(tokens.accessToken, tokens.refreshToken);
     return tokens.accessToken;
   } catch {
+    memoryAccessToken = null;
     await clearTokens();
     return null;
   }
@@ -54,9 +77,24 @@ async function refreshAccessToken(): Promise<string | null> {
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const original = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+      _gatewayRetry?: number;
+    };
 
-    if (error.response?.status === 401 && original && !original._retry) {
+    if (!original) {
+      return Promise.reject(error);
+    }
+
+    // Cloudflare / Vercel tunnel can 502 on the first cold hop — retry a couple times.
+    const gatewayAttempt = original._gatewayRetry ?? 0;
+    if (isRetryableGatewayError(error) && gatewayAttempt < 2) {
+      original._gatewayRetry = gatewayAttempt + 1;
+      await sleep(400 * (gatewayAttempt + 1));
+      return apiClient(original);
+    }
+
+    if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
 
       if (!refreshPromise) {
@@ -72,6 +110,7 @@ apiClient.interceptors.response.use(
       }
 
       onSessionExpired?.();
+      memoryAccessToken = null;
       await clearTokens();
     }
 

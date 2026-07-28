@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 
 import { clearTokens, getAccessToken, getRefreshToken, isOnboardingDone } from '@/lib/storage';
+import { setMemoryAccessToken } from '@/lib/api';
 import { authService } from '@/services';
 import { clearCredentials, setCredentials } from '@/store/slices/authSlice';
 
@@ -33,10 +34,12 @@ export function useAuthBootstrap() {
         const refresh = await getRefreshToken();
         if (!token || !refresh) return;
 
+        setMemoryAccessToken(token);
         const me = await withTimeout(authService.me(), BOOTSTRAP_TIMEOUT_MS);
         if (!mounted) return;
 
         if (me.userType !== 'PARTNER') {
+          setMemoryAccessToken(null);
           await clearTokens();
           return;
         }
@@ -59,6 +62,7 @@ export function useAuthBootstrap() {
           }),
         );
       } catch {
+        setMemoryAccessToken(null);
         await clearTokens();
         if (mounted) dispatch(clearCredentials());
       } finally {
