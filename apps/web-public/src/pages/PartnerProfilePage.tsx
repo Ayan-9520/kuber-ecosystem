@@ -5,19 +5,25 @@ import { Helmet } from 'react-helmet-async';
 import {
   Award,
   BadgeCheck,
+  Briefcase,
   Building2,
   Calendar,
+  Car,
   CreditCard,
   Download,
   FileText,
   Globe,
+  Home,
   Mail,
+  MapPin,
   MessageCircle,
   Phone,
   Play,
   QrCode,
   Share2,
+  Shield,
   Star,
+  UserRound,
 } from 'lucide-react';
 
 import { SiteFooter } from '@/components/layout/SiteFooter';
@@ -32,6 +38,17 @@ function formatCurrency(amount: number) {
   if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)} Cr`;
   if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)} L`;
   return `₹${amount.toLocaleString('en-IN')}`;
+}
+
+function expertiseIcon(type: string) {
+  const key = type.toUpperCase();
+  if (key.includes('HOME')) return Home;
+  if (key.includes('BUSINESS') || key.includes('SME')) return Briefcase;
+  if (key.includes('PERSONAL')) return UserRound;
+  if (key.includes('AUTO') || key.includes('CAR') || key.includes('VEHICLE')) return Car;
+  if (key.includes('INSURANCE')) return Shield;
+  if (key.includes('PROPERTY') || key.includes('LAP')) return Building2;
+  return CreditCard;
 }
 
 function ProfileHero({ profile }: { profile: PartnerProfile }) {
@@ -248,26 +265,33 @@ export function PartnerProfilePage() {
         {/* Section 2: About */}
         <section className="section" id="about">
           <div className="container">
+            <p className="section-kicker">Story</p>
             <h2 className="section-title">About Me</h2>
-            <div className="glass-card profile-section-card">
-              {profile.biography ? <p className="profile-bio">{profile.biography}</p> : <p className="profile-bio muted">Biography coming soon.</p>}
-              <div className="grid-2 profile-about-grid">
-                {profile.mission ? (
-                  <div>
-                    <h3>Mission</h3>
-                    <p>{profile.mission}</p>
-                  </div>
-                ) : null}
-                {profile.vision ? (
-                  <div>
-                    <h3>Vision</h3>
-                    <p>{profile.vision}</p>
-                  </div>
-                ) : null}
-              </div>
+            <div className="premium-card about-card">
+              {profile.biography ? (
+                <p className="profile-bio">{profile.biography}</p>
+              ) : (
+                <p className="profile-bio muted">Biography coming soon.</p>
+              )}
+              {(profile.mission || profile.vision) && (
+                <div className="about-split">
+                  {profile.mission ? (
+                    <div className="about-split__item">
+                      <h3>Mission</h3>
+                      <p>{profile.mission}</p>
+                    </div>
+                  ) : null}
+                  {profile.vision ? (
+                    <div className="about-split__item">
+                      <h3>Vision</h3>
+                      <p>{profile.vision}</p>
+                    </div>
+                  ) : null}
+                </div>
+              )}
               {profile.workingAreas.length ? (
                 <div className="profile-tags">
-                  <strong>Working Areas:</strong>
+                  <strong>Working Areas</strong>
                   {profile.workingAreas.map((a) => (
                     <span key={a}>{a}</span>
                   ))}
@@ -280,40 +304,95 @@ export function PartnerProfilePage() {
         {/* Section 3: Company */}
         <section className="section" id="company">
           <div className="container">
+            <p className="section-kicker">Business</p>
             <h2 className="section-title">Company Profile</h2>
-            <div className="glass-card profile-section-card company-card">
-              <div className="company-card__header">
-                {profile.company.logoUrl ? <img src={profile.company.logoUrl} alt="" className="company-card__logo" /> : null}
-                <div>
-                  <h3>{profile.company.name}</h3>
+            <div className="premium-card company-card">
+              <div className="company-card__top">
+                <div className="company-card__mark">
+                  {profile.company.logoUrl ? (
+                    <img src={profile.company.logoUrl} alt="" />
+                  ) : (
+                    <span>{(profile.company.name || 'C').charAt(0)}</span>
+                  )}
+                </div>
+                <div className="company-card__intro">
+                  <h3>{profile.company.name || profile.displayName}</h3>
                   {profile.company.category ? <p>{profile.company.category}</p> : null}
                 </div>
               </div>
-              <div className="grid-2">
-                {profile.company.founderName ? <p><strong>Founder:</strong> {profile.company.founderName}</p> : null}
-                {profile.company.establishedYear ? <p><strong>Established:</strong> {profile.company.establishedYear}</p> : null}
-                {profile.company.gstNumber ? <p><strong>GST:</strong> {profile.company.gstNumber}</p> : null}
+
+              <div className="company-facts">
+                {profile.company.founderName ? (
+                  <div className="company-fact">
+                    <UserRound size={16} />
+                    <div>
+                      <em>Founder</em>
+                      <strong>{profile.company.founderName}</strong>
+                    </div>
+                  </div>
+                ) : null}
+                {profile.company.establishedYear ? (
+                  <div className="company-fact">
+                    <Calendar size={16} />
+                    <div>
+                      <em>Established</em>
+                      <strong>{profile.company.establishedYear}</strong>
+                    </div>
+                  </div>
+                ) : null}
+                {profile.company.officeAddress ? (
+                  <div className="company-fact company-fact--wide">
+                    <MapPin size={16} />
+                    <div>
+                      <em>Office</em>
+                      <strong>{profile.company.officeAddress}</strong>
+                    </div>
+                  </div>
+                ) : null}
+                {profile.company.gstNumber ? (
+                  <div className="company-fact">
+                    <FileText size={16} />
+                    <div>
+                      <em>GST</em>
+                      <strong>{profile.company.gstNumber}</strong>
+                    </div>
+                  </div>
+                ) : null}
                 {profile.company.website ? (
-                  <p>
-                    <strong>Website:</strong>{' '}
-                    <a href={profile.company.website} target="_blank" rel="noreferrer">{profile.company.website}</a>
-                  </p>
+                  <div className="company-fact company-fact--wide">
+                    <Globe size={16} />
+                    <div>
+                      <em>Website</em>
+                      <strong>
+                        <a href={profile.company.website} target="_blank" rel="noreferrer">
+                          {profile.company.website}
+                        </a>
+                      </strong>
+                    </div>
+                  </div>
                 ) : null}
               </div>
-              {profile.company.officeAddress ? <p><strong>Office:</strong> {profile.company.officeAddress}</p> : null}
+
               {profile.company.citiesServed.length ? (
                 <div className="profile-tags">
-                  <strong>Cities Served:</strong>
-                  {profile.company.citiesServed.map((c) => <span key={c}>{c}</span>)}
+                  <strong>Cities Served</strong>
+                  {profile.company.citiesServed.map((c) => (
+                    <span key={c}>{c}</span>
+                  ))}
                 </div>
               ) : null}
+
               {profile.team.length ? (
                 <div className="team-grid">
                   <h4>Team</h4>
                   <div className="grid-4">
                     {profile.team.map((m) => (
                       <div key={m.id} className="team-member">
-                        {m.photoUrl ? <img src={m.photoUrl} alt={m.name} /> : <div className="team-member__avatar">{m.name.charAt(0)}</div>}
+                        {m.photoUrl ? (
+                          <img src={m.photoUrl} alt={m.name} />
+                        ) : (
+                          <div className="team-member__avatar">{m.name.charAt(0)}</div>
+                        )}
                         <strong>{m.name}</strong>
                         {m.role ? <span>{m.role}</span> : null}
                       </div>
@@ -329,15 +408,23 @@ export function PartnerProfilePage() {
         {profile.expertises.length ? (
           <section className="section" id="expertise">
             <div className="container">
+              <p className="section-kicker">Products</p>
               <h2 className="section-title">Professional Expertise</h2>
-              <div className="grid-3">
-                {profile.expertises.map((e) => (
-                  <div key={e.type} className="glass-card expertise-card">
-                    <CreditCard size={24} />
-                    <h3>{e.label}</h3>
-                    {e.isPrimary ? <span className="badge">Primary</span> : null}
-                  </div>
-                ))}
+              <div className="expertise-grid">
+                {profile.expertises.map((e) => {
+                  const Icon = expertiseIcon(e.type);
+                  return (
+                    <div key={e.type} className={`expertise-card${e.isPrimary ? ' expertise-card--primary' : ''}`}>
+                      <div className="expertise-card__icon">
+                        <Icon size={22} />
+                      </div>
+                      <h3>{e.label}</h3>
+                      {e.isPrimary ? <span className="expertise-card__badge">Primary focus</span> : (
+                        <span className="expertise-card__hint">Advisory available</span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </section>
