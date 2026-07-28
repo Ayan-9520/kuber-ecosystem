@@ -11,11 +11,21 @@ function webDevPrefixes(port: string): string[] {
   return [`http://${host}:${port}`, `http://127.0.0.1:${port}`];
 }
 
+function hostedWebPrefixes(): string[] {
+  if (Platform.OS !== 'web') return [];
+  return [
+    'https://partner.kuberone.online',
+    'https://dsa.kuberone.online',
+    'https://dsa.kuberone.com',
+  ];
+}
+
 export const linking: LinkingOptions<RootStackParamList> = {
   prefixes: [
     'kuberone://',
     'kuberone-dsa://',
     'https://dsa.kuberone.com',
+    ...hostedWebPrefixes(),
     ...webDevPrefixes('8082'),
     ...webDevPrefixes('8083'),
   ],
@@ -24,6 +34,16 @@ export const linking: LinkingOptions<RootStackParamList> = {
       Onboarding: 'Onboarding',
       Main: {
         screens: {
+          Home: {
+            path: 'Home',
+            screens: {
+              Dashboard: 'Dashboard',
+              AiAdvisor: 'AiAdvisor',
+              VoiceAi: 'VoiceAi',
+              Notifications: 'Notifications',
+              CommunicationHistory: 'CommunicationHistory',
+            },
+          },
           Academy: {
             path: 'academy',
             screens: {
@@ -52,7 +72,6 @@ export const linking: LinkingOptions<RootStackParamList> = {
               CommissionLedger: 'ledger',
               CommissionTracker: 'tracker',
               EarningsDashboard: 'dashboard',
-              // Legacy URLs redirect inside the screens
               PartnerBankRecon: 'bank-reconciliation',
               PartnerDrde: 'revenue-distribution',
             },

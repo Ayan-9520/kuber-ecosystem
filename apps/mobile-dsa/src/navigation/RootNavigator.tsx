@@ -2,9 +2,10 @@ import {
   DarkTheme,
   DefaultTheme,
   NavigationContainer,
+  useNavigationContainerRef,
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, StyleSheet, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -39,25 +40,38 @@ function syncWebPath(route: keyof RootStackParamList) {
   window.history.replaceState(null, '', '/login');
 }
 
+function currentRootName(
+  ref: ReturnType<typeof useNavigationContainerRef<RootStackParamList>>,
+): keyof RootStackParamList | undefined {
+  const state = ref.getRootState();
+  if (!state?.routes?.length) return undefined;
+  const index = state.index ?? 0;
+  return state.routes[index]?.name as keyof RootStackParamList | undefined;
+}
+
 export function RootNavigator() {
   const dispatch = useDispatch();
   const { colors, resolved } = useAppTheme();
+  const navigationRef = useNavigationContainerRef<RootStackParamList>();
   const isAuthenticated = useSelector((s: RootState) => s.auth.isAuthenticated);
   const requiresPartnerKyc = useSelector((s: RootState) => s.auth.requiresPartnerKyc);
   const { ready, showOnboarding: initialOnboarding } = useAuthBootstrap();
   const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [navReady, setNavReady] = useState(false);
   const showOnboarding = initialOnboarding && !onboardingComplete;
+  const bootRouteRef = useRef<keyof RootStackParamList | null>(null);
 
   const initialRouteName = useMemo(
     () => resolveInitialRoute(showOnboarding, onboardingComplete, isAuthenticated, requiresPartnerKyc),
     [showOnboarding, onboardingComplete, isAuthenticated, requiresPartnerKyc],
   );
 
+  if (bootRouteRef.current === null) {
+    bootRouteRef.current = initialRouteName;
+  }
+
   const authInitialRoute: keyof AuthStackParamList | undefined =
     isAuthenticated && requiresPartnerKyc ? 'PartnerKyc' : undefined;
-
-  /** Remount navigator when auth gate changes so login actually lands on Main. */
-  const navSessionKey = `${initialRouteName}:${authInitialRoute ?? 'default'}`;
 
   const navTheme = useMemo(() => {
     const base = resolved === 'dark' ? DarkTheme : DefaultTheme;
@@ -99,10 +113,54 @@ export function RootNavigator() {
 
   usePushNotifications();
 
-  useLayoutEffect(() => {
-    if (!ready) return;
-    syncWebPath(initialRouteName);
-  }, [ready, initialRouteName, navSessionKey]);
+  // Soft switch after login/logout — never remount NavigationContainer (that crashed resetRoot/routes).
+  useEffect(() => {
+    if (!ready || !navReady || !navigationRef.isReady()) return;
+
+    const target = resolveInitialRoute(
+      showOnboarding,
+      onboardingComplete,
+      isAuthenticated,
+      requiresPartnerKyc,
+    );
+    const current = currentRootName(navigationRef);
+
+    if (current === target) {
+      if (target === 'Auth' && isAuthenticated && requiresPartnerKyc) {
+        navigationRef.navigate('Auth', { screen: 'PartnerKyc' } as never);
+      }
+      syncWebPath(target);
+      return;
+    }
+
+    if (target === 'Main') {
+      navigationRef.reset({ index: 0, routes: [{ name: 'Main' }] });
+    } else if (target === 'Onboarding') {
+      navigationRef.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
+    } else if (isAuthenticated && requiresPartnerKyc) {
+      navigationRef.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'Auth',
+            state: { index: 0, routes: [{ name: 'PartnerKyc' }] },
+          },
+        ],
+      });
+    } else {
+      navigationRef.reset({ index: 0, routes: [{ name: 'Auth' }] });
+    }
+
+    syncWebPath(target);
+  }, [
+    ready,
+    navReady,
+    isAuthenticated,
+    requiresPartnerKyc,
+    showOnboarding,
+    onboardingComplete,
+    navigationRef,
+  ]);
 
   if (!ready) {
     return (
@@ -114,10 +172,18 @@ export function RootNavigator() {
   }
 
   return (
-    <NavigationContainer key={navSessionKey} theme={navTheme} linking={linking}>
+    <NavigationContainer
+      ref={navigationRef}
+      theme={navTheme}
+      linking={linking}
+      onReady={() => {
+        setNavReady(true);
+        syncWebPath(bootRouteRef.current ?? initialRouteName);
+      }}
+    >
       <OfflineBanner />
       <Stack.Navigator
-        initialRouteName={initialRouteName}
+        initialRouteName={bootRouteRef.current ?? initialRouteName}
         screenOptions={{ headerShown: false, animation: 'fade' }}
       >
         <Stack.Screen name="Onboarding">
