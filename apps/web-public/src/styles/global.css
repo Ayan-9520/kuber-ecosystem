@@ -231,7 +231,22 @@ textarea {
 }
 
 @media (max-width: 768px) {
+  .container {
+    width: calc(100% - 1.25rem);
+  }
+
   .section {
     padding: 2.5rem 0;
+  }
+
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .btn {
+    min-height: 44px;
   }
 }
