@@ -37,34 +37,61 @@ function formatCurrency(amount: number) {
 function ProfileHero({ profile }: { profile: PartnerProfile }) {
   const verified = profile.badges[0];
 
+  const photo = profile.photoUrl ? (
+    <img src={profile.photoUrl} alt={profile.displayName} className="profile-hero__photo" />
+  ) : (
+    <div className="profile-hero__photo profile-hero__photo--placeholder" aria-hidden>
+      {profile.displayName.charAt(0)}
+    </div>
+  );
+
   return (
     <section className="profile-hero">
       <div
         className="profile-hero__cover"
         style={profile.coverImageUrl ? { backgroundImage: `url(${profile.coverImageUrl})` } : undefined}
       />
+      <div className="profile-hero__glow" aria-hidden />
       <div className="profile-hero__body">
         <div className="profile-hero__layout">
           <div className="profile-hero__copy">
             {verified ? (
               <p className="profile-hero__eyebrow">
-                <BadgeCheck size={14} /> {verified.label} · Kuber Verified
+                <BadgeCheck size={14} /> {verified.label}
               </p>
             ) : (
               <p className="profile-hero__eyebrow">
-                <BadgeCheck size={14} /> Kuber Verified Professional™
+                <BadgeCheck size={14} /> Kuber Verified
               </p>
             )}
-            <h1>{profile.displayName}</h1>
-            <p className="profile-hero__designation">{profile.designation}</p>
-            {profile.companyName ? (
-              <p className="profile-hero__company">
-                <Building2 size={16} /> {profile.companyName}
-              </p>
-            ) : null}
+
+            <div className="profile-hero__identity">
+              <div className="profile-hero__visual profile-hero__visual--mobile">
+                <div className="profile-hero__photo-wrap">
+                  {photo}
+                  {profile.companyLogoUrl ? (
+                    <img
+                      src={profile.companyLogoUrl}
+                      alt={profile.companyName ?? ''}
+                      className="profile-hero__logo"
+                    />
+                  ) : null}
+                </div>
+              </div>
+              <div className="profile-hero__titles">
+                <h1>{profile.displayName}</h1>
+                <p className="profile-hero__designation">{profile.designation}</p>
+                {profile.companyName ? (
+                  <p className="profile-hero__company">
+                    <Building2 size={15} /> {profile.companyName}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
             {profile.tagline ? <p className="profile-hero__tagline">{profile.tagline}</p> : null}
             <div className="profile-hero__meta">
-              {profile.experienceYears ? <span>{profile.experienceYears}+ years</span> : null}
+              {profile.experienceYears ? <span>{profile.experienceYears}+ yrs</span> : null}
               {profile.location.label ? <span>{profile.location.label}</span> : null}
               {profile.languages.length ? <span>{profile.languages.slice(0, 3).join(' · ')}</span> : null}
               {profile.businessSince ? <span>Since {profile.businessSince}</span> : null}
@@ -72,15 +99,9 @@ function ProfileHero({ profile }: { profile: PartnerProfile }) {
             <ProfileActions profile={profile} />
           </div>
 
-          <div className="profile-hero__visual">
+          <div className="profile-hero__visual profile-hero__visual--desktop">
             <div className="profile-hero__photo-wrap">
-              {profile.photoUrl ? (
-                <img src={profile.photoUrl} alt={profile.displayName} className="profile-hero__photo" />
-              ) : (
-                <div className="profile-hero__photo profile-hero__photo--placeholder">
-                  {profile.displayName.charAt(0)}
-                </div>
-              )}
+              {photo}
               {profile.companyLogoUrl ? (
                 <img src={profile.companyLogoUrl} alt={profile.companyName ?? ''} className="profile-hero__logo" />
               ) : null}
@@ -108,13 +129,18 @@ function ProfileActions({ profile }: { profile: PartnerProfile }) {
           </a>
         )}
         {profile.contact.phone ? (
-          <a href={`tel:${profile.contact.phone}`} className="btn btn-secondary">
-            <Phone size={16} /> Call
+          <a href={`tel:${profile.contact.phone}`} className="btn btn-secondary profile-actions__call">
+            <Phone size={16} /> <span>Call</span>
           </a>
         ) : null}
         {profile.contact.whatsapp ? (
-          <a href={`https://wa.me/91${profile.contact.whatsapp}`} className="btn btn-secondary" target="_blank" rel="noreferrer">
-            <MessageCircle size={16} /> WhatsApp
+          <a
+            href={`https://wa.me/91${profile.contact.whatsapp}`}
+            className="btn btn-secondary profile-actions__wa"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <MessageCircle size={16} /> <span>WhatsApp</span>
           </a>
         ) : null}
         {profile.contact.applyLoanUrl ? (
