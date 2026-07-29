@@ -168,7 +168,7 @@ export function CommissionTrackerScreen() {
               subtitle={ledgerSubtitle(c)}
               right={
                 <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                  <Text style={typography.label}>{formatCurrency(amountOf(c))}</Text>
+                  <Text style={[typography.label, { color: colors.text }]}>{formatCurrency(amountOf(c))}</Text>
                   <StatusBadge status={str(c.status)} />
                 </View>
               }
@@ -464,7 +464,7 @@ export function CommissionByStatusScreen() {
               subtitle={ledgerSubtitle(c)}
               right={
                 <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                  <Text style={typography.label}>{formatCurrency(amountOf(c))}</Text>
+                  <Text style={[typography.label, { color: colors.text }]}>{formatCurrency(amountOf(c))}</Text>
                   <StatusBadge status={str(c.status)} />
                 </View>
               }
@@ -507,7 +507,7 @@ export function PayoutHistoryScreen() {
               }
               right={
                 <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                  <Text style={typography.label}>{formatCurrency(Number(p.totalAmount ?? 0))}</Text>
+                  <Text style={[typography.label, { color: colors.text }]}>{formatCurrency(Number(p.totalAmount ?? 0))}</Text>
                   <StatusBadge status={str(p.status)} />
                 </View>
               }
@@ -599,7 +599,7 @@ export function IncentiveTrackerScreen() {
             <ListRow
               key={type}
               title={type.replace(/_/g, ' ')}
-              right={<Text style={typography.label}>{formatCurrency(amount)}</Text>}
+              right={<Text style={[typography.label, { color: colors.text }]}>{formatCurrency(amount)}</Text>}
             />
           ))
         )}
@@ -629,7 +629,7 @@ export function BonusTrackerScreen() {
               subtitle={ledgerSubtitle(row)}
               right={
                 <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                  <Text style={typography.label}>{formatCurrency(amountOf(row))}</Text>
+                  <Text style={[typography.label, { color: colors.text }]}>{formatCurrency(amountOf(row))}</Text>
                   <StatusBadge status={str(row.status)} />
                 </View>
               }
@@ -667,7 +667,7 @@ export function ReferralIncomeScreen() {
               subtitle={str(row.refereeMobile ?? '')}
               right={
                 <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                  <Text style={typography.label}>{formatCurrency(Number(row.rewardAmount ?? 0))}</Text>
+                  <Text style={[typography.label, { color: colors.text }]}>{formatCurrency(Number(row.rewardAmount ?? 0))}</Text>
                   <StatusBadge status={str(row.status)} />
                 </View>
               }

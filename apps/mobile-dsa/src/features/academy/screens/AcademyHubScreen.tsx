@@ -118,7 +118,7 @@ function createStyles(_colors: ReturnType<typeof useAppTheme>['colors']) {
       alignItems: 'center',
     },
     primaryBtnText: {
-      color: '#fff',
+      color: _colors.onPrimary,
       fontWeight: '700',
       fontSize: 15,
     },

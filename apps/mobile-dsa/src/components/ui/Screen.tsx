@@ -31,7 +31,7 @@ function createStyles(colors: AppColors, contentMaxWidth: number | undefined, pa
       backgroundColor: colors.background,
       ...(isDesktop && Platform.OS === 'web'
         ? ({
-            backgroundImage: `radial-gradient(1200px 480px at 12% -10%, ${colors.primary}14, transparent), radial-gradient(900px 420px at 88% 0%, #00C38918, transparent), ${colors.background}`,
+            backgroundImage: `radial-gradient(1200px 480px at 12% -10%, ${colors.primary}14, transparent), radial-gradient(900px 420px at 88% 0%, ${colors.primary}18, transparent), ${colors.background}`,
           } as object)
         : null),
     },
