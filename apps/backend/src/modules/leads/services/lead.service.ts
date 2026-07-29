@@ -15,6 +15,8 @@ import { NotFoundError } from '../../../shared/errors/app-error.js';
 import { emitAutomationEvent } from '../../../shared/utils/automation-emitter.util.js';
 import { applyLeadScope, assertLeadAccess } from '../../../shared/utils/data-scope.js';
 import { authAuditRepository } from '../../auth/repositories/audit.repository.js';
+import { commissionLedgerRepository } from '../../commissions/repositories/commission.repository.js';
+import { commissionLedgerService } from '../../commissions/services/commission-ledger.service.js';
 import { productRepository } from '../../product/repositories/product.repository.js';
 import { GRADE_ALIASES } from '../constants/leads.constants.js';
 import { leadSourceRepository } from '../repositories/lead-source.repository.js';
@@ -32,6 +34,52 @@ import { serializeLead } from '../utils/lead-serializer.js';
 import { leadAssignmentService } from './lead-assignment.service.js';
 import { leadFollowUpService } from './lead-followup.service.js';
 import { leadScoreService } from './lead-score.service.js';
+
+/**
+ * When Admin/Partner marks a lead DISBURSED, auto-create DSA commission ledger
+ * (same idea as application disbursement COMPLETED). Idempotent per lead.
+ */
+async function tryCalculateLeadDisbursementCommission(
+  lead: {
+    id: string;
+    partnerId: string | null;
+    requestedAmount: { toNumber?: () => number } | number | null;
+    branchId: string | null;
+    productId: string | null;
+  },
+  ctx: RequestContext,
+): Promise<void> {
+  if (!lead.partnerId) return;
+
+  const existing = await commissionLedgerRepository.count({
+    leadId: lead.id,
+    commissionType: 'DISBURSEMENT',
+    deletedAt: null,
+  });
+  if (existing > 0) return;
+
+  const baseRaw = lead.requestedAmount;
+  const baseAmount =
+    typeof baseRaw === 'number'
+      ? baseRaw
+      : baseRaw && typeof baseRaw.toNumber === 'function'
+        ? baseRaw.toNumber()
+        : Number(baseRaw ?? 0);
+  if (!Number.isFinite(baseAmount) || baseAmount <= 0) return;
+
+  await commissionLedgerService.calculate(
+    {
+      partnerId: lead.partnerId,
+      commissionType: 'DISBURSEMENT',
+      baseAmount,
+      leadId: lead.id,
+      branchId: lead.branchId ?? undefined,
+      productId: lead.productId ?? undefined,
+      notes: 'Auto-calculated when lead marked DISBURSED',
+    },
+    ctx,
+  );
+}
 
 function buildListWhere(query: ListLeadsQuery): Prisma.LeadWhereInput {
   return {
@@ -219,6 +267,15 @@ export const leadService = {
       version: { increment: 1 },
       updatedById: ctx.actorId,
     });
+
+    // Lead CRM shortcut: Admin marks DISBURSED → DSA commission appears as CALCULATED (Ready)
+    if (input.status === 'DISBURSED' && input.status !== existing.status) {
+      try {
+        await tryCalculateLeadDisbursementCommission(lead, ctx);
+      } catch {
+        // Do not block lead update if commission rule/partner setup is incomplete
+      }
+    }
 
     if (input.rescore && input.scoringProfile) {
       await leadScoreService.scoreLead({ leadId: id, scoringProfile: input.scoringProfile }, ctx);

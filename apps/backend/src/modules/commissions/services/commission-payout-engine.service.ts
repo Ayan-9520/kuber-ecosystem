@@ -1,13 +1,56 @@
 import type { Prisma } from '@kuberone/database';
 
 import { AppError } from '../../../shared/errors/app-error.js';
+import { TDS_RATE, TDS_THRESHOLD_ANNUAL } from '../constants/commissions.constants.js';
 import {
   commissionLedgerRepository,
   commissionPaymentRepository,
 } from '../repositories/commission.repository.js';
+import type { TdsBreakdown } from '../types/commissions.types.js';
 import { roundMoney } from '../utils/commissions.utils.js';
 
 export const commissionPayoutEngineService = {
+  async calculateTds(partnerId: string, grossAmount: number): Promise<TdsBreakdown> {
+    const fyStart = new Date();
+    fyStart.setMonth(fyStart.getMonth() >= 3 ? 3 : -9, 1);
+    fyStart.setHours(0, 0, 0, 0);
+    if (fyStart.getMonth() === 3) fyStart.setFullYear(fyStart.getFullYear());
+
+    const annualPayouts = await commissionPaymentRepository.list(
+      { partnerId, deletedAt: null, status: 'RELEASED', createdAt: { gte: fyStart } },
+      0,
+      10000,
+      { createdAt: 'asc' },
+    );
+
+    const totalReleasedThisFy = roundMoney(
+      annualPayouts.reduce((sum, p) => sum + Number(p.totalAmount), 0),
+    );
+
+    const cumulativeAfterPayout = totalReleasedThisFy + grossAmount;
+
+    if (cumulativeAfterPayout <= TDS_THRESHOLD_ANNUAL) {
+      return {
+        grossAmount,
+        tdsAmount: 0,
+        netAmount: grossAmount,
+        tdsRate: 0,
+        tdsApplicable: false,
+        reason: `Cumulative FY payouts (₹${cumulativeAfterPayout}) below threshold of ₹${TDS_THRESHOLD_ANNUAL}`,
+      };
+    }
+
+    const tdsAmount = roundMoney(grossAmount * TDS_RATE);
+    return {
+      grossAmount,
+      tdsAmount,
+      netAmount: roundMoney(grossAmount - tdsAmount),
+      tdsRate: TDS_RATE,
+      tdsApplicable: true,
+      reason: `Section 194H — cumulative FY payouts (₹${cumulativeAfterPayout}) exceed ₹${TDS_THRESHOLD_ANNUAL}`,
+    };
+  },
+
   async validatePayoutLedgers(partnerId: string, ledgerIds: string[]) {
     const ledgers = await commissionLedgerRepository.list(
       {
@@ -27,7 +70,9 @@ export const commissionPayoutEngineService = {
     }
 
     const totalAmount = roundMoney(ledgers.reduce((sum, l) => sum + Number(l.commissionAmount), 0));
-    return { ledgers, totalAmount };
+    const tds = await commissionPayoutEngineService.calculateTds(partnerId, totalAmount);
+
+    return { ledgers, totalAmount, tds };
   },
 
   buildPaymentItems(ledgers: Array<{ id: string; commissionAmount: unknown }>): Prisma.CommissionPaymentItemCreateWithoutPaymentInput[] {

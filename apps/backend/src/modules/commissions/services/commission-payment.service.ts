@@ -5,9 +5,13 @@ import type {
   ListCommissionPaymentsQuery,
 } from '@kuberone/shared-validation';
 
+import { prisma } from '../../../config/database.js';
 import { AppError, NotFoundError } from '../../../shared/errors/app-error.js';
+import { razorpayPayoutProvider } from '../../../shared/providers/razorpay-payout.provider.js';
 import { applyCommissionScope } from '../../../shared/utils/data-scope.js';
 import { authAuditRepository } from '../../auth/repositories/audit.repository.js';
+import { emailOrchestratorService } from '../../email/services/email-orchestrator.service.js';
+import { smsOrchestratorService } from '../../sms/services/sms-orchestrator.service.js';
 import { DEFAULT_CURRENCY } from '../constants/commissions.constants.js';
 import { commissionPaymentRepository } from '../repositories/commission.repository.js';
 import type { RequestContext } from '../types/commissions.types.js';
@@ -70,27 +74,33 @@ export const commissionPaymentService = {
   },
 
   async createPayout(input: CreateCommissionPaymentInput, ctx: RequestContext) {
-    const { ledgers, totalAmount } = await commissionPayoutEngineService.validatePayoutLedgers(
+    const { ledgers, totalAmount, tds } = await commissionPayoutEngineService.validatePayoutLedgers(
       input.partnerId,
       input.ledgerIds,
     );
+
+    const tdsNotes = tds.tdsApplicable
+      ? `TDS @${tds.tdsRate * 100}%: ₹${tds.tdsAmount} deducted. Gross: ₹${tds.grossAmount}, Net: ₹${tds.netAmount}. ${tds.reason}`
+      : `No TDS. ${tds.reason}`;
+    const combinedNotes = input.notes ? `${input.notes}\n${tdsNotes}` : tdsNotes;
 
     const last = await commissionPaymentRepository.getLastPaymentNumber();
     const item = await commissionPaymentRepository.create({
       paymentNumber: generatePaymentNumber(last?.paymentNumber),
       partner: { connect: { id: input.partnerId } },
-      totalAmount,
+      totalAmount: tds.netAmount,
       currency: DEFAULT_CURRENCY,
       status: 'PENDING',
       paymentMethod: input.paymentMethod,
       bankAccountRef: input.bankAccountRef,
-      notes: input.notes,
+      notes: combinedNotes,
       items: { create: commissionPayoutEngineService.buildPaymentItems(ledgers) },
       createdBy: { connect: { id: ctx.actorId } },
     });
 
     await auditCommissionMutation(authAuditRepository.log, ctx, 'COMMISSION_PAYOUT_CREATED', item.id, {
       totalAmount,
+      tds,
       ledgerCount: ledgers.length,
     });
 
@@ -119,10 +129,49 @@ export const commissionPaymentService = {
       throw new AppError(400, 'PAYMENT_NOT_APPROVED', 'Payment must be approved before release');
     }
 
+    // Attempt Razorpay payout; fall back to manual transfer on failure
+    let razorpayPayoutId: string | undefined;
+    let releaseNotes = notes ?? payment.notes;
+    try {
+      const partner = payment.partner as { name?: string; email?: string; phone?: string } | undefined;
+      const contact = await razorpayPayoutProvider.createContact(
+        partner?.name ?? 'Partner',
+        partner?.email ?? '',
+        partner?.phone ?? '',
+        'vendor',
+      );
+
+      const bankRef = payment.bankAccountRef as string | undefined;
+      const [accNum = '', ifsc = '', bankName = ''] = bankRef?.split('|') ?? [];
+
+      const fundAccount = await razorpayPayoutProvider.createFundAccount(
+        contact.id,
+        bankName || 'Bank',
+        accNum,
+        ifsc,
+      );
+
+      const payout = await razorpayPayoutProvider.createPayout(
+        fundAccount.id,
+        Number(payment.totalAmount),
+        payment.currency,
+        `Commission payout ${payment.paymentNumber}`,
+        payment.id,
+      );
+
+      razorpayPayoutId = payout.id;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('[CommissionPayment] Razorpay payout failed, marking for manual transfer:', message);
+      releaseNotes = [releaseNotes, `[AUTO] Razorpay payout failed — manual transfer needed: ${message}`]
+        .filter(Boolean)
+        .join('\n');
+    }
+
     const item = await commissionPaymentRepository.update(id, {
       status: 'RELEASED',
-      paymentReference,
-      notes: notes ?? payment.notes,
+      paymentReference: razorpayPayoutId ?? paymentReference,
+      notes: releaseNotes,
       releasedAt: new Date(),
       releasedBy: { connect: { id: ctx.actorId } },
     });
@@ -131,8 +180,71 @@ export const commissionPaymentService = {
     await commissionPayoutEngineService.markLedgersPaid(ledgerIds, ctx.actorId);
 
     await auditCommissionMutation(authAuditRepository.log, ctx, 'COMMISSION_PAYOUT_RELEASED', id, {
-      paymentReference,
+      paymentReference: razorpayPayoutId ?? paymentReference,
     });
+
+    // Fire-and-forget payout release notifications
+    try {
+      const partner = await prisma.partner.findUnique({
+        where: { id: payment.partnerId },
+        select: { phone: true, email: true, contactName: true, userId: true },
+      });
+
+      if (partner) {
+        const amount = Number(item.totalAmount);
+        const formattedAmount = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+        const utr = razorpayPayoutId ?? paymentReference;
+        const smsBody = `Your commission payout of ${formattedAmount} has been released. Ref: ${utr}. Payment: ${item.paymentNumber}`;
+        const emailSubject = `Commission Payout Released — ${item.paymentNumber}`;
+        const emailBody = [
+          `Dear ${partner.contactName},`,
+          '',
+          `Your commission payout of ${formattedAmount} has been released.`,
+          '',
+          `Payment Number: ${item.paymentNumber}`,
+          `Amount: ${formattedAmount}`,
+          `Reference (UTR): ${utr}`,
+          '',
+          'Thank you,',
+          'KuberOne Finance',
+        ].join('\n');
+
+        const notificationPromises: Promise<unknown>[] = [];
+
+        if (partner.phone) {
+          notificationPromises.push(
+            smsOrchestratorService.send({
+              toPhone: partner.phone,
+              userId: partner.userId,
+              body: smsBody,
+              eventType: 'COMMISSION_PAYOUT_RELEASED',
+              category: 'TRANSACTIONAL',
+            }).catch((err) => {
+              console.error('[CommissionPayment] SMS notification failed:', err instanceof Error ? err.message : err);
+            }),
+          );
+        }
+
+        if (partner.email) {
+          notificationPromises.push(
+            emailOrchestratorService.send({
+              toEmail: partner.email,
+              userId: partner.userId,
+              subject: emailSubject,
+              body: emailBody,
+              eventType: 'COMMISSION_PAYOUT_RELEASED',
+              category: 'TRANSACTIONAL',
+            }).catch((err) => {
+              console.error('[CommissionPayment] Email notification failed:', err instanceof Error ? err.message : err);
+            }),
+          );
+        }
+
+        await Promise.allSettled(notificationPromises);
+      }
+    } catch (err) {
+      console.error('[CommissionPayment] Payout notification error:', err instanceof Error ? err.message : err);
+    }
 
     return item;
   },

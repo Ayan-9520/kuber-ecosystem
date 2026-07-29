@@ -28,6 +28,8 @@ import { leadRepository } from '../repositories/lead.repository.js';
 import { leadSourceRepository } from '../repositories/lead-source.repository.js';
 import { leadStatusHistoryRepository } from '../repositories/lead-status-history.repository.js';
 import { serializeLead } from '../utils/lead-serializer.js';
+import { leadAttributionService } from './lead-attribution.service.js';
+import type { UtmParams } from './lead-attribution.service.js';
 
 const LOAN_TYPE_TO_PRODUCT_CODE: Record<string, string> = {
   'home loan': 'HL-01',
@@ -224,6 +226,13 @@ export const websiteIntakeService = {
       changedById: await resolveWebsiteIntakeChangedById(),
       reason: 'Website lead intake',
     });
+
+    const utmParams = extractUtmParams(input);
+    if (utmParams) {
+      await leadAttributionService.trackAttribution(lead.id, utmParams).catch((err) => {
+        console.warn('[WebsiteIntake] Failed to track UTM attribution:', err);
+      });
+    }
 
     const refreshed = await leadRepository.findById(lead.id);
     return {
@@ -437,6 +446,26 @@ export const websiteIntakeService = {
     };
   },
 };
+
+function extractUtmParams(input: WebsiteLeadIntakeInput): UtmParams | null {
+  const f = input.fields as Record<string, unknown>;
+  const utm: UtmParams = {
+    utmSource: str(f.utm_source ?? f.utmSource),
+    utmMedium: str(f.utm_medium ?? f.utmMedium),
+    utmCampaign: str(f.utm_campaign ?? f.utmCampaign),
+    utmTerm: str(f.utm_term ?? f.utmTerm),
+    utmContent: str(f.utm_content ?? f.utmContent),
+    referrerUrl: str(f.referrer_url ?? f.referrerUrl ?? f.referrer),
+    landingPage: str(f.landing_page ?? f.landingPage) || input.page_url,
+  };
+  const hasAny = Object.values(utm).some(Boolean);
+  return hasAny ? utm : null;
+}
+
+function str(v: unknown): string | undefined {
+  if (typeof v === 'string' && v.trim()) return v.trim();
+  return undefined;
+}
 
 function serializeWebsiteVisitor(v: {
   id: string;

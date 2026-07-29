@@ -1,8 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 
 import { Card, DashboardHeader, EmptyState, QuickAction, Screen, StatCard, StatusBadge } from '@/components/ui';
 import { ACADEMY_LEVELS } from '@/features/academy/data/academy';
@@ -118,6 +120,88 @@ export function DashboardScreen() {
     | undefined;
   const commissionEarned = Number(commissionTotals?.totals?.totalCommission ?? 0);
 
+  // ── MTD Earnings calculations ──
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+  const mtdCommissions = useQuery({
+    queryKey: ['dashboard', 'mtd-commissions', partnerId],
+    queryFn: () =>
+      commissionsService.analytics({
+        partnerId,
+        fromDate: monthStart.toISOString(),
+        toDate: now.toISOString(),
+      }),
+    enabled: !!partnerId,
+  });
+
+  const lastMonthCommissions = useQuery({
+    queryKey: ['dashboard', 'last-month-commissions', partnerId],
+    queryFn: () =>
+      commissionsService.analytics({
+        partnerId,
+        fromDate: lastMonthStart.toISOString(),
+        toDate: lastMonthEnd.toISOString(),
+      }),
+    enabled: !!partnerId,
+  });
+
+  const mtdData = mtdCommissions.data as
+    | { totals?: { totalCommission?: number } }
+    | undefined;
+  const lastMonthData = lastMonthCommissions.data as
+    | { totals?: { totalCommission?: number } }
+    | undefined;
+
+  const mtdEarned = Number(mtdData?.totals?.totalCommission ?? 0);
+  const lastMonthEarned = Number(lastMonthData?.totals?.totalCommission ?? 0);
+  const mtdChangePercent =
+    lastMonthEarned > 0
+      ? ((mtdEarned - lastMonthEarned) / lastMonthEarned) * 100
+      : mtdEarned > 0
+        ? 100
+        : 0;
+  const MONTHLY_TARGET = 50_000;
+  const mtdProgress = Math.min(mtdEarned / MONTHLY_TARGET, 1);
+
+  // ── Conversion Rate calculations ──
+  const mtdLeads = useQuery({
+    queryKey: ['dashboard', 'mtd-leads', partnerId],
+    queryFn: () =>
+      leadsService.list({
+        fromDate: monthStart.toISOString(),
+        limit: 1,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      }),
+    enabled: !!partnerId,
+  });
+
+  const mtdDisbursed = useQuery({
+    queryKey: ['dashboard', 'mtd-disbursed', partnerId],
+    queryFn: () =>
+      leadsService.list({
+        fromDate: monthStart.toISOString(),
+        status: 'DISBURSED',
+        limit: 1,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      }),
+    enabled: !!partnerId,
+  });
+
+  const totalLeadsMtd = mtdLeads.data?.meta.total ?? 0;
+  const convertedLeadsMtd = mtdDisbursed.data?.meta.total ?? 0;
+  const conversionRate =
+    totalLeadsMtd > 0 ? (convertedLeadsMtd / totalLeadsMtd) * 100 : 0;
+
+  // ── Target vs Actual ──
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysRemaining = daysInMonth - now.getDate();
+  const targetProgress = Math.min(mtdEarned / MONTHLY_TARGET, 1);
+
   const refreshing =
     leads.isRefetching ||
     applications.isRefetching ||
@@ -134,6 +218,10 @@ export function DashboardScreen() {
     void referrals.refetch();
     void pendingDocs.refetch();
     void notifications.refetch();
+    void mtdCommissions.refetch();
+    void lastMonthCommissions.refetch();
+    void mtdLeads.refetch();
+    void mtdDisbursed.refetch();
   };
 
   const tabNav = navigation.getParent();
@@ -379,6 +467,131 @@ export function DashboardScreen() {
         </View>
       </View>
 
+      {/* ── MTD Earnings Widget ── */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeadInset}>
+          <Text style={styles.sectionTitle}>MTD Earnings</Text>
+          <Text style={styles.sectionSub}>Month-to-date commission earnings</Text>
+        </View>
+        <Card elevated>
+          <View style={styles.widgetRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.widgetValue}>{formatCurrency(mtdEarned)}</Text>
+              <View style={styles.widgetChangeRow}>
+                <Ionicons
+                  name={mtdChangePercent >= 0 ? 'arrow-up' : 'arrow-down'}
+                  size={14}
+                  color={mtdChangePercent >= 0 ? colors.success : colors.error}
+                />
+                <Text
+                  style={[
+                    styles.widgetChangeText,
+                    { color: mtdChangePercent >= 0 ? colors.success : colors.error },
+                  ]}
+                >
+                  {Math.abs(mtdChangePercent).toFixed(1)}% vs last month
+                </Text>
+              </View>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={styles.widgetLabel}>
+                Target: {formatCurrency(MONTHLY_TARGET)}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.progressBarBg}>
+            <View
+              style={[
+                styles.progressBarFill,
+                {
+                  width: `${(mtdProgress * 100).toFixed(0)}%` as `${number}%`,
+                  backgroundColor: colors.primary,
+                },
+              ]}
+            />
+          </View>
+          <Text style={styles.widgetMini}>
+            {(mtdProgress * 100).toFixed(0)}% of monthly target
+          </Text>
+        </Card>
+      </View>
+
+      {/* ── Conversion Rate Widget ── */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeadInset}>
+          <Text style={styles.sectionTitle}>Conversion Rate</Text>
+          <Text style={styles.sectionSub}>Lead to disbursement this month</Text>
+        </View>
+        <Card elevated>
+          <View style={styles.widgetRow}>
+            <ConversionCircle
+              percentage={conversionRate}
+              size={72}
+              strokeWidth={7}
+              color={colors.primary}
+              trackColor={`${colors.primary}20`}
+              textColor={colors.text}
+            />
+            <View style={{ flex: 1, marginLeft: spacing.lg }}>
+              <View style={styles.conversionStat}>
+                <Text style={styles.widgetLabel}>Leads submitted</Text>
+                <Text style={styles.widgetStatNum}>{totalLeadsMtd}</Text>
+              </View>
+              <View style={styles.conversionStat}>
+                <Text style={styles.widgetLabel}>Disbursed</Text>
+                <Text style={[styles.widgetStatNum, { color: colors.success }]}>
+                  {convertedLeadsMtd}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </Card>
+      </View>
+
+      {/* ── Target vs Actual Widget ── */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeadInset}>
+          <Text style={styles.sectionTitle}>Target vs Actual</Text>
+          <Text style={styles.sectionSub}>{daysRemaining} days remaining this month</Text>
+        </View>
+        <Card elevated>
+          <View style={styles.widgetRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.widgetLabel}>Actual earned</Text>
+              <Text style={styles.widgetValue}>{formatCurrency(mtdEarned)}</Text>
+            </View>
+            <View style={{ flex: 1, alignItems: 'flex-end' }}>
+              <Text style={styles.widgetLabel}>Monthly target</Text>
+              <Text style={styles.widgetValue}>{formatCurrency(MONTHLY_TARGET)}</Text>
+            </View>
+          </View>
+          <View style={styles.progressBarBg}>
+            <View
+              style={[
+                styles.progressBarFill,
+                {
+                  width: `${(targetProgress * 100).toFixed(0)}%` as `${number}%`,
+                  backgroundColor:
+                    targetProgress >= 1
+                      ? colors.success
+                      : targetProgress >= 0.5
+                        ? colors.warning
+                        : colors.error,
+                },
+              ]}
+            />
+          </View>
+          <View style={styles.widgetRow}>
+            <Text style={styles.widgetMini}>
+              {(targetProgress * 100).toFixed(0)}% achieved
+            </Text>
+            <Text style={styles.widgetMini}>
+              {formatCurrency(Math.max(MONTHLY_TARGET - mtdEarned, 0))} remaining
+            </Text>
+          </View>
+        </Card>
+      </View>
+
       <View style={[styles.section, styles.listsSection]}>
         <View style={styles.listCol}>
           <Card title="Hot Leads" subtitle="High priority prospects" elevated onPress={goLeads}>
@@ -464,6 +677,64 @@ export function DashboardScreen() {
         </View>
       </View>
     </Screen>
+  );
+}
+
+function ConversionCircle({
+  percentage,
+  size,
+  strokeWidth,
+  color,
+  trackColor,
+  textColor,
+}: {
+  percentage: number;
+  size: number;
+  strokeWidth: number;
+  color: string;
+  trackColor: string;
+  textColor: string;
+}) {
+  const r = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * r;
+  const strokeDashoffset = circumference * (1 - Math.min(percentage, 100) / 100);
+
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size}>
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={trackColor}
+          strokeWidth={strokeWidth}
+          fill="none"
+        />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={color}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${circumference}`}
+          strokeDashoffset={strokeDashoffset}
+          rotation={-90}
+          origin={`${size / 2}, ${size / 2}`}
+        />
+      </Svg>
+      <Text
+        style={{
+          position: 'absolute',
+          fontSize: 14,
+          fontWeight: '800',
+          color: textColor,
+        }}
+      >
+        {percentage.toFixed(0)}%
+      </Text>
+    </View>
   );
 }
 
@@ -577,5 +848,63 @@ function createStyles(
     rowTitle: { ...typography.label, color: colors.text, fontSize: 14 },
     rowSub: { ...typography.bodySm, color: colors.textSecondary, marginTop: 4, lineHeight: 18 },
     muted: { ...typography.body, color: colors.textSecondary },
+    widgetRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.sm,
+    },
+    widgetValue: {
+      ...typography.h3,
+      color: colors.text,
+      fontSize: isDesktop ? 24 : 20,
+      fontWeight: '800',
+    },
+    widgetLabel: {
+      ...typography.bodySm,
+      color: colors.textSecondary,
+      fontSize: 13,
+    },
+    widgetChangeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginTop: 4,
+    },
+    widgetChangeText: {
+      ...typography.bodySm,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    widgetMini: {
+      ...typography.bodySm,
+      color: colors.textSecondary,
+      fontSize: 12,
+      marginTop: 4,
+    },
+    widgetStatNum: {
+      ...typography.label,
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    progressBarBg: {
+      height: 8,
+      backgroundColor: `${colors.primary}15`,
+      borderRadius: 4,
+      overflow: 'hidden' as const,
+    },
+    progressBarFill: {
+      height: '100%',
+      borderRadius: 4,
+    },
+    conversionStat: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 6,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
   });
 }

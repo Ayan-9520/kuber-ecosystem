@@ -34,6 +34,15 @@ export interface SlabDefinition {
   fixedAmount?: number;
 }
 
+export interface TdsBreakdown {
+  grossAmount: number;
+  tdsAmount: number;
+  netAmount: number;
+  tdsRate: number;
+  tdsApplicable: boolean;
+  reason: string;
+}
+
 export interface CalculationResult {
   commissionAmount: number;
   ruleId: string | null;
