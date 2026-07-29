@@ -9,7 +9,7 @@ import { useDebounce, usePagination } from '@/hooks';
 import { fieldStr, formatCurrency, formatDate } from '@/lib/utils';
 import { commissionsService } from '@/services';
 
-type TabId = 'dashboard' | 'ledger' | 'approvals' | 'payments' | 'recoveries' | 'adjustments';
+type TabId = 'dashboard' | 'ledger' | 'approvals' | 'payments' | 'recoveries' | 'adjustments' | 'rules' | 'cycles' | 'tds';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -18,10 +18,13 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'payments', label: 'Payments' },
   { id: 'recoveries', label: 'Recoveries' },
   { id: 'adjustments', label: 'Adjustments' },
+  { id: 'rules', label: 'Rules' },
+  { id: 'cycles', label: 'Payout Cycles' },
+  { id: 'tds', label: 'TDS' },
 ];
 
 const FETCHERS: Record<
-  Exclude<TabId, 'dashboard'>,
+  Exclude<TabId, 'dashboard' | 'cycles' | 'tds'>,
   (params: Record<string, unknown>) => ReturnType<typeof commissionsService.ledger>
 > = {
   ledger: commissionsService.ledger,
@@ -29,7 +32,15 @@ const FETCHERS: Record<
   payments: commissionsService.payments,
   recoveries: commissionsService.recoveries,
   adjustments: commissionsService.adjustments,
+  rules: commissionsService.rules,
 };
+
+const CUSTOM_TABS: TabId[] = ['dashboard', 'cycles', 'tds'];
+
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
 
 export function CommissionsPage() {
   const queryClient = useQueryClient();
@@ -37,6 +48,10 @@ export function CommissionsPage() {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search);
   const { page, limit, setPage, reset } = usePagination();
+  const [selectedRule, setSelectedRule] = useState<Record<string, unknown> | null>(null);
+
+  const [cycleMonth, setCycleMonth] = useState(new Date().getMonth() + 1);
+  const [cycleYear, setCycleYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     reset();
@@ -56,13 +71,39 @@ export function CommissionsPage() {
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
     queryKey: ['commission-analytics'],
     queryFn: () => commissionsService.analytics(),
-    enabled: tab === 'dashboard',
+    enabled: tab === 'dashboard' || tab === 'tds',
   });
 
   const { data, isLoading } = useQuery({
     queryKey: ['commissions', tab, params],
-    queryFn: () => FETCHERS[tab as Exclude<TabId, 'dashboard'>](params),
-    enabled: tab !== 'dashboard',
+    queryFn: () => FETCHERS[tab as Exclude<TabId, 'dashboard' | 'cycles' | 'tds'>](params),
+    enabled: !CUSTOM_TABS.includes(tab),
+  });
+
+  const { data: cyclesData, isLoading: cyclesLoading } = useQuery({
+    queryKey: ['commission-payout-cycles', params],
+    queryFn: () => commissionsService.payoutCycles(params),
+    enabled: tab === 'cycles',
+  });
+
+  const { data: cyclePreview, refetch: refetchPreview, isFetching: previewLoading } = useQuery({
+    queryKey: ['commission-cycle-preview'],
+    queryFn: () => commissionsService.previewCycle(),
+    enabled: false,
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: (data: { month: number; year: number }) => commissionsService.generateCycle(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['commission-payout-cycles'] });
+    },
+  });
+
+  const executeMutation = useMutation({
+    mutationFn: (cycleId: string) => commissionsService.executeCycle(cycleId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['commission-payout-cycles'] });
+    },
   });
 
   const actionMutation = useMutation({
@@ -185,7 +226,7 @@ export function CommissionsPage() {
             header: 'Adjustment #',
             render: (r: Record<string, unknown>) => fieldStr(r, 'adjustmentNumber'),
           },
-          { key: 'partnerId', header: 'Partner', render: (r: Record<string, unknown>) => fieldStr(r, 'partnerId') },
+          { key: 'partnerId', header: 'Partner', render: (r: Record<string, unknown>) => fieldStr(r, 'adjustmentNumber') },
           {
             key: 'adjustmentAmount',
             header: 'Amount',
@@ -194,24 +235,233 @@ export function CommissionsPage() {
           statusCol,
           { key: 'createdAt', header: 'Date', render: (r: Record<string, unknown>) => formatDate(r.createdAt as string) },
         ];
+      case 'rules':
+        return [
+          { key: 'ruleCode', header: 'Rule Code', render: (r: Record<string, unknown>) => fieldStr(r, 'ruleCode') },
+          { key: 'name', header: 'Name', render: (r: Record<string, unknown>) => fieldStr(r, 'name') },
+          { key: 'commissionType', header: 'Type', render: (r: Record<string, unknown>) => fieldStr(r, 'commissionType') },
+          { key: 'calculationMethod', header: 'Method', render: (r: Record<string, unknown>) => fieldStr(r, 'calculationMethod') },
+          {
+            key: 'amount',
+            header: 'Rate / Amount',
+            render: (r: Record<string, unknown>) =>
+              r.percentage ? `${r.percentage}%` : formatCurrency(r.fixedAmount as number),
+          },
+          statusCol,
+          { key: 'createdAt', header: 'Created', render: (r: Record<string, unknown>) => formatDate(r.createdAt as string) },
+        ];
       default:
         return [];
     }
   }, [tab, renderActions]);
 
-  const emptyTitles: Record<Exclude<TabId, 'dashboard'>, string> = {
+  const emptyTitles: Record<Exclude<TabId, 'dashboard' | 'cycles' | 'tds'>, string> = {
     ledger: 'No ledger entries',
     approvals: 'No pending approvals',
     payments: 'No payments recorded',
     recoveries: 'No recoveries found',
     adjustments: 'No adjustments found',
+    rules: 'No commission rules found',
   };
+
+  const renderCyclesTab = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div className="grid-2">
+        <Card title="Current Cycle Preview">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => refetchPreview()}
+            disabled={previewLoading}
+          >
+            {previewLoading ? 'Loading...' : 'Preview Current Cycle'}
+          </Button>
+          {cyclePreview && (
+            <div className="data-table-wrapper" style={{ marginTop: '1rem' }}>
+              <table className="data-table">
+                <tbody>
+                  <tr><td>Total Partners</td><td>{String(cyclePreview.totalPartners ?? '—')}</td></tr>
+                  <tr><td>Total Gross</td><td>{formatCurrency(cyclePreview.totalGross as number)}</td></tr>
+                  <tr><td>Total TDS</td><td>{formatCurrency(cyclePreview.totalTds as number)}</td></tr>
+                  <tr><td>Total Net</td><td>{formatCurrency(cyclePreview.totalNet as number)}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        <Card title="Generate Payout Cycle">
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <div>
+              <label className="form-label">Month</label>
+              <select
+                className="form-input"
+                value={cycleMonth}
+                onChange={(e) => setCycleMonth(Number(e.target.value))}
+              >
+                {MONTHS.map((m, i) => (
+                  <option key={i} value={i + 1}>{m}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="form-label">Year</label>
+              <select
+                className="form-input"
+                value={cycleYear}
+                onChange={(e) => setCycleYear(Number(e.target.value))}
+              >
+                {[cycleYear - 1, cycleYear, cycleYear + 1].map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => generateMutation.mutate({ month: cycleMonth, year: cycleYear })}
+              disabled={generateMutation.isPending}
+            >
+              {generateMutation.isPending ? 'Generating...' : 'Generate Cycle'}
+            </Button>
+          </div>
+        </Card>
+      </div>
+
+      <Card title="Past Payout Cycles">
+        {cyclesLoading ? (
+          <div className="skeleton skeleton-stat" />
+        ) : (cyclesData?.items ?? []).length ? (
+          <div className="data-table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Cycle ID</th>
+                  <th>Month</th>
+                  <th>Year</th>
+                  <th>Partners</th>
+                  <th>Gross</th>
+                  <th>Net</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(cyclesData?.items ?? []).map((row, i) => (
+                  <tr key={i}>
+                    <td>{fieldStr(row, 'cycleId') || fieldStr(row, 'id')}</td>
+                    <td>{MONTHS[(row.month as number) - 1] ?? String(row.month ?? '—')}</td>
+                    <td>{String(row.year ?? '—')}</td>
+                    <td>{String(row.totalPartners ?? '—')}</td>
+                    <td>{formatCurrency(row.totalGross as number)}</td>
+                    <td>{formatCurrency(row.totalNet as number)}</td>
+                    <td><StatusBadge status={fieldStr(row, 'status')} /></td>
+                    <td>
+                      {fieldStr(row, 'status') === 'GENERATED' && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => executeMutation.mutate(String(row.id))}
+                          disabled={executeMutation.isPending}
+                        >
+                          Execute
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="page-subtitle">No payout cycles yet</p>
+        )}
+      </Card>
+    </div>
+  );
+
+  const renderTdsTab = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <Card title="TDS Configuration">
+        <div className="stat-grid">
+          <StatCard label="TDS Rate" value="5%" />
+          <StatCard label="Threshold" value="₹15,000" />
+          <StatCard label="Section" value="194H" />
+        </div>
+      </Card>
+
+      <Card title="Partner TDS Summary">
+        {analyticsLoading ? (
+          <div className="skeleton skeleton-stat" />
+        ) : (analytics?.partnerEarnings ?? []).length ? (
+          <div className="data-table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Partner</th>
+                  <th>Annual Commission</th>
+                  <th>TDS Applicable</th>
+                  <th>TDS Amount (5%)</th>
+                  <th>Net Payable</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(analytics?.partnerEarnings ?? []).map((row, i) => {
+                  const amount = Number(row.commissionAmount ?? 0);
+                  const tdsApplicable = amount > 15000;
+                  const tds = tdsApplicable ? amount * 0.05 : 0;
+                  return (
+                    <tr key={i}>
+                      <td>{row.partnerName || row.partnerCode || '—'}</td>
+                      <td>{formatCurrency(amount)}</td>
+                      <td>{tdsApplicable ? 'Yes' : 'No'}</td>
+                      <td>{formatCurrency(tds)}</td>
+                      <td>{formatCurrency(amount - tds)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="page-subtitle">No partner earnings data yet</p>
+        )}
+      </Card>
+    </div>
+  );
+
+  const renderRuleDetail = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <Button variant="secondary" size="sm" onClick={() => setSelectedRule(null)}>
+        ← Back to Rules
+      </Button>
+      <Card title={fieldStr(selectedRule!, 'name') || 'Rule Details'}>
+        <div className="data-table-wrapper">
+          <table className="data-table">
+            <tbody>
+              {['ruleCode', 'name', 'commissionType', 'calculationMethod', 'percentage', 'fixedAmount', 'status', 'description', 'createdAt', 'updatedAt'].map((key) => {
+                const val = selectedRule![key];
+                if (val == null || val === '') return null;
+                const display = key.endsWith('At') ? formatDate(val as string) : key === 'fixedAmount' ? formatCurrency(val as number) : key === 'percentage' ? `${val}%` : String(val);
+                return (
+                  <tr key={key}>
+                    <td style={{ fontWeight: 600, textTransform: 'capitalize' }}>{key.replace(/([A-Z])/g, ' $1')}</td>
+                    <td>{display}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
 
   return (
     <div className="page-container">
       <PageHeader title="Commissions" subtitle="Commission analytics, ledger, approvals, and payouts" />
 
-      <Tabs tabs={TABS} active={tab} onChange={(id) => setTab(id as TabId)} />
+      <Tabs tabs={TABS} active={tab} onChange={(id) => { setTab(id as TabId); setSelectedRule(null); }} />
 
       {tab === 'dashboard' ? (
         analyticsLoading ? (
@@ -293,6 +543,12 @@ export function CommissionsPage() {
             </div>
           </>
         )
+      ) : tab === 'cycles' ? (
+        renderCyclesTab()
+      ) : tab === 'tds' ? (
+        renderTdsTab()
+      ) : tab === 'rules' && selectedRule ? (
+        renderRuleDetail()
       ) : (
         <PaginatedListView
           search={search}
@@ -303,7 +559,8 @@ export function CommissionsPage() {
           meta={data?.meta}
           onPageChange={setPage}
           columns={listColumns}
-          emptyTitle={emptyTitles[tab as Exclude<TabId, 'dashboard'>]}
+          onRowClick={tab === 'rules' ? (row) => setSelectedRule(row) : undefined}
+          emptyTitle={emptyTitles[tab as Exclude<TabId, 'dashboard' | 'cycles' | 'tds'>]}
           emptyDescription="Commission records will appear as leads convert and payouts are processed."
         />
       )}

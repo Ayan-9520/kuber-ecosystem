@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { DetailDrawer } from '@/components/common/DetailDrawer';
 import { PaginatedListView } from '@/components/common/PaginatedListView';
-import { PageHeader } from '@/components/ui';
+import { PageHeader, StatCard } from '@/components/ui';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -11,27 +11,58 @@ import { useDebounce, usePagination } from '@/hooks';
 import { fieldStr, formatDate, formatDateTime } from '@/lib/utils';
 import { partnersService } from '@/services';
 
+type CommissionTier = 'SILVER' | 'GOLD' | 'PLATINUM' | 'DIAMOND';
+
+const TIER_COLORS: Record<CommissionTier, { bg: string; color: string; label: string }> = {
+  SILVER: { bg: '#e5e7eb', color: '#374151', label: 'Silver' },
+  GOLD: { bg: '#fef3c7', color: '#92400e', label: 'Gold' },
+  PLATINUM: { bg: '#dbeafe', color: '#1e40af', label: 'Platinum' },
+  DIAMOND: { bg: '#ede9fe', color: '#6d28d9', label: 'Diamond' },
+};
+
+function TierBadge({ tier }: { tier: string }) {
+  const config = TIER_COLORS[tier as CommissionTier] ?? TIER_COLORS.SILVER;
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        padding: '0.15rem 0.55rem',
+        borderRadius: '9999px',
+        fontSize: '0.75rem',
+        fontWeight: 600,
+        backgroundColor: config.bg,
+        color: config.color,
+      }}
+    >
+      {config.label}
+    </span>
+  );
+}
+
 export function PartnersPage() {
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [tierFilter, setTierFilter] = useState<string>('');
+  const [overrideTier, setOverrideTier] = useState<CommissionTier | ''>('');
   const debouncedSearch = useDebounce(search);
   const { page, limit, setPage, reset } = usePagination();
   const queryClient = useQueryClient();
 
   useEffect(() => {
     reset();
-  }, [debouncedSearch, reset]);
+  }, [debouncedSearch, tierFilter, reset]);
 
   const params = useMemo(
     () => ({
       page,
       limit,
       search: debouncedSearch || undefined,
+      commissionTier: tierFilter || undefined,
       sortBy: 'createdAt',
       sortOrder: 'desc',
     }),
-    [page, limit, debouncedSearch],
+    [page, limit, debouncedSearch, tierFilter],
   );
 
   const { data, isLoading } = useQuery({
@@ -98,6 +129,29 @@ export function PartnersPage() {
     },
   });
 
+  const tierMutation = useMutation({
+    mutationFn: ({ id, commissionTier }: { id: string; commissionTier: CommissionTier }) =>
+      partnersService.update(id, { commissionTier }),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: ['partners'] });
+      setActionMessage(`Tier updated to ${TIER_COLORS[vars.commissionTier].label}.`);
+      setOverrideTier('');
+    },
+    onError: (err: Error) => {
+      setActionMessage(err.message || 'Could not update tier.');
+    },
+  });
+
+  const allPartners = data?.items ?? [];
+  const tierCounts = useMemo(() => {
+    const counts = { total: data?.meta?.total ?? 0, SILVER: 0, GOLD: 0, PLATINUM: 0, DIAMOND: 0 };
+    for (const p of allPartners) {
+      const t = fieldStr(p, 'commissionTier') as CommissionTier;
+      if (t in counts) counts[t]++;
+    }
+    return counts;
+  }, [allPartners, data?.meta?.total]);
+
   const columns = [
     { key: 'partnerCode', header: 'Code', render: (r: Record<string, unknown>) => fieldStr(r, 'partnerCode') },
     {
@@ -107,6 +161,11 @@ export function PartnersPage() {
     },
     { key: 'phone', header: 'Phone', render: (r: Record<string, unknown>) => fieldStr(r, 'phone') },
     { key: 'email', header: 'Email', render: (r: Record<string, unknown>) => fieldStr(r, 'email') },
+    {
+      key: 'commissionTier',
+      header: 'Tier',
+      render: (r: Record<string, unknown>) => <TierBadge tier={fieldStr(r, 'commissionTier') || 'SILVER'} />,
+    },
     {
       key: 'kycStatus',
       header: 'KYC',
@@ -129,6 +188,35 @@ export function PartnersPage() {
   return (
     <div className="page-container">
       <PageHeader title="Partners" subtitle="Partner network, KYC status, and commission tiers" />
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+        <StatCard label="Total Partners" value={tierCounts.total} />
+        <StatCard label="Silver" value={tierCounts.SILVER} />
+        <StatCard label="Gold" value={tierCounts.GOLD} />
+        <StatCard label="Platinum+" value={tierCounts.PLATINUM + tierCounts.DIAMOND} />
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', alignItems: 'center' }}>
+        <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Tier:</label>
+        <select
+          value={tierFilter}
+          onChange={(e) => setTierFilter(e.target.value)}
+          style={{
+            padding: '0.4rem 0.75rem',
+            borderRadius: '0.375rem',
+            border: '1px solid var(--color-border, #d1d5db)',
+            fontSize: '0.875rem',
+            background: 'var(--color-bg-primary, #fff)',
+            color: 'var(--color-text-primary, #111)',
+          }}
+        >
+          <option value="">All Tiers</option>
+          <option value="SILVER">Silver</option>
+          <option value="GOLD">Gold</option>
+          <option value="PLATINUM">Platinum</option>
+          <option value="DIAMOND">Diamond</option>
+        </select>
+      </div>
 
       <PaginatedListView
         search={search}
@@ -192,6 +280,50 @@ export function PartnersPage() {
                 </div>
               </div>
             </div>
+
+            <Card title="Commission Tier" style={{ marginBottom: '1.5rem' }}>
+              <div style={{ marginBottom: '0.75rem' }}>
+                <span style={{ fontSize: '0.875rem', marginRight: '0.5rem' }}>Current:</span>
+                <TierBadge tier={fieldStr(detail, 'commissionTier') || 'SILVER'} />
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '1rem', lineHeight: 1.6 }}>
+                <strong>Tier thresholds:</strong><br />
+                Gold: ₹1L revenue or 50 leads<br />
+                Platinum: ₹5L revenue or 200 leads<br />
+                Diamond: ₹25L revenue or 1,000 leads
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <select
+                  value={overrideTier}
+                  onChange={(e) => setOverrideTier(e.target.value as CommissionTier | '')}
+                  style={{
+                    padding: '0.4rem 0.75rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid var(--color-border, #d1d5db)',
+                    fontSize: '0.875rem',
+                    background: 'var(--color-bg-primary, #fff)',
+                    color: 'var(--color-text-primary, #111)',
+                  }}
+                >
+                  <option value="">Override tier…</option>
+                  <option value="SILVER">Silver</option>
+                  <option value="GOLD">Gold</option>
+                  <option value="PLATINUM">Platinum</option>
+                  <option value="DIAMOND">Diamond</option>
+                </select>
+                <Button
+                  type="button"
+                  disabled={!overrideTier || tierMutation.isPending}
+                  onClick={() => {
+                    if (selectedId && overrideTier) {
+                      tierMutation.mutate({ id: selectedId, commissionTier: overrideTier });
+                    }
+                  }}
+                >
+                  {tierMutation.isPending ? 'Updating…' : 'Update Tier'}
+                </Button>
+              </div>
+            </Card>
 
             {actionMessage && (
               <p style={{ fontSize: '0.875rem', marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>

@@ -126,6 +126,10 @@ export const commissionsService = {
   recoveries: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/commission-recoveries', params),
   adjustments: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/commission-adjustments', params),
   rules: (params?: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/commission-rules', params ?? {}),
+  payoutCycles: (params?: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/commission-payout-cycles', params ?? {}),
+  previewCycle: () => apiGet<Record<string, unknown>>('/commission-payout-cycles/preview'),
+  generateCycle: (data: { month: number; year: number }) => apiPost<Record<string, unknown>>('/commission-payout-cycles/generate', data),
+  executeCycle: (cycleId: string) => apiPost<Record<string, unknown>>(`/commission-payout-cycles/${cycleId}/execute`),
   analytics: async (params?: Record<string, unknown>) =>
     normalizeCommissionAnalytics(await apiGet<Record<string, unknown>>('/commission-analytics', params)),
   requestApproval: (data: { ledgerId: string; notes?: string }) =>
