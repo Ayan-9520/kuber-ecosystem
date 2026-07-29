@@ -15,6 +15,7 @@ import type {
 import { AiAdvisorScreen } from '@/features/ai-advisor/screens/AiAdvisorScreen';
 import { AcademyHubScreen } from '@/features/academy/screens/AcademyHubScreen';
 import { AcademyModuleScreen } from '@/features/academy/screens/AcademyModuleScreen';
+import { useResponsiveLayout } from '@/hooks';
 import { ApplicationDetailScreen } from '@/features/applications/screens/ApplicationDetailScreen';
 import { ApplicationsListScreen } from '@/features/applications/screens/ApplicationsListScreen';
 import { CommissionAnalyticsScreen } from '@/features/commissions/screens/CommissionAnalyticsScreen';
@@ -221,6 +222,7 @@ function ProfileStackNavigator() {
 
 export function MainTabNavigator() {
   const { colors } = useAppTheme();
+  const { isDesktop, contentMaxWidth } = useResponsiveLayout();
 
   return (
     <Tab.Navigator
@@ -230,18 +232,29 @@ export function MainTabNavigator() {
           backgroundColor: colors.card,
           borderTopColor: colors.borderLight,
           borderTopWidth: 1,
-          height: 72,
-          paddingBottom: 10,
-          paddingTop: 10,
+          height: isDesktop ? 68 : 72,
+          paddingBottom: isDesktop ? 12 : 10,
+          paddingTop: isDesktop ? 10 : 10,
           elevation: 12,
           shadowColor: '#071A1F',
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.08,
           shadowRadius: 12,
+          ...(isDesktop
+            ? {
+                maxWidth: contentMaxWidth,
+                width: '100%',
+                alignSelf: 'center',
+                borderTopLeftRadius: 16,
+                borderTopRightRadius: 16,
+                overflow: 'hidden' as const,
+              }
+            : null),
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: { fontSize: 12, fontWeight: '700', marginTop: 2 },
+        tabBarLabelStyle: { fontSize: isDesktop ? 12 : 12, fontWeight: '700', marginTop: 2 },
+        tabBarItemStyle: isDesktop ? { paddingHorizontal: 8 } : undefined,
         tabBarIcon: ({ color, focused }) => {
           const icons: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
             Home: { active: 'home', inactive: 'home-outline' },
@@ -252,7 +265,7 @@ export function MainTabNavigator() {
             Profile: { active: 'person', inactive: 'person-outline' },
           };
           const icon = icons[route.name] ?? { active: 'ellipse', inactive: 'ellipse-outline' };
-          return <Ionicons name={focused ? icon.active : icon.inactive} size={22} color={color} />;
+          return <Ionicons name={focused ? icon.active : icon.inactive} size={isDesktop ? 22 : 22} color={color} />;
         },
       })}
     >

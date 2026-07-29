@@ -6,11 +6,11 @@ import {
   type ScrollViewProps,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useResponsiveLayout } from '@/hooks';
 import { spacing, typography } from '@/theme';
 import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
 
@@ -24,20 +24,28 @@ interface ScreenProps extends ScrollViewProps {
   padded?: boolean;
 }
 
-function createStyles(colors: AppColors, isWide: boolean) {
+function createStyles(colors: AppColors, contentMaxWidth: number | undefined, pagePad: number, isDesktop: boolean) {
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      ...(isDesktop && Platform.OS === 'web'
+        ? ({
+            backgroundImage: `radial-gradient(1200px 480px at 12% -10%, ${colors.primary}14, transparent), radial-gradient(900px 420px at 88% 0%, #00C38918, transparent), ${colors.background}`,
+          } as object)
+        : null),
+    },
     flex: { flex: 1 },
-    padded: { paddingHorizontal: spacing.md },
+    padded: { paddingHorizontal: pagePad },
     scrollContent: {
-      paddingBottom: spacing.xxl,
+      paddingBottom: isDesktop ? spacing.xxl + 24 : spacing.xxl,
       width: '100%',
-      maxWidth: isWide ? 1100 : undefined,
+      maxWidth: contentMaxWidth,
       alignSelf: 'center',
     },
     bodyShell: {
       width: '100%',
-      maxWidth: isWide ? 1100 : undefined,
+      maxWidth: contentMaxWidth,
       alignSelf: 'center',
       flex: 1,
     },
@@ -45,14 +53,14 @@ function createStyles(colors: AppColors, isWide: boolean) {
       flexDirection: 'row',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
+      paddingHorizontal: pagePad,
+      paddingVertical: isDesktop ? spacing.lg : spacing.md,
       width: '100%',
-      maxWidth: isWide ? 1100 : undefined,
+      maxWidth: contentMaxWidth,
       alignSelf: 'center',
     },
     headerLeft: { flex: 1 },
-    title: { ...typography.h1, color: colors.text, fontSize: 24 },
+    title: { ...typography.h1, color: colors.text, fontSize: isDesktop ? 28 : 24 },
     subtitle: { ...typography.bodySm, color: colors.textMuted, marginTop: 4 },
     loading: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
     empty: { alignItems: 'center', paddingVertical: spacing.xxl, paddingHorizontal: spacing.lg },
@@ -75,9 +83,11 @@ export function Screen({
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
-  const { width } = useWindowDimensions();
-  const isWide = Platform.OS === 'web' && width >= 920;
-  const styles = useMemo(() => createStyles(colors, isWide), [colors, isWide]);
+  const { contentMaxWidth, pagePad, isDesktop } = useResponsiveLayout();
+  const styles = useMemo(
+    () => createStyles(colors, contentMaxWidth, pagePad, isDesktop),
+    [colors, contentMaxWidth, pagePad, isDesktop],
+  );
 
   const header = (title || subtitle) && (
     <View style={styles.header}>
@@ -133,9 +143,11 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   const { colors } = useAppTheme();
-  const { width } = useWindowDimensions();
-  const isWide = Platform.OS === 'web' && width >= 920;
-  const styles = useMemo(() => createStyles(colors, isWide), [colors, isWide]);
+  const { contentMaxWidth, pagePad, isDesktop } = useResponsiveLayout();
+  const styles = useMemo(
+    () => createStyles(colors, contentMaxWidth, pagePad, isDesktop),
+    [colors, contentMaxWidth, pagePad, isDesktop],
+  );
 
   return (
     <View style={styles.empty}>

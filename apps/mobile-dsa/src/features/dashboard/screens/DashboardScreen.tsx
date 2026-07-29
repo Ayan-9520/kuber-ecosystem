@@ -6,7 +6,7 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'r
 
 import { Card, DashboardHeader, EmptyState, QuickAction, Screen, StatCard, StatusBadge } from '@/components/ui';
 import { ACADEMY_LEVELS } from '@/features/academy/data/academy';
-import { useAuth } from '@/hooks';
+import { useAuth, useResponsiveLayout } from '@/hooks';
 import { formatCurrency, str } from '@/lib/utils';
 import type { HomeStackParamList } from '@/navigation/types';
 import {
@@ -25,7 +25,11 @@ export function DashboardScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
   const { user, partnerId } = useAuth();
   const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { isDesktop, isWide, pagePad, statColumns, actionColumns, listColumns } = useResponsiveLayout();
+  const styles = useMemo(
+    () => createStyles(colors, isDesktop, pagePad, statColumns, actionColumns, listColumns),
+    [colors, isDesktop, pagePad, statColumns, actionColumns, listColumns],
+  );
 
   const partner = useQuery({
     queryKey: ['partner-profile', partnerId],
@@ -214,36 +218,66 @@ export function DashboardScreen() {
         <Text style={styles.sectionSub}>Quick actions to grow your business</Text>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.actions}>
-        <QuickAction
-          label="New Customer"
-          icon="person-add"
-          onPress={() => tabNav?.navigate('Leads', { screen: 'CreateLead' })}
-        />
-        <QuickAction
-          label="Academy"
-          icon="school"
-          onPress={() => tabNav?.navigate('Academy', { screen: 'AcademyHome' })}
-        />
-        <QuickAction
-          label="Analytics"
-          icon="bar-chart"
-          onPress={goLeadAnalytics}
-        />
-        <QuickAction label="Earnings" icon="wallet" onPress={goCommissions} />
-        <QuickAction label="AI Coach" icon="sparkles" onPress={() => navigation.navigate('AiAdvisor')} />
-        <QuickAction label="Voice AI" icon="mic" onPress={() => navigation.navigate('VoiceAi')} />
-        <QuickAction label="Alerts" icon="notifications" onPress={goNotifications} />
-        <QuickAction label="Referrals" icon="gift" onPress={goReferrals} />
-      </ScrollView>
+      {isWide ? (
+        <View style={styles.actionsGrid}>
+          <QuickAction
+            style={styles.actionItem}
+            label="New Customer"
+            icon="person-add"
+            onPress={() => tabNav?.navigate('Leads', { screen: 'CreateLead' })}
+          />
+          <QuickAction
+            style={styles.actionItem}
+            label="Academy"
+            icon="school"
+            onPress={() => tabNav?.navigate('Academy', { screen: 'AcademyHome' })}
+          />
+          <QuickAction style={styles.actionItem} label="Analytics" icon="bar-chart" onPress={goLeadAnalytics} />
+          <QuickAction style={styles.actionItem} label="Earnings" icon="wallet" onPress={goCommissions} />
+          <QuickAction
+            style={styles.actionItem}
+            label="AI Coach"
+            icon="sparkles"
+            onPress={() => navigation.navigate('AiAdvisor')}
+          />
+          <QuickAction
+            style={styles.actionItem}
+            label="Voice AI"
+            icon="mic"
+            onPress={() => navigation.navigate('VoiceAi')}
+          />
+          <QuickAction style={styles.actionItem} label="Alerts" icon="notifications" onPress={goNotifications} />
+          <QuickAction style={styles.actionItem} label="Referrals" icon="gift" onPress={goReferrals} />
+        </View>
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.actions}>
+          <QuickAction
+            label="New Customer"
+            icon="person-add"
+            onPress={() => tabNav?.navigate('Leads', { screen: 'CreateLead' })}
+          />
+          <QuickAction
+            label="Academy"
+            icon="school"
+            onPress={() => tabNav?.navigate('Academy', { screen: 'AcademyHome' })}
+          />
+          <QuickAction label="Analytics" icon="bar-chart" onPress={goLeadAnalytics} />
+          <QuickAction label="Earnings" icon="wallet" onPress={goCommissions} />
+          <QuickAction label="AI Coach" icon="sparkles" onPress={() => navigation.navigate('AiAdvisor')} />
+          <QuickAction label="Voice AI" icon="mic" onPress={() => navigation.navigate('VoiceAi')} />
+          <QuickAction label="Alerts" icon="notifications" onPress={goNotifications} />
+          <QuickAction label="Referrals" icon="gift" onPress={goReferrals} />
+        </ScrollView>
+      )}
 
       <View style={styles.section}>
-        <View style={styles.sectionHead}>
+        <View style={styles.sectionHeadInset}>
           <Text style={styles.sectionTitle}>Kuber Academy</Text>
           <Text style={styles.sectionSub}>Learn · Certify · Rank — grow as a financial entrepreneur</Text>
         </View>
-        <View style={styles.statRow}>
+        <View style={styles.academyRow}>
           <StatCard
+            style={styles.statHalf}
             label="Learning tracks"
             value={ACADEMY_LEVELS.length}
             icon="school"
@@ -251,6 +285,7 @@ export function DashboardScreen() {
             onPress={() => tabNav?.navigate('Academy', { screen: 'AcademyHome' })}
           />
           <StatCard
+            style={styles.statHalf}
             label="Certifications"
             value="Bronze → Diamond"
             icon="ribbon"
@@ -261,67 +296,81 @@ export function DashboardScreen() {
               })
             }
           />
+          {isDesktop ? (
+            <Card
+              style={styles.academyCta}
+              title="Start learning"
+              subtitle="Product training, compliance and business growth paths"
+              elevated
+              onPress={() => tabNav?.navigate('Academy', { screen: 'AcademyHome' })}
+            >
+              <Text style={{ color: colors.primary, fontWeight: '700' }}>Open Academy →</Text>
+            </Card>
+          ) : null}
         </View>
-        <Card
-          title="Start learning"
-          subtitle="Product training, compliance and business growth paths"
-          elevated
-          onPress={() => tabNav?.navigate('Academy', { screen: 'AcademyHome' })}
-        >
-          <Text style={{ color: colors.primary, fontWeight: '700' }}>Open Academy →</Text>
-        </Card>
+        {!isDesktop ? (
+          <Card
+            title="Start learning"
+            subtitle="Product training, compliance and business growth paths"
+            elevated
+            onPress={() => tabNav?.navigate('Academy', { screen: 'AcademyHome' })}
+          >
+            <Text style={{ color: colors.primary, fontWeight: '700' }}>Open Academy →</Text>
+          </Card>
+        ) : null}
       </View>
 
       <View style={styles.section}>
-        <View style={styles.sectionHead}>
+        <View style={styles.sectionHeadInset}>
           <Text style={styles.sectionTitle}>Pipeline overview</Text>
           <Text style={styles.sectionSub}>Today's numbers at a glance</Text>
         </View>
-        <View style={styles.statRow}>
-          <StatCard label="Today's Leads" value={todayLeads} icon="today" accent onPress={goLeads} />
+        <View style={styles.statGrid}>
+          <StatCard style={styles.statCell} label="Today's Leads" value={todayLeads} icon="today" accent onPress={goLeads} />
           <StatCard
+            style={styles.statCell}
             label="Hot Leads"
             value={hotLeads.data?.meta.total ?? 0}
             icon="flame"
             onPress={goLeadAnalytics}
           />
-        </View>
-        <View style={styles.statRow}>
           <StatCard
+            style={styles.statCell}
             label="Applications"
             value={applications.data?.meta.total ?? 0}
             icon="document-text"
             onPress={goApplications}
           />
           <StatCard
+            style={styles.statCell}
             label="Sanctions"
             value={sanctions.data?.meta.total ?? 0}
             icon="ribbon"
             onPress={goApplications}
           />
-        </View>
-        <View style={styles.statRow}>
           <StatCard
+            style={styles.statCell}
             label="Disbursements"
             value={disbursements.data?.meta.total ?? 0}
             icon="cash"
             onPress={goApplications}
           />
           <StatCard
+            style={styles.statCell}
             label="Commission ₹"
             value={commissions.isError ? '—' : formatCurrency(commissionEarned)}
             icon="trending-up"
             onPress={goCommissionAnalytics}
           />
-        </View>
-        <View style={styles.statRow}>
           <StatCard
+            style={styles.statCell}
             label="Referral ₹"
             value={formatCurrency(referralEarnings)}
             icon="gift"
             onPress={goReferrals}
           />
           <StatCard
+            style={styles.statCell}
             label="Pending Docs"
             value={pendingDocs.data?.meta.total ?? 0}
             icon="folder-open"
@@ -330,100 +379,180 @@ export function DashboardScreen() {
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Card title="Hot Leads" subtitle="High priority prospects" elevated onPress={goLeads}>
-          {(hotLeads.data?.items.length ?? 0) === 0 ? (
-            <EmptyState title="No hot leads" description="Create leads with HIGH priority to see them here" />
-          ) : (
-            hotLeads.data?.items.map((lead, index, arr) => (
-              <Pressable
-                key={String(lead.id)}
-                style={[styles.row, index === arr.length - 1 && styles.rowLast]}
-                onPress={() => openLead(String(lead.id))}
-              >
-                <View style={styles.rowIcon}>
-                  <Text style={styles.rowIconText}>L</Text>
-                </View>
-                <View style={styles.rowBody}>
-                  <Text style={styles.rowTitle}>{str(lead.prospectName)}</Text>
-                  <Text style={styles.rowSub}>
-                    {str(lead.leadNumber)} · {formatCurrency(lead.requestedAmount as number)}
-                  </Text>
-                </View>
-                <StatusBadge status={str(lead.status)} />
-              </Pressable>
-            ))
-          )}
-        </Card>
-
-        <Card title="Recent Applications" subtitle="Latest in your pipeline" elevated onPress={goApplications}>
-          {(applications.data?.items.length ?? 0) === 0 ? (
-            <EmptyState title="No applications yet" description="Convert leads to start applications" />
-          ) : (
-            applications.data?.items.map((app, index, arr) => (
-              <Pressable
-                key={String(app.id)}
-                style={[styles.row, index === arr.length - 1 && styles.rowLast]}
-                onPress={() => openApp(String(app.id))}
-              >
-                <View style={[styles.rowIcon, styles.rowIconApp]}>
-                  <Text style={styles.rowIconText}>₹</Text>
-                </View>
-                <View style={styles.rowBody}>
-                  <Text style={styles.rowTitle}>{str(app.customerName ?? app.applicationNumber ?? app.id)}</Text>
-                  <Text style={styles.rowSub}>
-                    {str(app.productName)} · {formatCurrency((app.loanAmount ?? app.requestedAmount) as number)}
-                  </Text>
-                </View>
-                <StatusBadge status={str(app.status)} />
-              </Pressable>
-            ))
-          )}
-        </Card>
-
-        <Card
-          title="Unread Alerts"
-          subtitle={`${notifications.data?.meta.total ?? 0} unread`}
-          elevated
-          onPress={goNotifications}
-        >
-          {(notifications.data?.items.length ?? 0) === 0 ? (
-            <Text style={styles.muted}>All caught up — no new alerts</Text>
-          ) : (
-            notifications.data?.items.slice(0, 3).map((n, index, arr) => (
-              <View key={String(n.id)} style={[styles.row, index === arr.length - 1 && styles.rowLast]}>
-                <View style={[styles.rowIcon, styles.rowIconInfo]}>
-                  <Text style={styles.rowIconText}>!</Text>
-                </View>
-                <View style={styles.rowBody}>
-                  <Text style={styles.rowTitle}>{str(n.title ?? n.subject)}</Text>
-                  {n.message ? (
-                    <Text style={styles.rowSub} numberOfLines={2}>
-                      {str(n.message)}
+      <View style={[styles.section, styles.listsSection]}>
+        <View style={styles.listCol}>
+          <Card title="Hot Leads" subtitle="High priority prospects" elevated onPress={goLeads}>
+            {(hotLeads.data?.items.length ?? 0) === 0 ? (
+              <EmptyState title="No hot leads" description="Create leads with HIGH priority to see them here" />
+            ) : (
+              hotLeads.data?.items.map((lead, index, arr) => (
+                <Pressable
+                  key={String(lead.id)}
+                  style={[styles.row, index === arr.length - 1 && styles.rowLast]}
+                  onPress={() => openLead(String(lead.id))}
+                >
+                  <View style={styles.rowIcon}>
+                    <Text style={styles.rowIconText}>L</Text>
+                  </View>
+                  <View style={styles.rowBody}>
+                    <Text style={styles.rowTitle}>{str(lead.prospectName)}</Text>
+                    <Text style={styles.rowSub}>
+                      {str(lead.leadNumber)} · {formatCurrency(lead.requestedAmount as number)}
                     </Text>
-                  ) : null}
+                  </View>
+                  <StatusBadge status={str(lead.status)} />
+                </Pressable>
+              ))
+            )}
+          </Card>
+        </View>
+
+        <View style={styles.listCol}>
+          <Card title="Recent Applications" subtitle="Latest in your pipeline" elevated onPress={goApplications}>
+            {(applications.data?.items.length ?? 0) === 0 ? (
+              <EmptyState title="No applications yet" description="Convert leads to start applications" />
+            ) : (
+              applications.data?.items.map((app, index, arr) => (
+                <Pressable
+                  key={String(app.id)}
+                  style={[styles.row, index === arr.length - 1 && styles.rowLast]}
+                  onPress={() => openApp(String(app.id))}
+                >
+                  <View style={[styles.rowIcon, styles.rowIconApp]}>
+                    <Text style={styles.rowIconText}>₹</Text>
+                  </View>
+                  <View style={styles.rowBody}>
+                    <Text style={styles.rowTitle}>{str(app.customerName ?? app.applicationNumber ?? app.id)}</Text>
+                    <Text style={styles.rowSub}>
+                      {str(app.productName)} · {formatCurrency((app.loanAmount ?? app.requestedAmount) as number)}
+                    </Text>
+                  </View>
+                  <StatusBadge status={str(app.status)} />
+                </Pressable>
+              ))
+            )}
+          </Card>
+        </View>
+
+        <View style={styles.listFull}>
+          <Card
+            title="Unread Alerts"
+            subtitle={`${notifications.data?.meta.total ?? 0} unread`}
+            elevated
+            onPress={goNotifications}
+          >
+            {(notifications.data?.items.length ?? 0) === 0 ? (
+              <Text style={styles.muted}>All caught up — no new alerts</Text>
+            ) : (
+              notifications.data?.items.slice(0, 3).map((n, index, arr) => (
+                <View key={String(n.id)} style={[styles.row, index === arr.length - 1 && styles.rowLast]}>
+                  <View style={[styles.rowIcon, styles.rowIconInfo]}>
+                    <Text style={styles.rowIconText}>!</Text>
+                  </View>
+                  <View style={styles.rowBody}>
+                    <Text style={styles.rowTitle}>{str(n.title ?? n.subject)}</Text>
+                    {n.message ? (
+                      <Text style={styles.rowSub} numberOfLines={2}>
+                        {str(n.message)}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
-              </View>
-            ))
-          )}
-        </Card>
+              ))
+            )}
+          </Card>
+        </View>
       </View>
     </Screen>
   );
 }
 
-function createStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+function createStyles(
+  colors: ReturnType<typeof useAppTheme>['colors'],
+  isDesktop: boolean,
+  pagePad: number,
+  statColumns: number,
+  actionColumns: number,
+  listColumns: number,
+) {
+  const statBasis = `${100 / statColumns - 1.5}%` as `${number}%`;
+  const actionBasis = `${100 / actionColumns - 0.8}%` as `${number}%`;
+  const listBasis = listColumns > 1 ? ('48.5%' as const) : ('100%' as const);
+
   return StyleSheet.create({
-    section: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
-    sectionHead: { paddingHorizontal: spacing.md, marginBottom: spacing.sm },
-    sectionTitle: { ...typography.h3, color: colors.text, fontSize: 17 },
-    sectionSub: { ...typography.bodySm, color: colors.textSecondary, marginTop: 2 },
+    section: { paddingHorizontal: pagePad, paddingBottom: spacing.sm },
+    sectionHead: { paddingHorizontal: pagePad, marginBottom: spacing.sm },
+    sectionHeadInset: { marginBottom: spacing.sm },
+    sectionTitle: {
+      ...typography.h3,
+      color: colors.text,
+      fontSize: isDesktop ? 20 : 17,
+      fontWeight: '800',
+    },
+    sectionSub: {
+      ...typography.bodySm,
+      color: colors.textSecondary,
+      marginTop: 2,
+      fontSize: isDesktop ? 14 : 13,
+    },
     actions: {
-      paddingHorizontal: spacing.md,
+      paddingHorizontal: pagePad,
       gap: spacing.md,
       paddingBottom: spacing.lg,
     },
-    statRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
+    actionsGrid: {
+      paddingHorizontal: pagePad,
+      paddingBottom: spacing.lg,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: isDesktop ? spacing.lg : spacing.md,
+    },
+    actionItem: {
+      flexBasis: actionBasis,
+      maxWidth: actionBasis,
+      minWidth: isDesktop ? 100 : 88,
+    },
+    academyRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.md,
+      marginBottom: spacing.md,
+      alignItems: 'stretch',
+    },
+    statHalf: {
+      flexBasis: isDesktop ? '31%' : '47%',
+      minWidth: isDesktop ? 200 : 140,
+    },
+    academyCta: {
+      flex: 1,
+      minWidth: 240,
+      marginBottom: 0,
+    },
+    statGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.md,
+    },
+    statCell: {
+      flexBasis: statBasis,
+      minWidth: isDesktop ? 200 : 140,
+      maxWidth: isDesktop && statColumns === 4 ? '24%' : undefined,
+    },
+    listsSection: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.md,
+      alignItems: 'flex-start',
+    },
+    listCol: {
+      flexBasis: listBasis,
+      minWidth: listColumns > 1 ? 320 : undefined,
+      flexGrow: 1,
+    },
+    listFull: {
+      flexBasis: '100%',
+      width: '100%',
+    },
     row: {
       flexDirection: 'row',
       alignItems: 'center',

@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo } from 'react';
-import { Image, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useResponsiveLayout } from '@/hooks';
 import { radius, spacing, typography } from '@/theme';
 import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
 
@@ -18,35 +19,33 @@ interface DashboardHeaderProps {
   tagline?: string;
 }
 
-function createStyles(colors: AppColors, isWide: boolean) {
+function createStyles(colors: AppColors, isDesktop: boolean, contentMaxWidth: number | undefined, pagePad: number) {
   return StyleSheet.create({
     outer: {
       width: '100%',
       alignItems: 'center',
-      marginBottom: spacing.lg,
+      marginBottom: isDesktop ? spacing.xl : spacing.lg,
+      paddingHorizontal: isDesktop ? pagePad : spacing.md,
     },
     wrap: {
       width: '100%',
-      maxWidth: isWide ? 1100 : undefined,
-      marginHorizontal: isWide ? 0 : spacing.md,
-      borderRadius: isWide ? 0 : radius.xl,
+      maxWidth: contentMaxWidth,
+      borderRadius: radius.xl,
       overflow: 'hidden',
-      ...(isWide
-        ? {}
-        : {
-            marginTop: spacing.sm,
-          }),
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.08)',
+      marginTop: isDesktop ? spacing.md : spacing.sm,
     },
     gradient: {
-      paddingHorizontal: isWide ? 40 : spacing.lg,
-      paddingTop: isWide ? 28 : spacing.lg,
-      paddingBottom: isWide ? 36 : spacing.xl,
+      paddingHorizontal: isDesktop ? 40 : spacing.lg,
+      paddingTop: isDesktop ? 32 : spacing.lg,
+      paddingBottom: isDesktop ? 40 : spacing.xl,
     },
     topRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: spacing.lg,
+      marginBottom: isDesktop ? spacing.xl : spacing.lg,
     },
     brand: {
       flexDirection: 'row',
@@ -55,8 +54,8 @@ function createStyles(colors: AppColors, isWide: boolean) {
       flexShrink: 1,
     },
     logoPlate: {
-      width: 52,
-      height: 52,
+      width: isDesktop ? 56 : 52,
+      height: isDesktop ? 56 : 52,
       borderRadius: 14,
       backgroundColor: '#FFFFFF',
       alignItems: 'center',
@@ -65,8 +64,8 @@ function createStyles(colors: AppColors, isWide: boolean) {
       borderColor: 'rgba(255,255,255,0.35)',
     },
     logoImage: {
-      width: 40,
-      height: 40,
+      width: isDesktop ? 44 : 40,
+      height: isDesktop ? 44 : 40,
       resizeMode: 'contain',
     },
     brandText: {
@@ -75,7 +74,7 @@ function createStyles(colors: AppColors, isWide: boolean) {
     },
     brandName: {
       color: '#FFFFFF',
-      fontSize: isWide ? 22 : 18,
+      fontSize: isDesktop ? 24 : 18,
       fontWeight: '800',
       letterSpacing: -0.4,
     },
@@ -83,12 +82,12 @@ function createStyles(colors: AppColors, isWide: boolean) {
       ...typography.caption,
       color: 'rgba(255,255,255,0.78)',
       letterSpacing: 0.3,
-      fontSize: 11,
+      fontSize: isDesktop ? 12 : 11,
     },
     actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     iconBtn: {
-      width: 42,
-      height: 42,
+      width: 44,
+      height: 44,
       borderRadius: radius.full,
       backgroundColor: 'rgba(255,255,255,0.14)',
       alignItems: 'center',
@@ -109,6 +108,13 @@ function createStyles(colors: AppColors, isWide: boolean) {
       paddingHorizontal: 4,
     },
     badgeText: { color: '#FFFFFF', fontSize: 9, fontWeight: '700' },
+    heroBody: {
+      flexDirection: isDesktop ? 'row' : 'column',
+      alignItems: isDesktop ? 'flex-end' : 'flex-start',
+      justifyContent: 'space-between',
+      gap: spacing.lg,
+    },
+    heroCopy: { flex: 1, minWidth: 0 },
     greeting: {
       ...typography.caption,
       color: 'rgba(255,255,255,0.8)',
@@ -118,7 +124,7 @@ function createStyles(colors: AppColors, isWide: boolean) {
     },
     name: {
       color: '#FFFFFF',
-      fontSize: isWide ? 34 : 28,
+      fontSize: isDesktop ? 40 : 28,
       fontWeight: '800',
       marginTop: 6,
       letterSpacing: -0.8,
@@ -128,7 +134,8 @@ function createStyles(colors: AppColors, isWide: boolean) {
       color: 'rgba(255,255,255,0.9)',
       marginTop: spacing.sm,
       lineHeight: 22,
-      maxWidth: 520,
+      maxWidth: isDesktop ? 560 : 520,
+      fontSize: isDesktop ? 16 : 14,
     },
     pillRow: {
       flexDirection: 'row',
@@ -184,11 +191,12 @@ export function DashboardHeader({
   ],
 }: DashboardHeaderProps) {
   const { colors } = useAppTheme();
-  const { width } = useWindowDimensions();
-  const isWide = Platform.OS === 'web' && width >= 920;
-  const styles = useMemo(() => createStyles(colors, isWide), [colors, isWide]);
+  const { isDesktop, contentMaxWidth, pagePad } = useResponsiveLayout();
+  const styles = useMemo(
+    () => createStyles(colors, isDesktop, contentMaxWidth, pagePad),
+    [colors, isDesktop, contentMaxWidth, pagePad],
+  );
   const initials = name.slice(0, 2).toUpperCase();
-
   const gradientColors = ['#032820', '#0B5D4B', '#00C389'] as const;
 
   return (
@@ -220,17 +228,20 @@ export function DashboardHeader({
             </View>
           </View>
 
-          <Text style={styles.greeting}>WELCOME BACK</Text>
-          <Text style={styles.name}>{name}</Text>
-          <Text style={styles.sub}>{subtitle}</Text>
-
-          <View style={styles.pillRow}>
-            {pills.map((p) => (
-              <View key={p.label} style={styles.pill}>
-                <Ionicons name={p.icon} size={14} color="#FFFFFF" />
-                <Text style={styles.pillText}>{p.label}</Text>
-              </View>
-            ))}
+          <View style={styles.heroBody}>
+            <View style={styles.heroCopy}>
+              <Text style={styles.greeting}>WELCOME BACK</Text>
+              <Text style={styles.name}>{name}</Text>
+              <Text style={styles.sub}>{subtitle}</Text>
+            </View>
+            <View style={styles.pillRow}>
+              {pills.map((p) => (
+                <View key={p.label} style={styles.pill}>
+                  <Ionicons name={p.icon} size={14} color="#FFFFFF" />
+                  <Text style={styles.pillText}>{p.label}</Text>
+                </View>
+              ))}
+            </View>
           </View>
         </LinearGradient>
       </View>
