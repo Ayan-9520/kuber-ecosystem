@@ -133,11 +133,14 @@ export const commissionPaymentService = {
     let razorpayPayoutId: string | undefined;
     let releaseNotes = notes ?? payment.notes;
     try {
-      const partner = payment.partner as { name?: string; email?: string; phone?: string } | undefined;
+      const partnerDetail = await prisma.partner.findUnique({
+        where: { id: payment.partnerId },
+        select: { contactName: true, email: true, phone: true },
+      });
       const contact = await razorpayPayoutProvider.createContact(
-        partner?.name ?? 'Partner',
-        partner?.email ?? '',
-        partner?.phone ?? '',
+        partnerDetail?.contactName ?? 'Partner',
+        partnerDetail?.email ?? '',
+        partnerDetail?.phone ?? '',
         'vendor',
       );
 

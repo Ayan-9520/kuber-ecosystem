@@ -481,12 +481,12 @@ export function DashboardScreen() {
                 <Ionicons
                   name={mtdChangePercent >= 0 ? 'arrow-up' : 'arrow-down'}
                   size={14}
-                  color={mtdChangePercent >= 0 ? colors.success : colors.error}
+                  color={mtdChangePercent >= 0 ? colors.success : colors.danger}
                 />
                 <Text
                   style={[
                     styles.widgetChangeText,
-                    { color: mtdChangePercent >= 0 ? colors.success : colors.error },
+                    { color: mtdChangePercent >= 0 ? colors.success : colors.danger },
                   ]}
                 >
                   {Math.abs(mtdChangePercent).toFixed(1)}% vs last month
@@ -576,7 +576,7 @@ export function DashboardScreen() {
                       ? colors.success
                       : targetProgress >= 0.5
                         ? colors.warning
-                        : colors.error,
+                        : colors.danger,
                 },
               ]}
             />

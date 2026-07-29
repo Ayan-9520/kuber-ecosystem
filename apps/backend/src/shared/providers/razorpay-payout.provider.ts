@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 const RAZORPAY_BASE_URL = 'https://api.razorpay.com/v1';
 
 // ── Razorpay API response types ─────────────────────────────────────────────
@@ -70,7 +72,7 @@ async function razorpayFetch<T>(path: string, body: Record<string, unknown>): Pr
     headers: {
       'Content-Type': 'application/json',
       Authorization: authHeader(),
-      'X-Payout-Idempotency': '',
+      'X-Payout-Idempotency': randomUUID(),
       ...(accountNumber ? { 'X-Razorpay-Account': accountNumber } : {}),
     },
     body: JSON.stringify(body),
