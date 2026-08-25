@@ -51,7 +51,7 @@ export function OtpLoginScreen() {
   useEffect(() => {
     const controller = new AbortController();
     const base = API_BASE_URL.replace(/\/api\/v1\/?$/, '') || '';
-    const healthUrl = base ? `${base}/health` : '/health';
+    const healthUrl = base ? `${base}/health/live` : '/health';
     void fetch(healthUrl, { method: 'GET', signal: controller.signal }).catch(() => undefined);
     return () => controller.abort();
   }, []);

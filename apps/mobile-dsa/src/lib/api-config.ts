@@ -38,16 +38,19 @@ function isHostedPartnerWebHostname(hostname: string): boolean {
 
 /** @see apps/mobile-customer/src/lib/api-config.ts */
 export function resolveApiBaseUrl(): string {
-  // Hosted Partner web (Vercel) → same-origin /api/v1 (vercel.json proxies to Cloudflare tunnel)
+  const configured = readConfiguredUrl();
+
+  // Hosted Partner web (Vercel): prefer explicit API URL (Cloudflare tunnel / real API).
+  // Same-origin /api rewrite often 502s against trycloudflare quick tunnels from Vercel edge.
   if (Platform.OS === 'web' && typeof globalThis !== 'undefined') {
     const win = globalThis as typeof globalThis & { location?: { hostname?: string } };
     const host = win.location?.hostname;
     if (host && isHostedPartnerWebHostname(host)) {
+      if (configured) return normalizeApiBaseUrl(configured);
       return API_SUFFIX;
     }
   }
 
-  const configured = readConfiguredUrl();
   if (configured) {
     return normalizeApiBaseUrl(configured);
   }
