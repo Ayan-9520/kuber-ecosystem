@@ -16,6 +16,10 @@
       "destination": "https://regarding-gst-concepts-landing.trycloudflare.com/api/:path*"
     },
     {
+      "source": "/health",
+      "destination": "https://regarding-gst-concepts-landing.trycloudflare.com/health/live"
+    },
+    {
       "source": "/health/:path*",
       "destination": "https://regarding-gst-concepts-landing.trycloudflare.com/health/:path*"
     },
