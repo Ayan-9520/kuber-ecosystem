@@ -78,7 +78,8 @@ async function dispatchOtp(
 
   await otpRepository.invalidatePending(input.phone, input.purpose);
 
-  const otp = env.APP_ENV === 'production' ? generateOtp() : '123456';
+  // Always store a real random OTP (emailed). Non-production still accepts 123456 on verify as phone/SMS bypass.
+  const otp = generateOtp();
   const otpHash = await hashSecret(otp);
   const expiresAt = new Date(Date.now() + env.OTP_EXPIRY_SECONDS * 1000);
 
@@ -113,9 +114,9 @@ async function dispatchOtp(
   }
 
   if (env.APP_ENV !== 'production') {
-    if (env.NODE_ENV === 'development') {
-      console.info(`[DEV OTP] ${input.phone}${toEmail ? ` / ${toEmail}` : ''} → ${input.purpose} = ${otp}`);
-    }
+    console.info(
+      `[OTP] phone=${input.phone} email=${toEmail ?? 'none'} purpose=${input.purpose} emailSent=${emailSent} (phone bypass 123456 still allowed)`,
+    );
   } else {
     const smsChannel = channelStatusService.getStatus('sms');
     if (smsChannel.deliverable) {
@@ -134,9 +135,7 @@ async function dispatchOtp(
     } else if (!emailSent) {
       throw new ValidationError({
         phone: [
-          smsChannel.status === 'disabled'
-            ? 'SMS OTP is temporarily disabled and email could not be sent. Contact support.'
-            : 'SMS is not configured yet. OTP was sent to your registered email if available.',
+          'Could not deliver OTP. Configure email SMTP or SMS gateway, then try again.',
         ],
       });
     }
@@ -157,14 +156,26 @@ async function dispatchOtp(
     requestId: ctx.requestId,
   });
 
-  const channels: string[] = [];
-  if (env.APP_ENV === 'production') channels.push('registered mobile');
-  if (emailSent && toEmail) channels.push(`email ${maskEmail(toEmail)}`);
-  const channelText = channels.length ? channels.join(' and ') : 'registered mobile (dev)';
-  const devHint = env.APP_ENV !== 'production' ? ' Dev OTP: 123456.' : '';
+  if (!emailSent && env.APP_ENV === 'production') {
+    throw new ValidationError({
+      phone: ['OTP email failed. Check SMTP settings or try again.'],
+    });
+  }
+
+  const parts: string[] = [];
+  if (emailSent && toEmail) parts.push(`email ${maskEmail(toEmail)}`);
+  if (env.APP_ENV === 'production') {
+    const smsChannel = channelStatusService.getStatus('sms');
+    if (smsChannel.deliverable) parts.push(`mobile ${input.phone.slice(0, 2)}******${input.phone.slice(-2)}`);
+  }
+  const where = parts.length ? parts.join(' and ') : 'your registered email';
+  const phoneBypassHint =
+    env.APP_ENV !== 'production'
+      ? ' SMS not configured yet — you may also use phone bypass OTP 123456.'
+      : '';
 
   return {
-    message: `OTP sent to ${channelText}.${devHint}`,
+    message: `OTP sent to ${where}.${phoneBypassHint}`,
     emailSent,
     emailHint: toEmail ? maskEmail(toEmail) : undefined,
   };

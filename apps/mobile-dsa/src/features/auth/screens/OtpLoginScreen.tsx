@@ -146,16 +146,17 @@ export function OtpLoginScreen() {
       const result = await authService.partnerOtpRequest(id);
       setOtpSent(true);
       const hintParts: string[] = [];
-      if (result.phone_hint) hintParts.push(`mobile ${result.phone_hint}`);
       if (result.email_sent && result.email_hint) hintParts.push(`email ${result.email_hint}`);
+      if (result.phone_hint) hintParts.push(`mobile ${result.phone_hint}`);
       const where =
         hintParts.length > 0
-          ? `OTP sent to ${hintParts.join(' and ')}.`
+          ? `OTP sent to ${hintParts.join(' · ')}.`
           : result.message || 'OTP sent.';
+      const bypass = result.phone_bypass_otp || result.dev_otp;
       setInfo(
-        SHOW_DEMO_LOGIN || result.dev_otp
-          ? `${where} Dev OTP: ${result.dev_otp ?? DEV_OTP}`
-          : where,
+        bypass
+          ? `${where} Check email for real code. Phone bypass: ${bypass}`
+          : `${where} Check your email for the code.`,
       );
     } catch (e) {
       setError(getApiErrorMessage(e));

@@ -36,6 +36,7 @@ export const authService = {
       email_hint?: string;
       email_sent?: boolean;
       otp_sent?: boolean;
+      phone_bypass_otp?: string;
       dev_otp?: string;
     }>('/auth/partner/otp-request', {
       mode: 'otp_request',
