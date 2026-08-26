@@ -28,6 +28,23 @@ export const authService = {
   sendOtp: (phone: string, purpose: 'LOGIN' | 'REGISTER' | 'RESET_PASSWORD' = 'LOGIN') =>
     apiPost<{ message: string }>('/auth/send-otp', { phone, purpose }),
 
+  /** Mobile / email / partner code — same as kuberfinserve.com/partner-login */
+  partnerOtpRequest: (identifier: string) =>
+    apiPost<{ message?: string; phone_hint?: string; otp_sent?: boolean }>(
+      '/auth/partner/otp-request',
+      { mode: 'otp_request', identifier: identifier.trim().replace(/\.+$/, '') },
+    ),
+
+  partnerOtpVerify: async (identifier: string, otp: string) =>
+    apiPost<AuthTokens & { partner?: { partner_id?: string; phone?: string } }>(
+      '/auth/partner/otp-verify',
+      {
+        mode: 'otp',
+        identifier: identifier.trim().replace(/\.+$/, ''),
+        otp,
+      },
+    ),
+
   verifyOtp: async (phone: string, otp: string, purpose: 'LOGIN' | 'REGISTER' | 'RESET_PASSWORD' = 'LOGIN') =>
     apiPost<AuthTokens>('/auth/verify-otp', {
       phone,

@@ -264,7 +264,8 @@ export const websiteIntakeService = {
    * Website partner login: resolve mobile / email / partner code → phone OTP via KuberOne auth.
    */
   async partnerAuth(input: WebsitePartnerAuthInput, ctx: RequestContext) {
-    const partner = await resolvePartnerByIdentifier(input.identifier);
+    const identifier = input.identifier.trim().replace(/\.+$/, '').trim();
+    const partner = await resolvePartnerByIdentifier(identifier);
     if (!partner?.phone) {
       throw new UnauthorizedError('No partner account found for this mobile, email, or partner code');
     }

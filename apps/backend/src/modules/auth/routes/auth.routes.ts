@@ -15,6 +15,7 @@ import {
   refreshTokenSchema,
   sendOtpSchema,
   verifyOtpSchema,
+  websitePartnerAuthSchema,
 } from '../validators/auth.validator.js';
 
 export const authRoutes: Router = Router();
@@ -23,6 +24,16 @@ authRoutes.use(authRateLimitMiddleware);
 
 authRoutes.post('/send-otp', validateMiddleware(sendOtpSchema), asyncHandler(otpController.sendOtp));
 authRoutes.post('/verify-otp', validateMiddleware(verifyOtpSchema), asyncHandler(otpController.verifyOtp));
+authRoutes.post(
+  '/partner/otp-request',
+  validateMiddleware(websitePartnerAuthSchema),
+  asyncHandler(otpController.partnerOtpRequest),
+);
+authRoutes.post(
+  '/partner/otp-verify',
+  validateMiddleware(websitePartnerAuthSchema),
+  asyncHandler(otpController.partnerOtpVerify),
+);
 authRoutes.post('/login', validateMiddleware(loginSchema), asyncHandler(loginController.login));
 authRoutes.post('/refresh', validateMiddleware(refreshTokenSchema), asyncHandler(sessionController.refresh));
 

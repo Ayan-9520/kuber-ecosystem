@@ -1,7 +1,7 @@
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useEffect, useState, useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 
 import { PremiumAuthShell } from '@/components/auth/PremiumAuthShell';
@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks';
 import { API_BASE_URL, setMemoryAccessToken } from '@/lib/api';
 import { clearTokens, setTokens } from '@/lib/storage';
 import { getApiErrorMessage, normalizePhone } from '@/lib/utils';
-import { validateIndianMobile, validateOtp } from '@/lib/validation';
+import { validateOtp } from '@/lib/validation';
 import type { AuthStackParamList } from '@/navigation/types';
 import { authService, partnersService, partnerBrandingService } from '@/services';
 import { setRequiresPartnerKyc } from '@/store/slices/authSlice';
@@ -22,27 +22,55 @@ const SHOW_DEMO_LOGIN = (process.env.EXPO_PUBLIC_APP_ENV ?? 'development') !== '
 
 type OtpLoginRoute = RouteProp<AuthStackParamList, 'OtpLogin'>;
 
+function readSsoTokensFromUrl(): { accessToken: string; refreshToken: string; screen?: string } | null {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return null;
+  const hash = window.location.hash?.replace(/^#/, '') ?? '';
+  const query = window.location.search?.replace(/^\?/, '') ?? '';
+  const params = new URLSearchParams(hash || query);
+  const accessToken = params.get('access_token')?.trim() || params.get('token')?.trim();
+  const refreshToken = params.get('refresh_token')?.trim() || '';
+  if (!accessToken) return null;
+  return {
+    accessToken,
+    refreshToken: refreshToken || accessToken,
+    screen: params.get('screen') ?? undefined,
+  };
+}
+
+function clearSsoParamsFromUrl() {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+  const path = window.location.pathname || '/login';
+  window.history.replaceState(null, '', path);
+}
+
+function normalizeIdentifier(raw: string): string {
+  return raw.trim().replace(/\.+$/, '').trim();
+}
+
 export function OtpLoginScreen() {
   const styles = useMemo(() => createStyles(), []);
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const route = useRoute<OtpLoginRoute>();
   const dispatch = useDispatch();
   const { login } = useAuth();
-  const [phone, setPhone] = useState(route.params?.phone ?? '');
+  const [identifier, setIdentifier] = useState(route.params?.phone ?? '');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(!!route.params?.phone);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const ssoTried = useRef(false);
 
   useEffect(() => {
     if (route.params?.phone) {
-      setPhone(route.params.phone);
+      setIdentifier(route.params.phone);
       setOtpSent(true);
     }
   }, [route.params?.phone]);
 
   // Drop stale session tokens on the login screen so bootstrap /auth/me does not 401-spam.
+  // Skip when SSO tokens are present — we apply those instead.
   useEffect(() => {
+    if (readSsoTokensFromUrl()) return;
     setMemoryAccessToken(null);
     void clearTokens();
   }, []);
@@ -56,33 +84,9 @@ export function OtpLoginScreen() {
     return () => controller.abort();
   }, []);
 
-  const sendOtp = async () => {
-    const phoneErr = validateIndianMobile(phone);
-    if (phoneErr) {
-      setError(phoneErr);
-      return;
-    }
-    setError('');
-    setLoading(true);
-    try {
-      await authService.sendOtp(normalizePhone(phone), 'LOGIN');
-      setOtpSent(true);
-    } catch (e) {
-      setError(getApiErrorMessage(e));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * Resolve KYC *before* setting Redux auth.
-   * RootNavigator remounts on isAuthenticated — setting KYC first avoids bounce / double login.
-   */
-  const completeLogin = async (normalizedPhone: string, otpCode: string) => {
-    const tokens = await authService.partnerLogin(normalizedPhone, otpCode);
-
-    setMemoryAccessToken(tokens.accessToken);
-    await setTokens(tokens.accessToken, tokens.refreshToken);
+  const finishWithTokens = async (accessToken: string, refreshToken: string) => {
+    setMemoryAccessToken(accessToken);
+    await setTokens(accessToken, refreshToken);
 
     const me = await authService.me();
     if (me.userType !== 'PARTNER') {
@@ -102,11 +106,53 @@ export function OtpLoginScreen() {
     }
 
     dispatch(setRequiresPartnerKyc(needsKyc));
-    // Setting credentials remounts navigator to Main or PartnerKyc — no manual navigate needed.
-    await login(tokens.accessToken, tokens.refreshToken, me);
-
-    // Auto-create Verified Professional draft profile (same template; partner fills content later).
+    await login(accessToken, refreshToken, me);
     void partnerBrandingService.getMyProfile().catch(() => undefined);
+  };
+
+  // Website SSO: kuberfinserve.com → partner.kuberone.online/login#access_token=…&refresh_token=…
+  useEffect(() => {
+    if (ssoTried.current) return;
+    const sso = readSsoTokensFromUrl();
+    if (!sso) return;
+    ssoTried.current = true;
+    setLoading(true);
+    setError('');
+    void (async () => {
+      try {
+        await finishWithTokens(sso.accessToken, sso.refreshToken);
+        clearSsoParamsFromUrl();
+      } catch (e) {
+        clearSsoParamsFromUrl();
+        setError(getApiErrorMessage(e));
+      } finally {
+        setLoading(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot SSO on mount
+  }, []);
+
+  const sendOtp = async () => {
+    const id = normalizeIdentifier(identifier);
+    if (id.length < 3) {
+      setError('Enter mobile, email, or Partner Code');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      await authService.partnerOtpRequest(id);
+      setOtpSent(true);
+    } catch (e) {
+      setError(getApiErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const completeLogin = async (id: string, otpCode: string) => {
+    const tokens = await authService.partnerOtpVerify(id, otpCode);
+    await finishWithTokens(tokens.accessToken, tokens.refreshToken);
   };
 
   const demoLogin = async () => {
@@ -114,11 +160,11 @@ export function OtpLoginScreen() {
     setLoading(true);
     try {
       const normalized = normalizePhone(DEMO_DSA_PHONE);
-      setPhone(DEMO_DSA_PHONE);
+      setIdentifier(DEMO_DSA_PHONE);
       setOtp(DEV_OTP);
       setOtpSent(true);
       try {
-        await authService.sendOtp(normalized, 'LOGIN');
+        await authService.partnerOtpRequest(normalized);
       } catch {
         /* dev bypass accepts 123456 without a prior send */
       }
@@ -139,7 +185,7 @@ export function OtpLoginScreen() {
     setError('');
     setLoading(true);
     try {
-      await completeLogin(normalizePhone(phone), otp);
+      await completeLogin(normalizeIdentifier(identifier), otp);
     } catch (e) {
       setError(getApiErrorMessage(e));
     } finally {
@@ -156,7 +202,7 @@ export function OtpLoginScreen() {
             New Financial Partner? Register here
           </Text>
           <Text style={styles.hint}>
-            Sign in with OTP using your registered partner mobile. Same login as kuberfinserve.com/partner-login
+            Mobile, email, or Partner Code + OTP. Same login as kuberfinserve.com/partner-login — one dashboard.
           </Text>
         </View>
       }
@@ -170,13 +216,13 @@ export function OtpLoginScreen() {
       ) : null}
 
       <Input
-        label="Mobile Number"
-        placeholder="10-digit mobile number"
-        keyboardType="phone-pad"
-        maxLength={10}
-        value={phone}
-        onChangeText={setPhone}
-        editable={!otpSent}
+        label="Mobile / Email / Partner Code"
+        placeholder="9876543210 · email · DSA-XXXXXX"
+        keyboardType="default"
+        autoCapitalize="none"
+        value={identifier}
+        onChangeText={setIdentifier}
+        editable={!otpSent && !loading}
         onLightSurface
       />
 
@@ -201,7 +247,7 @@ export function OtpLoginScreen() {
 
       {otpSent && (
         <Button
-          title="Change Number"
+          title="Change ID"
           variant="ghost"
           fullWidth
           onPress={() => {

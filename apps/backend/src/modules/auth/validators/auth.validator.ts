@@ -6,4 +6,5 @@ export {
   refreshTokenSchema,
   changeMobileSendOtpSchema,
   changeMobileVerifySchema,
+  websitePartnerAuthSchema,
 } from '@kuberone/shared-validation';
