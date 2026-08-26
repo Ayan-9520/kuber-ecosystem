@@ -9,7 +9,7 @@ Both `kuberone.online` (Admin) and `partner.kuberone.online` (DSA) rewrite `/api
 1. Vercel → **Add New Project** → import `Ayan-9520/kuber-ecosystem`
 2. **Root Directory:** `apps/mobile-dsa`
 3. Framework: Other / leave blank (uses `vercel.json`)
-4. Env (optional): `EXPO_PUBLIC_API_BASE_URL=/api/v1`
+4. Env: leave empty, or set full tunnel URL — **never** `/api/v1` (Vercel→trycloudflare rewrites 502)
 5. Deploy
 
 ## Move subdomain off Admin project

@@ -3,6 +3,13 @@ import { Platform } from 'react-native';
 
 const API_SUFFIX = '/api/v1';
 
+/**
+ * Fallback when Vercel build env is missing / stale.
+ * Keep in sync with apps/mobile-dsa/vercel.json EXPO_PUBLIC_API_BASE_URL.
+ * Never use same-origin /api on partner.kuberone.online — Vercel→trycloudflare rewrites 502.
+ */
+const HOSTED_PARTNER_API_FALLBACK = 'https://php-prisoners-olive-street.trycloudflare.com';
+
 function normalizeApiBaseUrl(url: string): string {
   const trimmed = url.trim().replace(/\/+$/, '');
   if (trimmed.endsWith(API_SUFFIX)) return trimmed;
@@ -40,14 +47,12 @@ function isHostedPartnerWebHostname(hostname: string): boolean {
 export function resolveApiBaseUrl(): string {
   const configured = readConfiguredUrl();
 
-  // Hosted Partner web (Vercel): prefer explicit API URL (Cloudflare tunnel / real API).
-  // Same-origin /api rewrite often 502s against trycloudflare quick tunnels from Vercel edge.
+  // Hosted Partner web: always hit Cloudflare tunnel / public API directly.
   if (Platform.OS === 'web' && typeof globalThis !== 'undefined') {
     const win = globalThis as typeof globalThis & { location?: { hostname?: string } };
     const host = win.location?.hostname;
     if (host && isHostedPartnerWebHostname(host)) {
-      if (configured) return normalizeApiBaseUrl(configured);
-      return API_SUFFIX;
+      return normalizeApiBaseUrl(configured || HOSTED_PARTNER_API_FALLBACK);
     }
   }
 
