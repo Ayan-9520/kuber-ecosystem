@@ -1,31 +1,27 @@
 # Partner DSA App — Vercel (`partner.kuberone.online`)
 
-## One API tunnel for Admin + Partner
-Keep **one** Cloudflare tunnel to Docker backend `:4000`.
-Both `kuberone.online` (Admin) and `partner.kuberone.online` (DSA) rewrite `/api` to that tunnel.
+## Why Vercel showed Error
+Expo web export takes **~45–60 min** and often fails / times out on Vercel CI.
+This repo now deploys a **prebuilt** `apps/mobile-dsa/dist` (install/build are no-ops).
 
-## Deploy Partner app (not Admin)
+## Correct Vercel project (IMPORTANT)
+`partner.kuberone.online` must be on a project whose **Root Directory = `apps/mobile-dsa`**.
 
-1. Vercel → **Add New Project** → import `Ayan-9520/kuber-ecosystem`
-2. **Root Directory:** `apps/mobile-dsa`
-3. Framework: Other / leave blank (uses `vercel.json`)
-4. Env: leave empty, or set full tunnel URL — **never** `/api/v1` (Vercel→trycloudflare rewrites 502)
-5. Deploy
+If the domain is on `kuber-ecosystem-admin` or `kuber-ecosystem-admin-vjk9`:
+1. That project → **Settings → Domains** → **Remove** `partner.kuberone.online`
+2. Create / open Partner project → Root Directory `apps/mobile-dsa` → Add domain `partner.kuberone.online`
 
-## Move subdomain off Admin project
+Admin project Root Directory must stay `apps/admin` (domain `kuberone.online` only).
 
-1. Open project **kuber-ecosystem-admin** → Domains
-2. **Remove** `partner.kuberone.online`
-3. Open **Partner** project → Domains → Add `partner.kuberone.online`
-4. DNS already points to Vercel — should become Valid quickly
+## Redeploy after tunnel change
+1. Locally rebuild partner dist with the tunnel URL (or ask agent)
+2. Commit `apps/mobile-dsa/dist` + `vercel.json`
+3. Push `main` → Vercel deploys in **~30 seconds**
+
+## Manual Redeploy (Vercel UI)
+1. Open the **Partner** project (Root = `apps/mobile-dsa`)
+2. **Deployments** → latest → **⋯** → **Redeploy** (uncheck “Use existing Build Cache” if stuck)
+3. Wait until **Ready** (should be fast with prebuilt dist)
 
 ## Tunnel
-
-```bat
-scripts\start-api-tunnel.cmd
-```
-
-If tunnel URL changes, update `rewrites` in:
-- `apps/admin/vercel.json`
-- `apps/mobile-dsa/vercel.json`
-then push / redeploy both.
+Keep one Cloudflare tunnel to Docker `:4000`. Update rewrites + rebuild dist when URL changes.

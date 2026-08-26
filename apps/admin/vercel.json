@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "cd ../.. && corepack enable && pnpm install --frozen-lockfile",
+  "installCommand": "cd ../.. && corepack enable && pnpm install --frozen-lockfile --filter @kuberone/admin...",
   "buildCommand": "cd ../.. && pnpm --filter @kuberone/admin... build",
   "outputDirectory": "dist",
   "framework": "vite",
