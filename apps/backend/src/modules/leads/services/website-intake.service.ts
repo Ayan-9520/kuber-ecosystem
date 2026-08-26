@@ -8,6 +8,7 @@ import type {
 } from '@kuberone/shared-validation';
 
 import { prisma } from '../../../config/database.js';
+import { env } from '../../../config/env.js';
 import {
   ConflictError,
   NotFoundError,
@@ -279,11 +280,20 @@ export const websiteIntakeService = {
     await securityService.assertPartnerCanLogin(user.id);
 
     if (input.mode === 'otp_request') {
-      const result = await otpService.sendOtp({ phone: partner.phone, purpose: 'LOGIN' }, ctx);
+      const result = await otpService.sendOtp(
+        { phone: partner.phone, purpose: 'LOGIN', email: partner.email },
+        ctx,
+      );
+      const emailHint = result.emailHint;
       return {
         otp_sent: true,
-        message: result.message || 'OTP sent to your registered mobile number.',
+        message:
+          result.message ||
+          'OTP sent to your registered mobile number (and email if available).',
         phone_hint: maskPhone(partner.phone),
+        email_hint: emailHint ?? (partner.email ? maskEmailHint(partner.email) : null),
+        email_sent: Boolean(result.emailSent),
+        dev_otp: env.APP_ENV !== 'production' ? '123456' : undefined,
       };
     }
 
@@ -509,6 +519,13 @@ function serializeWebsiteVisitor(v: {
 function maskPhone(phone: string): string {
   if (phone.length < 4) return '****';
   return `${phone.slice(0, 2)}******${phone.slice(-2)}`;
+}
+
+function maskEmailHint(email: string): string {
+  const [user, domain] = email.split('@');
+  if (!user || !domain) return '***';
+  const visible = user.slice(0, Math.min(2, user.length));
+  return `${visible}***@${domain}`;
 }
 
 async function resolvePartnerByIdentifier(raw: string) {

@@ -9,6 +9,7 @@ import {
   ValidationError,
 } from '../../../shared/errors/app-error.js';
 import { compareSecret, generateOtp, hashSecret } from '../../../shared/utils/crypto.js';
+import { emailOrchestratorService } from '../../email/email.module.js';
 import { channelStatusService } from '../../notifications/services/channel-status.service.js';
 import { customerRepository } from '../../customers/repositories/customer.repository.js';
 import { OTP_TEMPLATE_MAP } from '../../sms/constants/sms.constants.js';
@@ -21,10 +22,53 @@ import type { AuthDeviceInput, RequestContext, SessionIssueResult } from '../typ
 import { securityService } from './security.service.js';
 import { sessionService } from './session.service.js';
 
+function maskEmail(email: string): string {
+  const [user, domain] = email.split('@');
+  if (!user || !domain) return '***';
+  const visible = user.slice(0, Math.min(2, user.length));
+  return `${visible}***@${domain}`;
+}
+
+async function sendOtpEmail(params: {
+  toEmail: string;
+  otp: string;
+  purpose: SendOtpInput['purpose'];
+  userId?: string;
+}): Promise<boolean> {
+  const emailChannel = channelStatusService.getStatus('email');
+  if (!emailChannel.deliverable) return false;
+
+  const expiryMinutes = Math.max(1, Math.floor(env.OTP_EXPIRY_SECONDS / 60));
+  try {
+    const result = await emailOrchestratorService.send({
+      toEmail: params.toEmail,
+      userId: params.userId,
+      eventType: 'LOGIN_OTP',
+      category: 'OTP',
+      priority: 'URGENT',
+      subject: `KuberOne Partner OTP: ${params.otp}`,
+      htmlBody: `
+        <div style="font-family:Arial,sans-serif;line-height:1.5;color:#0f172a">
+          <h2 style="color:#0D6B57;margin:0 0 12px">KuberOne Partner Login</h2>
+          <p>Your one-time password (OTP) is:</p>
+          <p style="font-size:28px;font-weight:700;letter-spacing:6px;margin:16px 0">${params.otp}</p>
+          <p>This code expires in ${expiryMinutes} minute(s). Do not share it with anyone.</p>
+          <p style="color:#64748b;font-size:12px">Purpose: ${params.purpose}</p>
+        </div>
+      `,
+      textBody: `KuberOne Partner OTP: ${params.otp}. Valid for ${expiryMinutes} minute(s). Purpose: ${params.purpose}`,
+    });
+    return !('skipped' in result && result.skipped);
+  } catch (error) {
+    console.warn('[OTP email] failed:', error instanceof Error ? error.message : error);
+    return false;
+  }
+}
+
 async function dispatchOtp(
-  input: { phone: string; purpose: SendOtpInput['purpose']; userId?: string },
+  input: { phone: string; purpose: SendOtpInput['purpose']; userId?: string; email?: string | null },
   ctx: RequestContext,
-): Promise<{ message: string }> {
+): Promise<{ message: string; emailSent?: boolean; emailHint?: string }> {
   const recent = await otpRepository.findRecentByPhone(
     input.phone,
     input.purpose,
@@ -52,50 +96,85 @@ async function dispatchOtp(
     throw new ValidationError({ phone: ['OTP rate limit exceeded for this number'] });
   }
 
+  let toEmail = input.email?.trim().toLowerCase() || null;
+  if (!toEmail && input.userId) {
+    const user = await userRepository.findById(input.userId);
+    toEmail = user?.email?.trim().toLowerCase() || null;
+  }
+
+  let emailSent = false;
+  if (toEmail) {
+    emailSent = await sendOtpEmail({
+      toEmail,
+      otp,
+      purpose: input.purpose,
+      userId: input.userId,
+    });
+  }
+
   if (env.APP_ENV !== 'production') {
     if (env.NODE_ENV === 'development') {
-      console.info(`[DEV OTP] ${input.phone} → ${input.purpose}`);
+      console.info(`[DEV OTP] ${input.phone}${toEmail ? ` / ${toEmail}` : ''} → ${input.purpose} = ${otp}`);
     }
   } else {
     const smsChannel = channelStatusService.getStatus('sms');
-    if (!smsChannel.deliverable) {
+    if (smsChannel.deliverable) {
+      const templateCode = OTP_TEMPLATE_MAP[input.purpose] ?? 'LOGIN_OTP';
+      await smsOrchestratorService.send({
+        userId: input.userId,
+        toPhone: input.phone,
+        templateCode,
+        eventType: 'LOGIN_OTP',
+        category: 'OTP',
+        priority: 'URGENT',
+        isOtp: true,
+        otpPurpose: input.purpose,
+        variables: { otp, expiryMinutes: Math.floor(env.OTP_EXPIRY_SECONDS / 60) },
+      });
+    } else if (!emailSent) {
       throw new ValidationError({
         phone: [
           smsChannel.status === 'disabled'
-            ? 'SMS OTP is temporarily disabled. Use password login or contact support.'
-            : 'SMS OTP is not configured yet. Use password login or contact your administrator.',
+            ? 'SMS OTP is temporarily disabled and email could not be sent. Contact support.'
+            : 'SMS is not configured yet. OTP was sent to your registered email if available.',
         ],
       });
     }
-    const templateCode = OTP_TEMPLATE_MAP[input.purpose] ?? 'LOGIN_OTP';
-    await smsOrchestratorService.send({
-      userId: input.userId,
-      toPhone: input.phone,
-      templateCode,
-      eventType: 'LOGIN_OTP',
-      category: 'OTP',
-      priority: 'URGENT',
-      isOtp: true,
-      otpPurpose: input.purpose,
-      variables: { otp, expiryMinutes: Math.floor(env.OTP_EXPIRY_SECONDS / 60) },
-    });
   }
 
   await authAuditRepository.log({
     userId: input.userId,
     action: 'OTP_SENT',
     entityType: 'otp_verification',
-    newValues: { phone: input.phone, purpose: input.purpose },
+    newValues: {
+      phone: input.phone,
+      purpose: input.purpose,
+      emailSent,
+      email: toEmail ? maskEmail(toEmail) : null,
+    },
     ipAddress: ctx.ipAddress,
     userAgent: ctx.userAgent,
     requestId: ctx.requestId,
   });
 
-  return { message: 'OTP sent successfully' };
+  const channels: string[] = [];
+  if (env.APP_ENV === 'production') channels.push('registered mobile');
+  if (emailSent && toEmail) channels.push(`email ${maskEmail(toEmail)}`);
+  const channelText = channels.length ? channels.join(' and ') : 'registered mobile (dev)';
+  const devHint = env.APP_ENV !== 'production' ? ' Dev OTP: 123456.' : '';
+
+  return {
+    message: `OTP sent to ${channelText}.${devHint}`,
+    emailSent,
+    emailHint: toEmail ? maskEmail(toEmail) : undefined,
+  };
 }
 
 export const otpService = {
-  async sendOtp(input: SendOtpInput, ctx: RequestContext): Promise<{ message: string }> {
+  async sendOtp(
+    input: SendOtpInput & { email?: string | null },
+    ctx: RequestContext,
+  ): Promise<{ message: string; emailSent?: boolean; emailHint?: string }> {
     const user = await userRepository.findByPhone(input.phone);
 
     if (input.purpose === 'LOGIN') {
@@ -125,7 +204,12 @@ export const otpService = {
     }
 
     return dispatchOtp(
-      { phone: input.phone, purpose: input.purpose, userId: user?.id },
+      {
+        phone: input.phone,
+        purpose: input.purpose,
+        userId: user?.id,
+        email: input.email ?? user?.email,
+      },
       ctx,
     );
   },

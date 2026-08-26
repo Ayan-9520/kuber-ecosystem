@@ -30,10 +30,17 @@ export const authService = {
 
   /** Mobile / email / partner code — same as kuberfinserve.com/partner-login */
   partnerOtpRequest: (identifier: string) =>
-    apiPost<{ message?: string; phone_hint?: string; otp_sent?: boolean }>(
-      '/auth/partner/otp-request',
-      { mode: 'otp_request', identifier: identifier.trim().replace(/\.+$/, '') },
-    ),
+    apiPost<{
+      message?: string;
+      phone_hint?: string;
+      email_hint?: string;
+      email_sent?: boolean;
+      otp_sent?: boolean;
+      dev_otp?: string;
+    }>('/auth/partner/otp-request', {
+      mode: 'otp_request',
+      identifier: identifier.trim().replace(/\.+$/, ''),
+    }),
 
   partnerOtpVerify: async (identifier: string, otp: string) =>
     apiPost<AuthTokens & { partner?: { partner_id?: string; phone?: string } }>(

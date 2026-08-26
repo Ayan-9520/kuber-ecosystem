@@ -58,6 +58,7 @@ export function OtpLoginScreen() {
   const [otpSent, setOtpSent] = useState(!!route.params?.phone);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const ssoTried = useRef(false);
 
   useEffect(() => {
@@ -139,10 +140,23 @@ export function OtpLoginScreen() {
       return;
     }
     setError('');
+    setInfo('');
     setLoading(true);
     try {
-      await authService.partnerOtpRequest(id);
+      const result = await authService.partnerOtpRequest(id);
       setOtpSent(true);
+      const hintParts: string[] = [];
+      if (result.phone_hint) hintParts.push(`mobile ${result.phone_hint}`);
+      if (result.email_sent && result.email_hint) hintParts.push(`email ${result.email_hint}`);
+      const where =
+        hintParts.length > 0
+          ? `OTP sent to ${hintParts.join(' and ')}.`
+          : result.message || 'OTP sent.';
+      setInfo(
+        SHOW_DEMO_LOGIN || result.dev_otp
+          ? `${where} Dev OTP: ${result.dev_otp ?? DEV_OTP}`
+          : where,
+      );
     } catch (e) {
       setError(getApiErrorMessage(e));
     } finally {
@@ -202,7 +216,9 @@ export function OtpLoginScreen() {
             New Financial Partner? Register here
           </Text>
           <Text style={styles.hint}>
-            Mobile, email, or Partner Code + OTP. Same login as kuberfinserve.com/partner-login — one dashboard.
+            Mobile, email, or Partner Code + OTP. OTP goes to that partner's registered mobile
+            (SMS after gateway purchase) and email when SMTP is on. Same login as
+            kuberfinserve.com/partner-login.
           </Text>
         </View>
       }
@@ -214,6 +230,8 @@ export function OtpLoginScreen() {
             : error}
         </Text>
       ) : null}
+
+      {info ? <Text style={styles.info}>{info}</Text> : null}
 
       <Input
         label="Mobile / Email / Partner Code"
@@ -272,6 +290,12 @@ function createStyles() {
       ...typography.caption,
       color: '#B91C1C',
       marginBottom: spacing.sm,
+    },
+    info: {
+      ...typography.caption,
+      color: '#0D6B57',
+      marginBottom: spacing.sm,
+      lineHeight: 18,
     },
     links: {
       gap: spacing.sm,
