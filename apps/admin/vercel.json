@@ -7,15 +7,15 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://regarding-gst-concepts-landing.trycloudflare.com/api/:path*"
+      "destination": "https://php-prisoners-olive-street.trycloudflare.com/api/:path*"
     },
     {
       "source": "/health",
-      "destination": "https://regarding-gst-concepts-landing.trycloudflare.com/health/live"
+      "destination": "https://php-prisoners-olive-street.trycloudflare.com/health/live"
     },
     {
       "source": "/health/:path*",
-      "destination": "https://regarding-gst-concepts-landing.trycloudflare.com/health/:path*"
+      "destination": "https://php-prisoners-olive-street.trycloudflare.com/health/:path*"
     },
     {
       "source": "/(.*)",
