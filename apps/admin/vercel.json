@@ -7,15 +7,15 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://php-prisoners-olive-street.trycloudflare.com/api/:path*"
+      "destination": "https://tons-frontier-establishing-primary.trycloudflare.com/api/:path*"
     },
     {
       "source": "/health",
-      "destination": "https://php-prisoners-olive-street.trycloudflare.com/health/live"
+      "destination": "https://tons-frontier-establishing-primary.trycloudflare.com/health/live"
     },
     {
       "source": "/health/:path*",
-      "destination": "https://php-prisoners-olive-street.trycloudflare.com/health/:path*"
+      "destination": "https://tons-frontier-establishing-primary.trycloudflare.com/health/:path*"
     },
     {
       "source": "/(.*)",
