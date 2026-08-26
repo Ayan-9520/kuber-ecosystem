@@ -281,7 +281,8 @@ export function PartnersPage() {
               </div>
             </div>
 
-            <Card title="Commission Tier" style={{ marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: '1.5rem' }}>
+            <Card title="Commission Tier">
               <div style={{ marginBottom: '0.75rem' }}>
                 <span style={{ fontSize: '0.875rem', marginRight: '0.5rem' }}>Current:</span>
                 <TierBadge tier={fieldStr(detail, 'commissionTier') || 'SILVER'} />
@@ -324,6 +325,7 @@ export function PartnersPage() {
                 </Button>
               </div>
             </Card>
+            </div>
 
             {actionMessage && (
               <p style={{ fontSize: '0.875rem', marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>

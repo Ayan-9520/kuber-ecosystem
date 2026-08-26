@@ -1,9 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "cd ../.. && corepack enable && pnpm install --frozen-lockfile --filter @kuberone/admin...",
-  "buildCommand": "cd ../.. && pnpm --filter @kuberone/admin... build",
+  "installCommand": "echo 'Using prebuilt admin dist'",
+  "buildCommand": "echo 'Prebuilt — API https://tons-frontier-establishing-primary.trycloudflare.com'",
   "outputDirectory": "dist",
-  "framework": "vite",
+  "framework": null,
   "rewrites": [
     {
       "source": "/api/:path*",

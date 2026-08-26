@@ -1,5 +1,8 @@
 const API_SUFFIX = '/api/v1';
 
+/** Keep in sync with apps/admin/vercel.json tunnel destination. */
+const HOSTED_ADMIN_API_FALLBACK = 'https://tons-frontier-establishing-primary.trycloudflare.com';
+
 /**
  * Ensure API base URL always ends with /api/v1.
  * Vercel env often omits the suffix (e.g. tunnel root only) which causes 404 on /auth/login.
@@ -27,15 +30,14 @@ function isHostedAdminHostname(hostname: string): boolean {
 }
 
 /**
- * Hosted Admin (Vercel / kuberone.online) always uses same-origin `/api/v1`.
- * Vercel rewrites proxy `/api/*` to the Cloudflare tunnel → local Docker backend.
- * This avoids dead trycloudflare URLs baked into old Vercel env builds.
+ * Hosted Admin: hit Cloudflare tunnel / public API directly.
+ * Same-origin /api rewrites to trycloudflare often 502 (DNS_HOSTNAME_NOT_FOUND) from Vercel edge.
  */
 export function resolveApiBaseUrl(): string {
+  const configured = import.meta.env.VITE_API_BASE_URL?.trim();
   if (typeof window !== 'undefined' && isHostedAdminHostname(window.location.hostname)) {
-    return API_SUFFIX;
+    return normalizeApiBaseUrl(configured || HOSTED_ADMIN_API_FALLBACK);
   }
-  const configured = import.meta.env.VITE_API_BASE_URL;
-  if (configured?.trim()) return normalizeApiBaseUrl(configured);
+  if (configured) return normalizeApiBaseUrl(configured);
   return API_SUFFIX;
 }
