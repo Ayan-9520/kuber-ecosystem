@@ -7,11 +7,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://tons-frontier-establishing-primary.trycloudflare.com/api/:path*"
+      "destination": "https://implies-usgs-processor-toronto.trycloudflare.com/api/:path*"
     },
     {
       "source": "/health/:path*",
-      "destination": "https://tons-frontier-establishing-primary.trycloudflare.com/health/:path*"
+      "destination": "https://implies-usgs-processor-toronto.trycloudflare.com/health/:path*"
     },
     {
       "source": "/(.*)",
