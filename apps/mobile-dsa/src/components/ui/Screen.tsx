@@ -31,22 +31,22 @@ function createStyles(colors: AppColors, contentMaxWidth: number | undefined, pa
       backgroundColor: colors.background,
       ...(isDesktop && Platform.OS === 'web'
         ? ({
-            backgroundImage: `radial-gradient(1200px 480px at 12% -10%, ${colors.primary}14, transparent), radial-gradient(900px 420px at 88% 0%, ${colors.primary}18, transparent), ${colors.background}`,
+            backgroundImage: `radial-gradient(900px 420px at 8% -8%, ${colors.primary}10, transparent), ${colors.background}`,
           } as object)
         : null),
     },
     flex: { flex: 1 },
     padded: { paddingHorizontal: pagePad },
     scrollContent: {
-      paddingBottom: isDesktop ? spacing.xxl + 24 : spacing.xxl,
+      paddingBottom: isDesktop ? spacing.xxl + 16 : spacing.xxl,
       width: '100%',
       maxWidth: contentMaxWidth,
-      alignSelf: 'center',
+      alignSelf: isDesktop ? 'stretch' : 'center',
     },
     bodyShell: {
       width: '100%',
       maxWidth: contentMaxWidth,
-      alignSelf: 'center',
+      alignSelf: isDesktop ? 'stretch' : 'center',
       flex: 1,
     },
     header: {
@@ -57,7 +57,7 @@ function createStyles(colors: AppColors, contentMaxWidth: number | undefined, pa
       paddingVertical: isDesktop ? spacing.lg : spacing.md,
       width: '100%',
       maxWidth: contentMaxWidth,
-      alignSelf: 'center',
+      alignSelf: isDesktop ? 'stretch' : 'center',
     },
     headerLeft: { flex: 1 },
     title: { ...typography.h1, color: colors.text, fontSize: isDesktop ? 28 : 24 },

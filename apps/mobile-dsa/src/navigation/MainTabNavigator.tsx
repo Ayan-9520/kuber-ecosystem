@@ -11,6 +11,7 @@ import type {
   MainTabParamList,
   ProfileStackParamList,
 } from './types';
+import { PartnerDesktopTabBar } from './PartnerDesktopTabBar';
 
 import { AiAdvisorScreen } from '@/features/ai-advisor/screens/AiAdvisorScreen';
 import { AcademyHubScreen } from '@/features/academy/screens/AcademyHubScreen';
@@ -222,41 +223,44 @@ function ProfileStackNavigator() {
 
 export function MainTabNavigator() {
   const { colors } = useAppTheme();
-  const { isDesktop, contentMaxWidth } = useResponsiveLayout();
+  const { isDesktop } = useResponsiveLayout();
 
   return (
     <Tab.Navigator
+      tabBar={isDesktop ? (props) => <PartnerDesktopTabBar {...props} /> : undefined}
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: colors.card,
-          borderTopColor: colors.borderLight,
-          borderTopWidth: 1,
-          height: isDesktop ? 68 : 72,
-          paddingBottom: isDesktop ? 12 : 10,
-          paddingTop: isDesktop ? 10 : 10,
-          elevation: 12,
-          shadowColor: '#071A1F',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.08,
-          shadowRadius: 12,
-          ...(isDesktop
-            ? {
-                maxWidth: contentMaxWidth,
-                width: '100%',
-                alignSelf: 'center',
-                borderTopLeftRadius: 16,
-                borderTopRightRadius: 16,
-                overflow: 'hidden' as const,
-              }
-            : null),
-        },
+        // Places custom sidebar on the left in a row layout (web desktop).
+        tabBarPosition: isDesktop ? 'left' : 'bottom',
+        tabBarStyle: isDesktop
+          ? {
+              // Width/chrome come from PartnerDesktopTabBar
+              backgroundColor: 'transparent',
+              borderTopWidth: 0,
+              elevation: 0,
+              shadowOpacity: 0,
+            }
+          : {
+              backgroundColor: colors.card,
+              borderTopColor: colors.borderLight,
+              borderTopWidth: 1,
+              height: 72,
+              paddingBottom: 10,
+              paddingTop: 10,
+              elevation: 12,
+              shadowColor: '#071A1F',
+              shadowOffset: { width: 0, height: -4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+            },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: { fontSize: isDesktop ? 12 : 12, fontWeight: '700', marginTop: 2 },
-        tabBarItemStyle: isDesktop ? { paddingHorizontal: 8 } : undefined,
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '700', marginTop: 2 },
         tabBarIcon: ({ color, focused }) => {
-          const icons: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
+          const icons: Record<
+            string,
+            { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }
+          > = {
             Home: { active: 'home', inactive: 'home-outline' },
             Academy: { active: 'school', inactive: 'school-outline' },
             Leads: { active: 'people', inactive: 'people-outline' },
@@ -265,7 +269,7 @@ export function MainTabNavigator() {
             Profile: { active: 'person', inactive: 'person-outline' },
           };
           const icon = icons[route.name] ?? { active: 'ellipse', inactive: 'ellipse-outline' };
-          return <Ionicons name={focused ? icon.active : icon.inactive} size={isDesktop ? 22 : 22} color={color} />;
+          return <Ionicons name={focused ? icon.active : icon.inactive} size={22} color={color} />;
         },
       })}
     >

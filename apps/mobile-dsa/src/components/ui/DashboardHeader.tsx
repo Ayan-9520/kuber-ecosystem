@@ -23,29 +23,30 @@ function createStyles(colors: AppColors, isDesktop: boolean, contentMaxWidth: nu
   return StyleSheet.create({
     outer: {
       width: '100%',
-      alignItems: 'center',
+      alignItems: isDesktop ? 'stretch' : 'center',
       marginBottom: isDesktop ? spacing.xl : spacing.lg,
       paddingHorizontal: isDesktop ? pagePad : spacing.md,
     },
     wrap: {
       width: '100%',
       maxWidth: contentMaxWidth,
-      borderRadius: radius.xl,
+      alignSelf: isDesktop ? 'stretch' : 'center',
+      borderRadius: isDesktop ? radius.lg : radius.xl,
       overflow: 'hidden',
       borderWidth: 1,
       borderColor: 'rgba(255,255,255,0.08)',
-      marginTop: isDesktop ? spacing.md : spacing.sm,
+      marginTop: isDesktop ? spacing.sm : spacing.sm,
     },
     gradient: {
-      paddingHorizontal: isDesktop ? 40 : spacing.lg,
-      paddingTop: isDesktop ? 32 : spacing.lg,
-      paddingBottom: isDesktop ? 40 : spacing.xl,
+      paddingHorizontal: isDesktop ? 36 : spacing.lg,
+      paddingTop: isDesktop ? 28 : spacing.lg,
+      paddingBottom: isDesktop ? 32 : spacing.xl,
     },
     topRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: isDesktop ? spacing.xl : spacing.lg,
+      marginBottom: isDesktop ? spacing.lg : spacing.lg,
     },
     brand: {
       flexDirection: 'row',
@@ -84,7 +85,12 @@ function createStyles(colors: AppColors, isDesktop: boolean, contentMaxWidth: nu
       letterSpacing: 0.3,
       fontSize: isDesktop ? 12 : 11,
     },
-    actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    actions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginLeft: 'auto',
+    },
     iconBtn: {
       width: 44,
       height: 44,
@@ -124,7 +130,7 @@ function createStyles(colors: AppColors, isDesktop: boolean, contentMaxWidth: nu
     },
     name: {
       color: '#FFFFFF',
-      fontSize: isDesktop ? 40 : 28,
+      fontSize: isDesktop ? 36 : 28,
       fontWeight: '800',
       marginTop: 6,
       letterSpacing: -0.8,
@@ -134,14 +140,14 @@ function createStyles(colors: AppColors, isDesktop: boolean, contentMaxWidth: nu
       color: 'rgba(255,255,255,0.9)',
       marginTop: spacing.sm,
       lineHeight: 22,
-      maxWidth: isDesktop ? 560 : 520,
+      maxWidth: isDesktop ? 640 : 520,
       fontSize: isDesktop ? 16 : 14,
     },
     pillRow: {
       flexDirection: 'row',
       flexWrap: 'wrap',
       gap: spacing.sm,
-      marginTop: spacing.lg,
+      marginTop: isDesktop ? 0 : spacing.lg,
     },
     pill: {
       flexDirection: 'row',
@@ -204,15 +210,19 @@ export function DashboardHeader({
       <View style={styles.wrap}>
         <LinearGradient colors={gradientColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradient}>
           <View style={styles.topRow}>
-            <View style={styles.brand}>
-              <View style={styles.logoPlate}>
-                <Image source={logoK1} style={styles.logoImage} accessibilityLabel="KuberOne" />
+            {!isDesktop ? (
+              <View style={styles.brand}>
+                <View style={styles.logoPlate}>
+                  <Image source={logoK1} style={styles.logoImage} accessibilityLabel="KuberOne" />
+                </View>
+                <View style={styles.brandText}>
+                  <Text style={styles.brandName}>KuberOne</Text>
+                  <Text style={styles.brandTag}>{tagline}</Text>
+                </View>
               </View>
-              <View style={styles.brandText}>
-                <Text style={styles.brandName}>KuberOne</Text>
-                <Text style={styles.brandTag}>{tagline}</Text>
-              </View>
-            </View>
+            ) : (
+              <View style={{ flex: 1 }} />
+            )}
             <View style={styles.actions}>
               <Pressable style={styles.iconBtn} onPress={onNotificationsPress} accessibilityLabel="Notifications">
                 <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
