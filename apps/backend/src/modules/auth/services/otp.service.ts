@@ -58,7 +58,9 @@ async function sendOtpEmail(params: {
       `,
       textBody: `KuberOne Partner OTP: ${params.otp}. Valid for ${expiryMinutes} minute(s). Purpose: ${params.purpose}`,
     });
-    return !('skipped' in result && result.skipped);
+    if ('skipped' in result && result.skipped) return false;
+    if ('success' in result && result.success === false) return false;
+    return true;
   } catch (error) {
     console.warn('[OTP email] failed:', error instanceof Error ? error.message : error);
     return false;

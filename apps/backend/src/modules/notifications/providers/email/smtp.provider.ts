@@ -1,13 +1,23 @@
-import { createConnection } from 'node:net';
-import { connect as tlsConnect } from 'node:tls';
+import { createConnection, type Socket } from 'node:net';
+import { connect as tlsConnect, type TLSSocket } from 'node:tls';
 
 import { env } from '../../../../config/env.js';
 import type { EmailPayload, EmailProvider, ProviderSendResult } from '../types.js';
+
+type SmtpSocket = Socket | TLSSocket;
 
 function sendSmtpCommand(socket: NodeJS.WritableStream, command: string): void {
   socket.write(`${command}\r\n`);
 }
 
+function isFinalReply(line: string): boolean {
+  return line.length >= 4 && line[3] === ' ';
+}
+
+/**
+ * Hostinger: 587 = plain + STARTTLS, 465 = implicit TLS.
+ * Do not use implicit TLS on 587 (causes ssl wrong version number).
+ */
 export const smtpProvider: EmailProvider = {
   type: 'SMTP',
 
@@ -17,68 +27,139 @@ export const smtpProvider: EmailProvider = {
       return { success: false, error: 'SMTP_HOST not configured' };
     }
 
-    const port = env.SMTP_PORT;
-    const secure = env.SMTP_SECURE;
+    const port = env.SMTP_PORT || 587;
+    // Hostinger: 465 = implicit TLS, 587 = STARTTLS.
+    // Ignore SMTP_SECURE env — z.coerce.boolean turns string "false" into true.
+    const useImplicitTls = port === 465;
+    const useStartTls = port !== 465;
     const from = payload.from ?? env.EMAIL_FROM;
+    const smtpUser = env.SMTP_USER;
+    const smtpPass = env.SMTP_PASS ?? env.SMTP_PASSWORD;
 
     return new Promise((resolve) => {
-      const socket = secure
-        ? tlsConnect({ host, port, rejectUnauthorized: false })
+      let socket: SmtpSocket = useImplicitTls
+        ? tlsConnect({ host, port, servername: host, rejectUnauthorized: false })
         : createConnection({ host, port });
 
-      let step = 0;
+      let step:
+        | 'greeting'
+        | 'ehlo1'
+        | 'starttls'
+        | 'ehlo2'
+        | 'auth'
+        | 'user'
+        | 'pass'
+        | 'mail'
+        | 'rcpt'
+        | 'data'
+        | 'body'
+        | 'quit' = 'greeting';
       let buffer = '';
+      let settled = false;
 
-      const fail = (error: string) => {
-        socket.destroy();
-        resolve({ success: false, error });
+      const finish = (result: ProviderSendResult) => {
+        if (settled) return;
+        settled = true;
+        try {
+          socket.destroy();
+        } catch {
+          /* ignore */
+        }
+        resolve(result);
       };
 
-      const succeed = () => {
-        socket.destroy();
-        resolve({ success: true, providerRef: `smtp-${Date.now()}`, deliveryStatus: 'accepted' });
-      };
+      const fail = (error: string) => finish({ success: false, error });
+      const succeed = () =>
+        finish({ success: true, providerRef: `smtp-${Date.now()}`, deliveryStatus: 'accepted' });
 
-      socket.on('data', (chunk: Buffer) => {
-        buffer += chunk.toString();
-        const lines = buffer.split('\r\n');
-        buffer = lines.pop() ?? '';
-        for (const line of lines) {
-          const code = Number.parseInt(line.slice(0, 3), 10);
-          if (Number.isNaN(code)) continue;
+      const upgradeToTls = (): Promise<void> =>
+        new Promise((upgradeResolve, upgradeReject) => {
+          const plain = socket as Socket;
+          const tlsSocket = tlsConnect(
+            { socket: plain, host, servername: host, rejectUnauthorized: false },
+            () => {
+              socket = tlsSocket;
+              attachDataHandler();
+              upgradeResolve();
+            },
+          );
+          tlsSocket.on('error', upgradeReject);
+        });
 
-          if (code >= 400) {
-            fail(line);
+      const handleLine = async (line: string) => {
+        if (!line) return;
+        const code = Number.parseInt(line.slice(0, 3), 10);
+        if (Number.isNaN(code)) return;
+        if (!isFinalReply(line) && step !== 'ehlo1' && step !== 'ehlo2') return;
+
+        if (code >= 400) {
+          fail(line);
+          return;
+        }
+
+        try {
+          if (step === 'greeting' && code === 220) {
+            sendSmtpCommand(socket, 'EHLO kuberone.local');
+            step = 'ehlo1';
             return;
           }
 
-          if (step === 0 && code === 220) {
-            sendSmtpCommand(socket, 'EHLO kuberone.local');
-            step = 1;
-          } else if (step === 1 && line.startsWith('250')) {
-            if (env.SMTP_USER && env.SMTP_PASS) {
+          if ((step === 'ehlo1' || step === 'ehlo2') && code === 250 && isFinalReply(line)) {
+            if (step === 'ehlo1' && useStartTls) {
+              sendSmtpCommand(socket, 'STARTTLS');
+              step = 'starttls';
+              return;
+            }
+
+            if (smtpUser && smtpPass) {
               sendSmtpCommand(socket, 'AUTH LOGIN');
-              step = 2;
+              step = 'auth';
             } else {
               sendSmtpCommand(socket, `MAIL FROM:<${from}>`);
-              step = 4;
+              step = 'mail';
             }
-          } else if (step === 2 && code === 334) {
-            sendSmtpCommand(socket, Buffer.from(env.SMTP_USER!).toString('base64'));
-            step = 3;
-          } else if (step === 3 && code === 334) {
-            sendSmtpCommand(socket, Buffer.from(env.SMTP_PASS!).toString('base64'));
-            step = 4;
-          } else if (step === 4 && code === 235) {
+            return;
+          }
+
+          if (step === 'starttls' && code === 220) {
+            await upgradeToTls();
+            sendSmtpCommand(socket, 'EHLO kuberone.local');
+            step = 'ehlo2';
+            return;
+          }
+
+          if (step === 'auth' && code === 334) {
+            sendSmtpCommand(socket, Buffer.from(smtpUser!).toString('base64'));
+            step = 'user';
+            return;
+          }
+
+          if (step === 'user' && code === 334) {
+            sendSmtpCommand(socket, Buffer.from(smtpPass!).toString('base64'));
+            step = 'pass';
+            return;
+          }
+
+          if (step === 'pass' && code === 235) {
             sendSmtpCommand(socket, `MAIL FROM:<${from}>`);
-            step = 5;
-          } else if ((step === 4 || step === 5) && code === 250 && line.includes('MAIL FROM')) {
+            step = 'mail';
+            return;
+          }
+
+          if (step === 'mail' && code === 250) {
             sendSmtpCommand(socket, `RCPT TO:<${payload.to}>`);
-            step = 6;
-          } else if (step === 6 && code === 250) {
+            step = 'rcpt';
+            return;
+          }
+
+          if (step === 'rcpt' && code === 250) {
             sendSmtpCommand(socket, 'DATA');
-            step = 7;
-          } else if (step === 7 && code === 354) {
+            step = 'data';
+            return;
+          }
+
+          if (step === 'data' && code === 354) {
+            const html = payload.html ?? payload.body ?? '';
             const message = [
               `From: ${from}`,
               `To: ${payload.to}`,
@@ -86,18 +167,40 @@ export const smtpProvider: EmailProvider = {
               'MIME-Version: 1.0',
               'Content-Type: text/html; charset=utf-8',
               '',
-              payload.html ?? payload.body,
+              html,
               '.',
             ].join('\r\n');
             sendSmtpCommand(socket, message);
-            step = 8;
-          } else if (step === 8 && code === 250) {
+            step = 'body';
+            return;
+          }
+
+          if (step === 'body' && code === 250) {
             sendSmtpCommand(socket, 'QUIT');
+            step = 'quit';
             succeed();
           }
+        } catch (err) {
+          fail(err instanceof Error ? err.message : String(err));
         }
-      });
+      };
 
+      const onData = (chunk: Buffer) => {
+        buffer += chunk.toString();
+        const lines = buffer.split(/\r?\n/);
+        buffer = lines.pop() ?? '';
+        for (const raw of lines) {
+          const line = raw.replace(/\r$/, '');
+          void handleLine(line);
+        }
+      };
+
+      const attachDataHandler = () => {
+        socket.removeAllListeners('data');
+        socket.on('data', onData);
+      };
+
+      attachDataHandler();
       socket.on('error', (err) => fail(err.message));
       socket.setTimeout(30_000, () => fail('SMTP timeout'));
     });

@@ -71,7 +71,17 @@ export const communicationEnvSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
-  SMTP_SECURE: z.coerce.boolean().default(false),
+  // z.coerce.boolean turns string "false" into true — parse explicitly
+  SMTP_SECURE: z
+    .union([z.boolean(), z.string()])
+    .optional()
+    .transform((v) => {
+      if (typeof v === 'boolean') return v;
+      if (v == null || v === '') return false;
+      const s = String(v).trim().toLowerCase();
+      return s === '1' || s === 'true' || s === 'yes';
+    })
+    .default(false),
   SENDGRID_API_KEY: z.string().optional(),
   AWS_SES_REGION: z.string().default('ap-south-1'),
   AWS_SES_ACCESS_KEY: z.string().optional(),
