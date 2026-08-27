@@ -1,10 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
 
 import { Card, DashboardHeader, EmptyState, QuickAction, Screen, StatCard, StatusBadge } from '@/components/ui';
 import { ACADEMY_LEVELS } from '@/features/academy/data/academy';
@@ -14,11 +12,9 @@ import type { HomeStackParamList } from '@/navigation/types';
 import {
   applicationsService,
   commissionsService,
-  documentsService,
   leadsService,
   notificationsService,
   partnersService,
-  referralsService,
 } from '@/services';
 import { radius, spacing, typography } from '@/theme';
 import { useAppTheme } from '@/theme/ThemeProvider';
@@ -47,39 +43,16 @@ export function DashboardScreen() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // Lean mount: 5 queries instead of 14 — rest of pipeline opens on demand via tabs.
   const leads = useQuery({
     queryKey: ['dashboard', 'leads', partnerId],
-    queryFn: () => leadsService.list({ limit: 100, sortBy: 'createdAt', sortOrder: 'desc' }),
-    enabled: !!partnerId,
-  });
-
-  const hotLeads = useQuery({
-    queryKey: ['dashboard', 'hot-leads', partnerId],
-    queryFn: () =>
-      leadsService.list({
-        priority: 'HIGH',
-        limit: 5,
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
-      }),
+    queryFn: () => leadsService.list({ limit: 30, sortBy: 'createdAt', sortOrder: 'desc' }),
     enabled: !!partnerId,
   });
 
   const applications = useQuery({
     queryKey: ['dashboard', 'applications', partnerId],
-    queryFn: () => applicationsService.list({ limit: 5, sortBy: 'createdAt', sortOrder: 'desc' }),
-    enabled: !!partnerId,
-  });
-
-  const sanctions = useQuery({
-    queryKey: ['dashboard', 'sanctions', partnerId],
-    queryFn: () => applicationsService.list({ status: 'SANCTIONED', limit: 5 }),
-    enabled: !!partnerId,
-  });
-
-  const disbursements = useQuery({
-    queryKey: ['dashboard', 'disbursements', partnerId],
-    queryFn: () => applicationsService.list({ status: 'DISBURSED', limit: 5 }),
+    queryFn: () => applicationsService.list({ limit: 8, sortBy: 'createdAt', sortOrder: 'desc' }),
     enabled: !!partnerId,
   });
 
@@ -89,43 +62,14 @@ export function DashboardScreen() {
     enabled: !!partnerId,
   });
 
-  const referrals = useQuery({
-    queryKey: ['dashboard', 'referrals', partnerId],
-    queryFn: () =>
-      referralsService.list({ referrerPartnerId: partnerId, limit: 5, sortBy: 'createdAt', sortOrder: 'desc' }),
-    enabled: !!partnerId,
-  });
-
-  const pendingDocs = useQuery({
-    queryKey: ['dashboard', 'docs', partnerId],
-    queryFn: () => documentsService.list({ partnerId, status: 'PENDING_VERIFICATION', limit: 5 }),
-    enabled: !!partnerId,
-  });
-
   const notifications = useQuery({
     queryKey: ['dashboard', 'notifications', user?.id],
     queryFn: () => notificationsService.list({ userId: user?.id, unreadOnly: true, limit: 5 }),
     enabled: !!user?.id,
   });
 
-  const todayLeads =
-    leads.data?.items.filter((l) => new Date(String(l.createdAt)).getTime() >= today.getTime()).length ?? 0;
-
-  const referralEarnings =
-    referrals.data?.items.reduce((s, r) => s + Number(r.rewardAmount ?? 0), 0) ?? 0;
-
-  /** Backend commissionAnalyticsService.getSummary() shape. */
-  const commissionTotals = commissions.data as
-    | { totals?: { totalCommission?: number }; paidCommissions?: number }
-    | undefined;
-  const commissionEarned = Number(commissionTotals?.totals?.totalCommission ?? 0);
-
-  // ── MTD Earnings calculations ──
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
-
   const mtdCommissions = useQuery({
     queryKey: ['dashboard', 'mtd-commissions', partnerId],
     queryFn: () =>
@@ -137,67 +81,23 @@ export function DashboardScreen() {
     enabled: !!partnerId,
   });
 
-  const lastMonthCommissions = useQuery({
-    queryKey: ['dashboard', 'last-month-commissions', partnerId],
-    queryFn: () =>
-      commissionsService.analytics({
-        partnerId,
-        fromDate: lastMonthStart.toISOString(),
-        toDate: lastMonthEnd.toISOString(),
-      }),
-    enabled: !!partnerId,
-  });
+  const todayLeads =
+    leads.data?.items.filter((l) => new Date(String(l.createdAt)).getTime() >= today.getTime()).length ?? 0;
 
-  const mtdData = mtdCommissions.data as
-    | { totals?: { totalCommission?: number } }
-    | undefined;
-  const lastMonthData = lastMonthCommissions.data as
-    | { totals?: { totalCommission?: number } }
-    | undefined;
+  const hotLeadItems =
+    leads.data?.items.filter((l) => String(l.priority ?? '').toUpperCase() === 'HIGH').slice(0, 5) ?? [];
+  const hotLeadCount = hotLeadItems.length;
 
+  /** Backend commissionAnalyticsService.getSummary() shape. */
+  const commissionTotals = commissions.data as
+    | { totals?: { totalCommission?: number }; paidCommissions?: number }
+    | undefined;
+  const commissionEarned = Number(commissionTotals?.totals?.totalCommission ?? 0);
+
+  const mtdData = mtdCommissions.data as { totals?: { totalCommission?: number } } | undefined;
   const mtdEarned = Number(mtdData?.totals?.totalCommission ?? 0);
-  const lastMonthEarned = Number(lastMonthData?.totals?.totalCommission ?? 0);
-  const mtdChangePercent =
-    lastMonthEarned > 0
-      ? ((mtdEarned - lastMonthEarned) / lastMonthEarned) * 100
-      : mtdEarned > 0
-        ? 100
-        : 0;
   const MONTHLY_TARGET = 50_000;
   const mtdProgress = Math.min(mtdEarned / MONTHLY_TARGET, 1);
-
-  // ── Conversion Rate calculations ──
-  const mtdLeads = useQuery({
-    queryKey: ['dashboard', 'mtd-leads', partnerId],
-    queryFn: () =>
-      leadsService.list({
-        fromDate: monthStart.toISOString(),
-        limit: 1,
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
-      }),
-    enabled: !!partnerId,
-  });
-
-  const mtdDisbursed = useQuery({
-    queryKey: ['dashboard', 'mtd-disbursed', partnerId],
-    queryFn: () =>
-      leadsService.list({
-        fromDate: monthStart.toISOString(),
-        status: 'DISBURSED',
-        limit: 1,
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
-      }),
-    enabled: !!partnerId,
-  });
-
-  const totalLeadsMtd = mtdLeads.data?.meta.total ?? 0;
-  const convertedLeadsMtd = mtdDisbursed.data?.meta.total ?? 0;
-  const conversionRate =
-    totalLeadsMtd > 0 ? (convertedLeadsMtd / totalLeadsMtd) * 100 : 0;
-
-  // ── Target vs Actual ──
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const daysRemaining = daysInMonth - now.getDate();
   const targetProgress = Math.min(mtdEarned / MONTHLY_TARGET, 1);
@@ -206,22 +106,15 @@ export function DashboardScreen() {
     leads.isRefetching ||
     applications.isRefetching ||
     commissions.isRefetching ||
-    notifications.isRefetching;
+    notifications.isRefetching ||
+    mtdCommissions.isRefetching;
 
   const refreshAll = () => {
     void leads.refetch();
-    void hotLeads.refetch();
     void applications.refetch();
-    void sanctions.refetch();
-    void disbursements.refetch();
     void commissions.refetch();
-    void referrals.refetch();
-    void pendingDocs.refetch();
     void notifications.refetch();
     void mtdCommissions.refetch();
-    void lastMonthCommissions.refetch();
-    void mtdLeads.refetch();
-    void mtdDisbursed.refetch();
   };
 
   const tabNav = navigation.getParent();
@@ -260,10 +153,6 @@ export function DashboardScreen() {
 
   const goReferrals = () => {
     tabNav?.navigate('Profile', { screen: 'Referrals' });
-  };
-
-  const goDocuments = () => {
-    tabNav?.navigate('Profile', { screen: 'Documents' });
   };
 
   const goNotifications = () => {
@@ -328,12 +217,6 @@ export function DashboardScreen() {
             icon="sparkles"
             onPress={() => navigation.navigate('AiAdvisor')}
           />
-          <QuickAction
-            style={styles.actionItem}
-            label="Voice AI"
-            icon="mic"
-            onPress={() => navigation.navigate('VoiceAi')}
-          />
           <QuickAction style={styles.actionItem} label="Alerts" icon="notifications" onPress={goNotifications} />
           <QuickAction style={styles.actionItem} label="Referrals" icon="gift" onPress={goReferrals} />
         </View>
@@ -352,7 +235,6 @@ export function DashboardScreen() {
           <QuickAction label="Analytics" icon="bar-chart" onPress={goLeadAnalytics} />
           <QuickAction label="Earnings" icon="wallet" onPress={goCommissions} />
           <QuickAction label="AI Coach" icon="sparkles" onPress={() => navigation.navigate('AiAdvisor')} />
-          <QuickAction label="Voice AI" icon="mic" onPress={() => navigation.navigate('VoiceAi')} />
           <QuickAction label="Alerts" icon="notifications" onPress={goNotifications} />
           <QuickAction label="Referrals" icon="gift" onPress={goReferrals} />
         </ScrollView>
@@ -418,7 +300,7 @@ export function DashboardScreen() {
           <StatCard
             style={styles.statCell}
             label="Hot Leads"
-            value={hotLeads.data?.meta.total ?? 0}
+            value={hotLeadCount}
             icon="flame"
             onPress={goLeadAnalytics}
           />
@@ -431,38 +313,10 @@ export function DashboardScreen() {
           />
           <StatCard
             style={styles.statCell}
-            label="Sanctions"
-            value={sanctions.data?.meta.total ?? 0}
-            icon="ribbon"
-            onPress={goApplications}
-          />
-          <StatCard
-            style={styles.statCell}
-            label="Disbursements"
-            value={disbursements.data?.meta.total ?? 0}
-            icon="cash"
-            onPress={goApplications}
-          />
-          <StatCard
-            style={styles.statCell}
             label="Commission ₹"
             value={commissions.isError ? '—' : formatCurrency(commissionEarned)}
             icon="trending-up"
             onPress={goCommissionAnalytics}
-          />
-          <StatCard
-            style={styles.statCell}
-            label="Referral ₹"
-            value={formatCurrency(referralEarnings)}
-            icon="gift"
-            onPress={goReferrals}
-          />
-          <StatCard
-            style={styles.statCell}
-            label="Pending Docs"
-            value={pendingDocs.data?.meta.total ?? 0}
-            icon="folder-open"
-            onPress={goDocuments}
           />
         </View>
       </View>
@@ -471,31 +325,16 @@ export function DashboardScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeadInset}>
           <Text style={styles.sectionTitle}>MTD Earnings</Text>
-          <Text style={styles.sectionSub}>Month-to-date commission earnings</Text>
+          <Text style={styles.sectionSub}>
+            Month-to-date · {daysRemaining} days left · target {formatCurrency(MONTHLY_TARGET)}
+          </Text>
         </View>
         <Card elevated>
           <View style={styles.widgetRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.widgetValue}>{formatCurrency(mtdEarned)}</Text>
-              <View style={styles.widgetChangeRow}>
-                <Ionicons
-                  name={mtdChangePercent >= 0 ? 'arrow-up' : 'arrow-down'}
-                  size={14}
-                  color={mtdChangePercent >= 0 ? colors.success : colors.danger}
-                />
-                <Text
-                  style={[
-                    styles.widgetChangeText,
-                    { color: mtdChangePercent >= 0 ? colors.success : colors.danger },
-                  ]}
-                >
-                  {Math.abs(mtdChangePercent).toFixed(1)}% vs last month
-                </Text>
-              </View>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.widgetLabel}>
-                Target: {formatCurrency(MONTHLY_TARGET)}
+              <Text style={styles.widgetMini}>
+                {(mtdProgress * 100).toFixed(0)}% of monthly target
               </Text>
             </View>
           </View>
@@ -505,89 +344,15 @@ export function DashboardScreen() {
                 styles.progressBarFill,
                 {
                   width: `${(mtdProgress * 100).toFixed(0)}%` as `${number}%`,
-                  backgroundColor: colors.primary,
-                },
-              ]}
-            />
-          </View>
-          <Text style={styles.widgetMini}>
-            {(mtdProgress * 100).toFixed(0)}% of monthly target
-          </Text>
-        </Card>
-      </View>
-
-      {/* ── Conversion Rate Widget ── */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeadInset}>
-          <Text style={styles.sectionTitle}>Conversion Rate</Text>
-          <Text style={styles.sectionSub}>Lead to disbursement this month</Text>
-        </View>
-        <Card elevated>
-          <View style={styles.widgetRow}>
-            <ConversionCircle
-              percentage={conversionRate}
-              size={72}
-              strokeWidth={7}
-              color={colors.primary}
-              trackColor={`${colors.primary}20`}
-              textColor={colors.text}
-            />
-            <View style={{ flex: 1, marginLeft: spacing.lg }}>
-              <View style={styles.conversionStat}>
-                <Text style={styles.widgetLabel}>Leads submitted</Text>
-                <Text style={styles.widgetStatNum}>{totalLeadsMtd}</Text>
-              </View>
-              <View style={styles.conversionStat}>
-                <Text style={styles.widgetLabel}>Disbursed</Text>
-                <Text style={[styles.widgetStatNum, { color: colors.success }]}>
-                  {convertedLeadsMtd}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </Card>
-      </View>
-
-      {/* ── Target vs Actual Widget ── */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeadInset}>
-          <Text style={styles.sectionTitle}>Target vs Actual</Text>
-          <Text style={styles.sectionSub}>{daysRemaining} days remaining this month</Text>
-        </View>
-        <Card elevated>
-          <View style={styles.widgetRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.widgetLabel}>Actual earned</Text>
-              <Text style={styles.widgetValue}>{formatCurrency(mtdEarned)}</Text>
-            </View>
-            <View style={{ flex: 1, alignItems: 'flex-end' }}>
-              <Text style={styles.widgetLabel}>Monthly target</Text>
-              <Text style={styles.widgetValue}>{formatCurrency(MONTHLY_TARGET)}</Text>
-            </View>
-          </View>
-          <View style={styles.progressBarBg}>
-            <View
-              style={[
-                styles.progressBarFill,
-                {
-                  width: `${(targetProgress * 100).toFixed(0)}%` as `${number}%`,
                   backgroundColor:
                     targetProgress >= 1
                       ? colors.success
                       : targetProgress >= 0.5
                         ? colors.warning
-                        : colors.danger,
+                        : colors.primary,
                 },
               ]}
             />
-          </View>
-          <View style={styles.widgetRow}>
-            <Text style={styles.widgetMini}>
-              {(targetProgress * 100).toFixed(0)}% achieved
-            </Text>
-            <Text style={styles.widgetMini}>
-              {formatCurrency(Math.max(MONTHLY_TARGET - mtdEarned, 0))} remaining
-            </Text>
           </View>
         </Card>
       </View>
@@ -595,10 +360,10 @@ export function DashboardScreen() {
       <View style={[styles.section, styles.listsSection]}>
         <View style={styles.listCol}>
           <Card title="Hot Leads" subtitle="High priority prospects" elevated onPress={goLeads}>
-            {(hotLeads.data?.items.length ?? 0) === 0 ? (
+            {hotLeadItems.length === 0 ? (
               <EmptyState title="No hot leads" description="Create leads with HIGH priority to see them here" />
             ) : (
-              hotLeads.data?.items.map((lead, index, arr) => (
+              hotLeadItems.map((lead, index, arr) => (
                 <Pressable
                   key={String(lead.id)}
                   style={[styles.row, index === arr.length - 1 && styles.rowLast]}
@@ -680,63 +445,6 @@ export function DashboardScreen() {
   );
 }
 
-function ConversionCircle({
-  percentage,
-  size,
-  strokeWidth,
-  color,
-  trackColor,
-  textColor,
-}: {
-  percentage: number;
-  size: number;
-  strokeWidth: number;
-  color: string;
-  trackColor: string;
-  textColor: string;
-}) {
-  const r = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * r;
-  const strokeDashoffset = circumference * (1 - Math.min(percentage, 100) / 100);
-
-  return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={size} height={size}>
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke={trackColor}
-          strokeWidth={strokeWidth}
-          fill="none"
-        />
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke={color}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={`${circumference}`}
-          strokeDashoffset={strokeDashoffset}
-          rotation={-90}
-          origin={`${size / 2}, ${size / 2}`}
-        />
-      </Svg>
-      <Text
-        style={{
-          position: 'absolute',
-          fontSize: 14,
-          fontWeight: '800',
-          color: textColor,
-        }}
-      >
-        {percentage.toFixed(0)}%
-      </Text>
-    </View>
-  );
-}
 
 function createStyles(
   colors: ReturnType<typeof useAppTheme>['colors'],

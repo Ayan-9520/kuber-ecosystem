@@ -13,66 +13,14 @@ import type {
 } from './types';
 import { PartnerDesktopTabBar } from './PartnerDesktopTabBar';
 
-import { AiAdvisorScreen } from '@/features/ai-advisor/screens/AiAdvisorScreen';
 import { AcademyHubScreen } from '@/features/academy/screens/AcademyHubScreen';
-import { AcademyModuleScreen } from '@/features/academy/screens/AcademyModuleScreen';
-import { useResponsiveLayout } from '@/hooks';
-import { ApplicationDetailScreen } from '@/features/applications/screens/ApplicationDetailScreen';
 import { ApplicationsListScreen } from '@/features/applications/screens/ApplicationsListScreen';
-import { CommissionAnalyticsScreen } from '@/features/commissions/screens/CommissionAnalyticsScreen';
-import { CommissionLedgerScreen } from '@/features/commissions/screens/CommissionLedgerScreen';
-import { CommissionPaymentsScreen } from '@/features/commissions/screens/CommissionPaymentsScreen';
-import { CommissionRecoveriesScreen } from '@/features/commissions/screens/CommissionRecoveriesScreen';
 import { CommissionsHomeScreen } from '@/features/commissions/screens/CommissionsHomeScreen';
-import { PendingCommissionsScreen } from '@/features/commissions/screens/PendingCommissionsScreen';
-import {
-  BonusTrackerScreen,
-  CommissionByStatusScreen,
-  CommissionTimelineScreen,
-  CommissionTrackerScreen,
-  DownloadStatementsScreen,
-  EarningsDashboardScreen,
-  GstReportsScreen,
-  IncentiveTrackerScreen,
-  InvoiceTimelineScreen,
-  InvoiceTrackerScreen,
-  PartnerWalletScreen,
-  PayoutHistoryScreen,
-  RaiseInvoiceScreen,
-  ReferralIncomeScreen,
-  TdsCentreScreen,
-} from '@/features/earnings-finance/screens/EarningsScreens';
-import { PartnerDrdeScreen } from '@/features/earnings-finance/screens/PartnerDrdeScreen';
-import { PartnerBankReconScreen } from '@/features/earnings-finance/screens/PartnerBankReconScreen';
-import { PartnerLoanCasesScreen } from '@/features/loan-fulfillment';
 import { DashboardScreen } from '@/features/dashboard/screens/DashboardScreen';
-import { CreateLeadScreen } from '@/features/leads/screens/CreateLeadScreen';
-import { EditLeadScreen } from '@/features/leads/screens/EditLeadScreen';
-import { LeadAnalyticsScreen } from '@/features/leads/screens/LeadAnalyticsScreen';
-import { LeadDetailScreen } from '@/features/leads/screens/LeadDetailScreen';
 import { LeadsListScreen } from '@/features/leads/screens/LeadsListScreen';
-import { CommunicationHistoryScreen } from '@/features/notifications/screens/CommunicationHistoryScreen';
-import { NotificationsScreen } from '@/features/notifications/screens/NotificationsScreen';
-import { BankAccountScreen } from '@/features/profile/screens/BankAccountScreen';
-import { BrandingDashboardScreen } from '@/features/profile/screens/BrandingDashboardScreen';
-import { CustomerDetailScreen } from '@/features/profile/screens/CustomerDetailScreen';
-import { CustomersListScreen } from '@/features/profile/screens/CustomersListScreen';
-import { DocumentDeficienciesScreen } from '@/features/profile/screens/DocumentDeficienciesScreen';
-import { DocumentsScreen } from '@/features/profile/screens/DocumentsScreen';
-import { PartnerKycStatusScreen } from '@/features/profile/screens/PartnerKycStatusScreen';
 import { ProfileScreen } from '@/features/profile/screens/ProfileScreen';
-import { UploadDocumentScreen } from '@/features/profile/screens/UploadDocumentScreen';
-import { CreateReferralScreen } from '@/features/referrals/screens/CreateReferralScreen';
-import { ReferralAnalyticsScreen } from '@/features/referrals/screens/ReferralAnalyticsScreen';
-import { ReferralsScreen } from '@/features/referrals/screens/ReferralsScreen';
-import { SettingsScreen } from '@/features/settings/screens/SettingsScreen';
-import { CreateTicketScreen } from '@/features/support/screens/CreateTicketScreen';
-import { FeedbackScreen } from '@/features/support/screens/FeedbackScreen';
-import { SupportScreen } from '@/features/support/screens/SupportScreen';
-import { TicketDetailScreen } from '@/features/support/screens/TicketDetailScreen';
-import { VoiceAiScreen } from '@/features/voice-ai/screens/VoiceAiScreen';
+import { useResponsiveLayout } from '@/hooks';
 import { useAppTheme } from '@/theme/ThemeProvider';
-
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -94,17 +42,27 @@ function useStackScreenOptions() {
   };
 }
 
+/** Lazy screen — keeps secondary routes out of the first parse/eval path. */
 function HomeStackNavigator() {
   const screenOptions = useStackScreenOptions();
   return (
     <HomeStack.Navigator screenOptions={screenOptions}>
       <HomeStack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
-      <HomeStack.Screen name="AiAdvisor" component={AiAdvisorScreen} options={{ title: 'AI Advisor' }} />
-      <HomeStack.Screen name="VoiceAi" component={VoiceAiScreen} options={{ title: 'Voice AI' }} />
-      <HomeStack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
+      <HomeStack.Screen
+        name="AiAdvisor"
+        getComponent={() => require('@/features/ai-advisor/screens/AiAdvisorScreen').AiAdvisorScreen}
+        options={{ title: 'AI Advisor' }}
+      />
+      <HomeStack.Screen
+        name="Notifications"
+        getComponent={() => require('@/features/notifications/screens/NotificationsScreen').NotificationsScreen}
+        options={{ title: 'Notifications' }}
+      />
       <HomeStack.Screen
         name="CommunicationHistory"
-        component={CommunicationHistoryScreen}
+        getComponent={() =>
+          require('@/features/notifications/screens/CommunicationHistoryScreen').CommunicationHistoryScreen
+        }
         options={{ title: 'Communications' }}
       />
     </HomeStack.Navigator>
@@ -122,7 +80,7 @@ function AcademyStackNavigator() {
       />
       <AcademyStack.Screen
         name="AcademyModule"
-        component={AcademyModuleScreen}
+        getComponent={() => require('@/features/academy/screens/AcademyModuleScreen').AcademyModuleScreen}
         options={{ title: 'Academy Module' }}
       />
     </AcademyStack.Navigator>
@@ -134,10 +92,26 @@ function LeadsStackNavigator() {
   return (
     <LeadsStack.Navigator screenOptions={screenOptions}>
       <LeadsStack.Screen name="LeadsList" component={LeadsListScreen} options={{ title: 'Leads' }} />
-      <LeadsStack.Screen name="LeadDetail" component={LeadDetailScreen} options={{ title: 'Lead Details' }} />
-      <LeadsStack.Screen name="CreateLead" component={CreateLeadScreen} options={{ title: 'Create Lead' }} />
-      <LeadsStack.Screen name="EditLead" component={EditLeadScreen} options={{ title: 'Edit Lead' }} />
-      <LeadsStack.Screen name="LeadAnalytics" component={LeadAnalyticsScreen} options={{ title: 'Lead Analytics' }} />
+      <LeadsStack.Screen
+        name="LeadDetail"
+        getComponent={() => require('@/features/leads/screens/LeadDetailScreen').LeadDetailScreen}
+        options={{ title: 'Lead Details' }}
+      />
+      <LeadsStack.Screen
+        name="CreateLead"
+        getComponent={() => require('@/features/leads/screens/CreateLeadScreen').CreateLeadScreen}
+        options={{ title: 'Create Lead' }}
+      />
+      <LeadsStack.Screen
+        name="EditLead"
+        getComponent={() => require('@/features/leads/screens/EditLeadScreen').EditLeadScreen}
+        options={{ title: 'Edit Lead' }}
+      />
+      <LeadsStack.Screen
+        name="LeadAnalytics"
+        getComponent={() => require('@/features/leads/screens/LeadAnalyticsScreen').LeadAnalyticsScreen}
+        options={{ title: 'Lead Analytics' }}
+      />
     </LeadsStack.Navigator>
   );
 }
@@ -149,7 +123,7 @@ function ApplicationsStackNavigator() {
       <AppsStack.Screen name="ApplicationsList" component={ApplicationsListScreen} options={{ title: 'Applications' }} />
       <AppsStack.Screen
         name="ApplicationDetail"
-        component={ApplicationDetailScreen}
+        getComponent={() => require('@/features/applications/screens/ApplicationDetailScreen').ApplicationDetailScreen}
         options={{ title: 'Application' }}
       />
     </AppsStack.Navigator>
@@ -165,29 +139,91 @@ function CommissionsStackNavigator() {
         component={CommissionsHomeScreen}
         options={{ title: 'Earnings & Finance' }}
       />
-      <CommissionsStack.Screen name="EarningsDashboard" component={EarningsDashboardScreen} options={{ title: 'Earnings Dashboard' }} />
-      <CommissionsStack.Screen name="PartnerDrde" component={PartnerDrdeScreen} options={{ title: 'Revenue Distribution' }} />
-      <CommissionsStack.Screen name="PartnerBankRecon" component={PartnerBankReconScreen} options={{ title: 'Bank Reconciliation' }} />
-      <CommissionsStack.Screen name="PartnerLoanCases" component={PartnerLoanCasesScreen} options={{ title: 'My Loan Cases' }} />
-      <CommissionsStack.Screen name="CommissionTracker" component={CommissionTrackerScreen} options={{ title: 'Commission Tracker' }} />
-      <CommissionsStack.Screen name="RaiseInvoice" component={RaiseInvoiceScreen} options={{ title: 'Raise Invoice' }} />
-      <CommissionsStack.Screen name="InvoiceTracker" component={InvoiceTrackerScreen} options={{ title: 'Track Invoice' }} />
-      <CommissionsStack.Screen name="InvoiceTimeline" component={InvoiceTimelineScreen} options={{ title: 'Invoice Timeline' }} />
-      <CommissionsStack.Screen name="CommissionTimeline" component={CommissionTimelineScreen} options={{ title: 'Commission Timeline' }} />
-      <CommissionsStack.Screen name="PartnerWallet" component={PartnerWalletScreen} options={{ title: 'Wallet' }} />
-      <CommissionsStack.Screen name="CommissionByStatus" component={CommissionByStatusScreen} options={{ title: 'Commissions' }} />
-      <CommissionsStack.Screen name="PayoutHistory" component={PayoutHistoryScreen} options={{ title: 'Payout History' }} />
-      <CommissionsStack.Screen name="TdsCentre" component={TdsCentreScreen} options={{ title: 'TDS Centre' }} />
-      <CommissionsStack.Screen name="GstReports" component={GstReportsScreen} options={{ title: 'GST Reports' }} />
-      <CommissionsStack.Screen name="DownloadStatements" component={DownloadStatementsScreen} options={{ title: 'Statements' }} />
-      <CommissionsStack.Screen name="IncentiveTracker" component={IncentiveTrackerScreen} options={{ title: 'Incentives' }} />
-      <CommissionsStack.Screen name="BonusTracker" component={BonusTrackerScreen} options={{ title: 'Bonuses' }} />
-      <CommissionsStack.Screen name="ReferralIncome" component={ReferralIncomeScreen} options={{ title: 'Referral Income' }} />
-      <CommissionsStack.Screen name="CommissionLedger" component={CommissionLedgerScreen} options={{ title: 'Ledger' }} />
-      <CommissionsStack.Screen name="CommissionPayments" component={CommissionPaymentsScreen} options={{ title: 'Payments' }} />
-      <CommissionsStack.Screen name="PendingCommissions" component={PendingCommissionsScreen} options={{ title: 'Pending' }} />
-      <CommissionsStack.Screen name="CommissionRecoveries" component={CommissionRecoveriesScreen} options={{ title: 'Recoveries' }} />
-      <CommissionsStack.Screen name="CommissionAnalytics" component={CommissionAnalyticsScreen} options={{ title: 'Analytics' }} />
+      <CommissionsStack.Screen
+        name="EarningsDashboard"
+        getComponent={() => require('@/features/earnings-finance/screens/EarningsScreens').EarningsDashboardScreen}
+        options={{ title: 'Earnings Dashboard' }}
+      />
+      <CommissionsStack.Screen
+        name="PartnerDrde"
+        getComponent={() => require('@/features/earnings-finance/screens/PartnerDrdeScreen').PartnerDrdeScreen}
+        options={{ title: 'Revenue Distribution' }}
+      />
+      <CommissionsStack.Screen
+        name="PartnerBankRecon"
+        getComponent={() => require('@/features/earnings-finance/screens/PartnerBankReconScreen').PartnerBankReconScreen}
+        options={{ title: 'Bank Reconciliation' }}
+      />
+      <CommissionsStack.Screen
+        name="PartnerLoanCases"
+        getComponent={() => require('@/features/loan-fulfillment').PartnerLoanCasesScreen}
+        options={{ title: 'My Loan Cases' }}
+      />
+      <CommissionsStack.Screen
+        name="CommissionTracker"
+        getComponent={() => require('@/features/earnings-finance/screens/EarningsScreens').CommissionTrackerScreen}
+        options={{ title: 'Commission Tracker' }}
+      />
+      <CommissionsStack.Screen
+        name="RaiseInvoice"
+        getComponent={() => require('@/features/earnings-finance/screens/EarningsScreens').RaiseInvoiceScreen}
+        options={{ title: 'Raise Invoice' }}
+      />
+      <CommissionsStack.Screen
+        name="InvoiceTracker"
+        getComponent={() => require('@/features/earnings-finance/screens/EarningsScreens').InvoiceTrackerScreen}
+        options={{ title: 'Track Invoice' }}
+      />
+      <CommissionsStack.Screen
+        name="InvoiceTimeline"
+        getComponent={() => require('@/features/earnings-finance/screens/EarningsScreens').InvoiceTimelineScreen}
+        options={{ title: 'Invoice Timeline' }}
+      />
+      <CommissionsStack.Screen
+        name="CommissionTimeline"
+        getComponent={() => require('@/features/earnings-finance/screens/EarningsScreens').CommissionTimelineScreen}
+        options={{ title: 'Commission Timeline' }}
+      />
+      <CommissionsStack.Screen
+        name="CommissionByStatus"
+        getComponent={() => require('@/features/earnings-finance/screens/EarningsScreens').CommissionByStatusScreen}
+        options={{ title: 'Commissions' }}
+      />
+      <CommissionsStack.Screen
+        name="PayoutHistory"
+        getComponent={() => require('@/features/earnings-finance/screens/EarningsScreens').PayoutHistoryScreen}
+        options={{ title: 'Payout History' }}
+      />
+      <CommissionsStack.Screen
+        name="TdsCentre"
+        getComponent={() => require('@/features/earnings-finance/screens/EarningsScreens').TdsCentreScreen}
+        options={{ title: 'TDS Centre' }}
+      />
+      <CommissionsStack.Screen
+        name="DownloadStatements"
+        getComponent={() => require('@/features/earnings-finance/screens/EarningsScreens').DownloadStatementsScreen}
+        options={{ title: 'Statements' }}
+      />
+      <CommissionsStack.Screen
+        name="BonusTracker"
+        getComponent={() => require('@/features/earnings-finance/screens/EarningsScreens').BonusTrackerScreen}
+        options={{ title: 'Bonuses' }}
+      />
+      <CommissionsStack.Screen
+        name="ReferralIncome"
+        getComponent={() => require('@/features/earnings-finance/screens/EarningsScreens').ReferralIncomeScreen}
+        options={{ title: 'Referral Income' }}
+      />
+      <CommissionsStack.Screen
+        name="CommissionLedger"
+        getComponent={() => require('@/features/commissions/screens/CommissionLedgerScreen').CommissionLedgerScreen}
+        options={{ title: 'Ledger' }}
+      />
+      <CommissionsStack.Screen
+        name="CommissionAnalytics"
+        getComponent={() => require('@/features/commissions/screens/CommissionAnalyticsScreen').CommissionAnalyticsScreen}
+        options={{ title: 'Analytics' }}
+      />
     </CommissionsStack.Navigator>
   );
 }
@@ -197,26 +233,86 @@ function ProfileStackNavigator() {
   return (
     <ProfileStack.Navigator screenOptions={screenOptions}>
       <ProfileStack.Screen name="ProfileHome" component={ProfileScreen} options={{ title: 'Profile' }} />
-      <ProfileStack.Screen name="BrandingDashboard" component={BrandingDashboardScreen} options={{ title: 'My Brand Profile' }} />
-      <ProfileStack.Screen name="BankAccount" component={BankAccountScreen} options={{ title: 'Bank Account' }} />
-      <ProfileStack.Screen name="PartnerKycStatus" component={PartnerKycStatusScreen} options={{ title: 'KYC Status' }} />
-      <ProfileStack.Screen name="Documents" component={DocumentsScreen} options={{ title: 'Documents' }} />
-      <ProfileStack.Screen name="UploadDocument" component={UploadDocumentScreen} options={{ title: 'Upload Document' }} />
+      <ProfileStack.Screen
+        name="BrandingDashboard"
+        getComponent={() => require('@/features/profile/screens/BrandingDashboardScreen').BrandingDashboardScreen}
+        options={{ title: 'My Brand Profile' }}
+      />
+      <ProfileStack.Screen
+        name="BankAccount"
+        getComponent={() => require('@/features/profile/screens/BankAccountScreen').BankAccountScreen}
+        options={{ title: 'Bank Account' }}
+      />
+      <ProfileStack.Screen
+        name="PartnerKycStatus"
+        getComponent={() => require('@/features/profile/screens/PartnerKycStatusScreen').PartnerKycStatusScreen}
+        options={{ title: 'KYC Status' }}
+      />
+      <ProfileStack.Screen
+        name="Documents"
+        getComponent={() => require('@/features/profile/screens/DocumentsScreen').DocumentsScreen}
+        options={{ title: 'Documents' }}
+      />
+      <ProfileStack.Screen
+        name="UploadDocument"
+        getComponent={() => require('@/features/profile/screens/UploadDocumentScreen').UploadDocumentScreen}
+        options={{ title: 'Upload Document' }}
+      />
       <ProfileStack.Screen
         name="DocumentDeficiencies"
-        component={DocumentDeficienciesScreen}
+        getComponent={() => require('@/features/profile/screens/DocumentDeficienciesScreen').DocumentDeficienciesScreen}
         options={{ title: 'Deficiencies' }}
       />
-      <ProfileStack.Screen name="CustomersList" component={CustomersListScreen} options={{ title: 'Customers' }} />
-      <ProfileStack.Screen name="CustomerDetail" component={CustomerDetailScreen} options={{ title: 'Customer' }} />
-      <ProfileStack.Screen name="Referrals" component={ReferralsScreen} options={{ title: 'Referrals' }} />
-      <ProfileStack.Screen name="CreateReferral" component={CreateReferralScreen} options={{ title: 'New Referral' }} />
-      <ProfileStack.Screen name="ReferralAnalytics" component={ReferralAnalyticsScreen} options={{ title: 'Referral Analytics' }} />
-      <ProfileStack.Screen name="Support" component={SupportScreen} options={{ title: 'Support' }} />
-      <ProfileStack.Screen name="CreateTicket" component={CreateTicketScreen} options={{ title: 'New Ticket' }} />
-      <ProfileStack.Screen name="TicketDetail" component={TicketDetailScreen} options={{ title: 'Ticket' }} />
-      <ProfileStack.Screen name="TicketFeedback" component={FeedbackScreen} options={{ title: 'Feedback' }} />
-      <ProfileStack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+      <ProfileStack.Screen
+        name="CustomersList"
+        getComponent={() => require('@/features/profile/screens/CustomersListScreen').CustomersListScreen}
+        options={{ title: 'Customers' }}
+      />
+      <ProfileStack.Screen
+        name="CustomerDetail"
+        getComponent={() => require('@/features/profile/screens/CustomerDetailScreen').CustomerDetailScreen}
+        options={{ title: 'Customer' }}
+      />
+      <ProfileStack.Screen
+        name="Referrals"
+        getComponent={() => require('@/features/referrals/screens/ReferralsScreen').ReferralsScreen}
+        options={{ title: 'Referrals' }}
+      />
+      <ProfileStack.Screen
+        name="CreateReferral"
+        getComponent={() => require('@/features/referrals/screens/CreateReferralScreen').CreateReferralScreen}
+        options={{ title: 'New Referral' }}
+      />
+      <ProfileStack.Screen
+        name="ReferralAnalytics"
+        getComponent={() => require('@/features/referrals/screens/ReferralAnalyticsScreen').ReferralAnalyticsScreen}
+        options={{ title: 'Referral Analytics' }}
+      />
+      <ProfileStack.Screen
+        name="Support"
+        getComponent={() => require('@/features/support/screens/SupportScreen').SupportScreen}
+        options={{ title: 'Support' }}
+      />
+      <ProfileStack.Screen
+        name="CreateTicket"
+        getComponent={() => require('@/features/support/screens/CreateTicketScreen').CreateTicketScreen}
+        options={{ title: 'New Ticket' }}
+      />
+      <ProfileStack.Screen
+        name="TicketDetail"
+        getComponent={() => require('@/features/support/screens/TicketDetailScreen').TicketDetailScreen}
+        options={{ title: 'Ticket' }}
+      />
+      <ProfileStack.Screen
+        name="TicketFeedback"
+        getComponent={() => require('@/features/support/screens/FeedbackScreen').FeedbackScreen}
+        options={{ title: 'Feedback' }}
+      />
+      <ProfileStack.Screen
+        name="Settings"
+        getComponent={() => require('@/features/settings/screens/SettingsScreen').SettingsScreen}
+        options={{ title: 'Settings' }}
+      />
     </ProfileStack.Navigator>
   );
 }
@@ -230,11 +326,9 @@ export function MainTabNavigator() {
       tabBar={isDesktop ? (props) => <PartnerDesktopTabBar {...props} /> : undefined}
       screenOptions={({ route }) => ({
         headerShown: false,
-        // Places custom sidebar on the left in a row layout (web desktop).
         tabBarPosition: isDesktop ? 'left' : 'bottom',
         tabBarStyle: isDesktop
           ? {
-              // Width/chrome come from PartnerDesktopTabBar
               backgroundColor: 'transparent',
               borderTopWidth: 0,
               elevation: 0,

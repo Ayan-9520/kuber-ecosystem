@@ -43,7 +43,7 @@ export function useResponsiveLayout() {
   const pagePad = isDesktop ? 32 : size === 'medium' ? 20 : 16;
   const sectionGap = isDesktop ? 28 : 16;
   const statColumns = isDesktop ? 4 : 2;
-  const actionColumns = isDesktop ? 8 : size === 'medium' ? 4 : 4;
+  const actionColumns = isDesktop ? 7 : size === 'medium' ? 4 : 4;
   const listColumns = isDesktop ? 2 : 1;
 
   return {

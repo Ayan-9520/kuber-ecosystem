@@ -39,7 +39,6 @@ export const linking: LinkingOptions<RootStackParamList> = {
             screens: {
               Dashboard: 'Dashboard',
               AiAdvisor: 'AiAdvisor',
-              VoiceAi: 'VoiceAi',
               Notifications: 'Notifications',
               CommunicationHistory: 'CommunicationHistory',
             },

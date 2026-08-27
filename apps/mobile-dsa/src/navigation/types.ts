@@ -13,7 +13,6 @@ export type HomeStackParamList = {
   Notifications: undefined;
   CommunicationHistory: undefined;
   AiAdvisor: undefined;
-  VoiceAi: undefined;
 };
 
 export type AcademyStackParamList = {
@@ -42,24 +41,18 @@ export type CommissionsStackParamList = {
   InvoiceTracker: undefined;
   InvoiceTimeline: { invoiceId: string };
   CommissionTimeline: { commissionId: string };
-  PartnerWallet: undefined;
   CommissionByStatus: {
     status: 'PENDING' | 'CALCULATED' | 'APPROVED' | 'PAID' | 'REJECTED' | 'RECOVERED';
   };
   PayoutHistory: undefined;
   TdsCentre: undefined;
-  GstReports: undefined;
   DownloadStatements: undefined;
-  IncentiveTracker: undefined;
   BonusTracker: undefined;
   ReferralIncome: undefined;
   PartnerDrde: undefined;
   PartnerBankRecon: undefined;
   PartnerLoanCases: undefined;
   CommissionLedger: undefined;
-  CommissionPayments: undefined;
-  PendingCommissions: undefined;
-  CommissionRecoveries: undefined;
   CommissionAnalytics: undefined;
 };
 
