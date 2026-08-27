@@ -293,8 +293,8 @@ export const websiteIntakeService = {
         phone_hint: maskPhone(partner.phone),
         email_hint: emailHint ?? (partner.email ? maskEmailHint(partner.email) : null),
         email_sent: Boolean(result.emailSent),
-        // Non-production phone/SMS bypass only — email gets a real random OTP
-        phone_bypass_otp: env.APP_ENV !== 'production' ? '123456' : undefined,
+        // Bypass still accepted on verify in non-prod — do not return the code to the browser/app UI.
+        phone_bypass_otp: undefined,
       };
     }
 

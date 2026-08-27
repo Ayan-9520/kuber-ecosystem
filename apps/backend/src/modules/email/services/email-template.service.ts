@@ -154,9 +154,20 @@ export const emailTemplateService = {
     }
 
     const vars = params.variables ?? {};
-    const subject = renderTemplateString(template?.subject ?? params.subject ?? 'KuberOne', vars);
-    const innerHtml = renderTemplateString(template?.htmlBody ?? params.htmlBody ?? params.textBody ?? '', vars);
-    const textBody = renderTemplateString(template?.textBody ?? params.textBody ?? innerHtml.replace(/<[^>]+>/g, ' '), vars);
+    // Caller-provided subject/body win over DB template (OTP emails pass fully rendered content).
+    // Template is fallback when caller omits fields. Always apply {{var}} substitution.
+    const subject = renderTemplateString(
+      params.subject ?? template?.subject ?? 'KuberOne',
+      vars,
+    );
+    const innerHtml = renderTemplateString(
+      params.htmlBody ?? template?.htmlBody ?? params.textBody ?? '',
+      vars,
+    );
+    const textBody = renderTemplateString(
+      params.textBody ?? template?.textBody ?? innerHtml.replace(/<[^>]+>/g, ' '),
+      vars,
+    );
     const html = renderBrandedEmailHtml({ subject, bodyHtml: innerHtml });
 
     return {

@@ -39,24 +39,33 @@ async function sendOtpEmail(params: {
   if (!emailChannel.deliverable) return false;
 
   const expiryMinutes = Math.max(1, Math.floor(env.OTP_EXPIRY_SECONDS / 60));
-  try {
-    const result = await emailOrchestratorService.send({
-      toEmail: params.toEmail,
-      userId: params.userId,
-      eventType: 'LOGIN_OTP',
-      category: 'OTP',
-      priority: 'URGENT',
-      subject: `KuberOne Partner OTP: ${params.otp}`,
-      htmlBody: `
+  // Fully render here so DB LOGIN_OTP template cannot blank-out {{otp}}.
+  const subject = 'KuberOne Partner Login OTP';
+  const textBody = `Your KuberOne Partner OTP is ${params.otp}. Valid for ${expiryMinutes} minute(s). Do not share this code.`;
+  const htmlBody = `
         <div style="font-family:Arial,sans-serif;line-height:1.5;color:#0f172a">
           <h2 style="color:#0D6B57;margin:0 0 12px">KuberOne Partner Login</h2>
           <p>Your one-time password (OTP) is:</p>
           <p style="font-size:28px;font-weight:700;letter-spacing:6px;margin:16px 0">${params.otp}</p>
           <p>This code expires in ${expiryMinutes} minute(s). Do not share it with anyone.</p>
-          <p style="color:#64748b;font-size:12px">Purpose: ${params.purpose}</p>
         </div>
-      `,
-      textBody: `KuberOne Partner OTP: ${params.otp}. Valid for ${expiryMinutes} minute(s). Purpose: ${params.purpose}`,
+      `;
+  try {
+    const result = await emailOrchestratorService.send({
+      toEmail: params.toEmail,
+      userId: params.userId,
+      // Unique event type — no DB template → uses inline subject/body with real OTP.
+      eventType: 'PARTNER_LOGIN_OTP',
+      category: 'OTP',
+      priority: 'URGENT',
+      subject,
+      htmlBody,
+      textBody,
+      variables: {
+        otp: params.otp,
+        expiryMinutes,
+        expiryMinute: expiryMinutes,
+      },
     });
     if ('skipped' in result && result.skipped) return false;
     if ('success' in result && result.success === false) return false;
@@ -172,12 +181,14 @@ async function dispatchOtp(
   }
   const where = parts.length ? parts.join(' and ') : 'your registered email';
   const phoneBypassHint =
-    env.APP_ENV !== 'production'
-      ? ' SMS not configured yet — you may also use phone bypass OTP 123456.'
+    env.APP_ENV !== 'production' && !emailSent
+      ? ' If email is delayed, contact support or retry in a minute.'
       : '';
 
   return {
-    message: `OTP sent to ${where}.${phoneBypassHint}`,
+    message: emailSent
+      ? `OTP sent to ${where}. Check your inbox (and spam).`
+      : `Could not send email OTP yet.${phoneBypassHint}`,
     emailSent,
     emailHint: toEmail ? maskEmail(toEmail) : undefined,
   };
