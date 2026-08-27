@@ -9,7 +9,10 @@ import {
   ValidationError,
 } from '../../../shared/errors/app-error.js';
 import { compareSecret, generateOtp, hashSecret } from '../../../shared/utils/crypto.js';
-import { emailOrchestratorService } from '../../email/email.module.js';
+import { EMAIL_MAX_RETRIES } from '../../email/constants/email.constants.js';
+import { emailQueueRepository } from '../../email/repositories/email.repository.js';
+import { emailQueueService } from '../../email/services/email-queue.service.js';
+import { emailTemplateService } from '../../email/services/email-template.service.js';
 import { channelStatusService } from '../../notifications/services/channel-status.service.js';
 import { customerRepository } from '../../customers/repositories/customer.repository.js';
 import { OTP_TEMPLATE_MAP } from '../../sms/constants/sms.constants.js';
@@ -55,24 +58,36 @@ async function sendOtpEmail(params: {
           <p>This code expires in ${expiryMinutes} minute(s). Do not share it with anyone.</p>
         </div>
       `;
+  const variables = {
+    otp,
+    expiryMinutes,
+    expiryMinute: expiryMinutes,
+  };
   try {
-    const result = await emailOrchestratorService.send({
-      toEmail: params.toEmail,
-      userId: params.userId,
+    // Queue + kick worker — do NOT await Hostinger SMTP in the HTTP request
+    // (website Partner Login was waiting 10–30s for SMTP before showing the OTP field).
+    const rendered = await emailTemplateService.render({
       eventType: 'PARTNER_LOGIN_OTP',
-      category: 'OTP',
-      priority: 'URGENT',
       subject,
       htmlBody,
       textBody,
-      variables: {
-        otp,
-        expiryMinutes,
-        expiryMinute: expiryMinutes,
-      },
+      variables,
     });
-    if ('skipped' in result && result.skipped) return false;
-    if ('success' in result && result.success === false) return false;
+    await emailQueueRepository.enqueue({
+      queueType: 'PRIORITY',
+      status: 'PENDING',
+      priority: 'URGENT',
+      toEmail: params.toEmail,
+      recipientUser: params.userId ? { connect: { id: params.userId } } : undefined,
+      subject: rendered.subject,
+      htmlBody: rendered.bodyHtml,
+      textBody: rendered.textBody,
+      variables: variables as never,
+      maxRetries: EMAIL_MAX_RETRIES,
+    });
+    void emailQueueService.processBatch(3).catch((error) => {
+      console.warn('[OTP email] queue kick failed:', error instanceof Error ? error.message : error);
+    });
     return true;
   } catch (error) {
     console.warn('[OTP email] failed:', error instanceof Error ? error.message : error);
