@@ -29,16 +29,38 @@ export const emailQueueService = {
     for (const item of items) {
       await emailQueueRepository.update(item.id, { status: 'PROCESSING' });
       try {
-        await emailOrchestratorService.dispatchNow({
-          toEmail: item.toEmail,
-          userId: item.recipientUserId ?? undefined,
-          templateCode: item.templateCode ?? undefined,
-          subject: item.subject ?? undefined,
-          htmlBody: item.htmlBody ?? undefined,
-          textBody: item.textBody ?? undefined,
-          variables: (item.variables as Record<string, unknown>) ?? undefined,
-          priority: item.priority,
-        });
+        const variables = (item.variables as Record<string, unknown>) ?? undefined;
+        const otpValue = variables?.otp != null ? String(variables.otp) : '';
+        const blankQueuedBody =
+          /OTP is\s*\./i.test(item.textBody ?? '') ||
+          /password is:\s*<\/p>/i.test(item.htmlBody ?? '') ||
+          /password is:\s*$/im.test(item.htmlBody ?? '');
+
+        // Recover blank OTP retries: rebuild body from variables.otp
+        if (otpValue && blankQueuedBody) {
+          const expiryMinutes = Number(variables?.expiryMinutes ?? variables?.expiryMinute ?? 5);
+          await emailOrchestratorService.dispatchNow({
+            toEmail: item.toEmail,
+            userId: item.recipientUserId ?? undefined,
+            eventType: 'PARTNER_LOGIN_OTP',
+            subject: 'KuberOne Partner Login OTP',
+            htmlBody: `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#E8F4F2"><h2 style="color:#22D3A6;margin:0 0 12px">KuberOne Partner Login</h2><p>Your one-time password (OTP) is:</p><p style="font-size:32px;font-weight:700;letter-spacing:8px;margin:16px 0;color:#FFFFFF">${otpValue}</p><p>This code expires in ${expiryMinutes} minute(s). Do not share it with anyone.</p></div>`,
+            textBody: `Your KuberOne Partner OTP is ${otpValue}. Valid for ${expiryMinutes} minute(s). Do not share this code.`,
+            variables,
+            priority: item.priority,
+          });
+        } else {
+          await emailOrchestratorService.dispatchNow({
+            toEmail: item.toEmail,
+            userId: item.recipientUserId ?? undefined,
+            templateCode: item.templateCode ?? undefined,
+            subject: item.subject ?? undefined,
+            htmlBody: item.htmlBody ?? undefined,
+            textBody: item.textBody ?? undefined,
+            variables,
+            priority: item.priority,
+          });
+        }
         await emailQueueRepository.update(item.id, { status: 'COMPLETED', processedAt: new Date() });
         results.push({ id: item.id, success: true });
       } catch (error) {

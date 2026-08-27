@@ -1,11 +1,25 @@
 import { EMAIL_BRAND } from '../constants/email.constants.js';
 
+export function isBrandedEmailHtml(html: string): boolean {
+  return (
+    /<!DOCTYPE html/i.test(html) ||
+    /class="wrap"/.test(html) ||
+    /Smart Lending Platform/i.test(html) ||
+    /This is an automated message from/i.test(html)
+  );
+}
+
 export function renderBrandedEmailHtml(params: {
   subject: string;
   bodyHtml: string;
   preheader?: string;
   unsubscribeUrl?: string;
 }): string {
+  // Retries often pass already-wrapped HTML — never nest headers/footers again.
+  if (isBrandedEmailHtml(params.bodyHtml)) {
+    return params.bodyHtml;
+  }
+
   const { primary, dark, surface, text, muted, company, product } = EMAIL_BRAND;
   const year = new Date().getFullYear();
 

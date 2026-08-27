@@ -196,6 +196,8 @@ export const emailOrchestratorService = {
     });
 
     if (!result.success) {
+      // Queue unbranded body + variables so retries can re-render OTP correctly
+      // without nesting branded headers/footers.
       await emailQueueRepository.enqueue({
         queueType: 'RETRY',
         status: 'PENDING',
@@ -203,8 +205,8 @@ export const emailOrchestratorService = {
         toEmail: params.toEmail,
         recipientUser: params.userId ? { connect: { id: params.userId } } : undefined,
         templateCode: params.templateCode ?? rendered.templateCode,
-        subject: rendered.subject,
-        htmlBody: rendered.html,
+        subject: params.subject ?? rendered.subject,
+        htmlBody: rendered.bodyHtml,
         textBody: rendered.textBody,
         variables: params.variables as Prisma.InputJsonValue,
         emailLogId: notificationLog.id,

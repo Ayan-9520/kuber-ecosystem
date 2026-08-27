@@ -39,14 +39,19 @@ async function sendOtpEmail(params: {
   if (!emailChannel.deliverable) return false;
 
   const expiryMinutes = Math.max(1, Math.floor(env.OTP_EXPIRY_SECONDS / 60));
+  const otp = String(params.otp ?? '').trim();
+  if (!/^\d{4,8}$/.test(otp)) {
+    console.warn('[OTP email] refused send — missing/invalid OTP value');
+    return false;
+  }
   // Fully render here so DB LOGIN_OTP template cannot blank-out {{otp}}.
   const subject = 'KuberOne Partner Login OTP';
-  const textBody = `Your KuberOne Partner OTP is ${params.otp}. Valid for ${expiryMinutes} minute(s). Do not share this code.`;
+  const textBody = `Your KuberOne Partner OTP is ${otp}. Valid for ${expiryMinutes} minute(s). Do not share this code.`;
   const htmlBody = `
-        <div style="font-family:Arial,sans-serif;line-height:1.5;color:#0f172a">
-          <h2 style="color:#0D6B57;margin:0 0 12px">KuberOne Partner Login</h2>
+        <div style="font-family:Arial,sans-serif;line-height:1.5;color:#E8F4F2">
+          <h2 style="color:#22D3A6;margin:0 0 12px">KuberOne Partner Login</h2>
           <p>Your one-time password (OTP) is:</p>
-          <p style="font-size:28px;font-weight:700;letter-spacing:6px;margin:16px 0">${params.otp}</p>
+          <p style="font-size:32px;font-weight:700;letter-spacing:8px;margin:16px 0;color:#FFFFFF">${otp}</p>
           <p>This code expires in ${expiryMinutes} minute(s). Do not share it with anyone.</p>
         </div>
       `;
@@ -54,7 +59,6 @@ async function sendOtpEmail(params: {
     const result = await emailOrchestratorService.send({
       toEmail: params.toEmail,
       userId: params.userId,
-      // Unique event type — no DB template → uses inline subject/body with real OTP.
       eventType: 'PARTNER_LOGIN_OTP',
       category: 'OTP',
       priority: 'URGENT',
@@ -62,7 +66,7 @@ async function sendOtpEmail(params: {
       htmlBody,
       textBody,
       variables: {
-        otp: params.otp,
+        otp,
         expiryMinutes,
         expiryMinute: expiryMinutes,
       },

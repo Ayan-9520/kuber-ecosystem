@@ -155,7 +155,6 @@ export const emailTemplateService = {
 
     const vars = params.variables ?? {};
     // Caller-provided subject/body win over DB template (OTP emails pass fully rendered content).
-    // Template is fallback when caller omits fields. Always apply {{var}} substitution.
     const subject = renderTemplateString(
       params.subject ?? template?.subject ?? 'KuberOne',
       vars,
@@ -173,6 +172,8 @@ export const emailTemplateService = {
     return {
       subject,
       html,
+      /** Unbranded inner HTML — use this for queue retries to avoid nested wrappers. */
+      bodyHtml: innerHtml,
       textBody,
       templateId: template?.id,
       templateCode: template?.code,
