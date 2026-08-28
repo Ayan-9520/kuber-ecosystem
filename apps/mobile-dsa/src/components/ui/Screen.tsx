@@ -49,7 +49,13 @@ function useShowScreenHeader(
   return true;
 }
 
-function createStyles(colors: AppColors, contentMaxWidth: number | undefined, pagePad: number, isDesktop: boolean) {
+function createStyles(
+  colors: AppColors,
+  contentMaxWidth: number | undefined,
+  pagePad: number,
+  contentTopPad: number,
+  isDesktop: boolean,
+) {
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -58,6 +64,7 @@ function createStyles(colors: AppColors, contentMaxWidth: number | undefined, pa
     flex: { flex: 1 },
     padded: { paddingHorizontal: pagePad },
     scrollContent: {
+      paddingTop: contentTopPad,
       paddingBottom: isDesktop ? spacing.xl + 16 : spacing.xxl,
       width: '100%',
       maxWidth: contentMaxWidth,
@@ -68,6 +75,7 @@ function createStyles(colors: AppColors, contentMaxWidth: number | undefined, pa
       maxWidth: contentMaxWidth,
       alignSelf: isDesktop ? 'stretch' : 'center',
       flex: 1,
+      paddingTop: contentTopPad,
     },
     header: {
       flexDirection: 'row',
@@ -112,10 +120,10 @@ export function Screen({
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { colors } = useAppTheme();
-  const { contentMaxWidth, pagePad, isDesktop } = useResponsiveLayout();
+  const { contentMaxWidth, pagePad, contentTopPad, isDesktop } = useResponsiveLayout();
   const styles = useMemo(
-    () => createStyles(colors, contentMaxWidth, pagePad, isDesktop),
-    [colors, contentMaxWidth, pagePad, isDesktop],
+    () => createStyles(colors, contentMaxWidth, pagePad, contentTopPad, isDesktop),
+    [colors, contentMaxWidth, pagePad, contentTopPad, isDesktop],
   );
 
   const showHeader = useShowScreenHeader(!!(title || subtitle), forceHeader);
@@ -175,10 +183,10 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   const { colors } = useAppTheme();
-  const { contentMaxWidth, pagePad, isDesktop } = useResponsiveLayout();
+  const { contentMaxWidth, pagePad, contentTopPad, isDesktop } = useResponsiveLayout();
   const styles = useMemo(
-    () => createStyles(colors, contentMaxWidth, pagePad, isDesktop),
-    [colors, contentMaxWidth, pagePad, isDesktop],
+    () => createStyles(colors, contentMaxWidth, pagePad, contentTopPad, isDesktop),
+    [colors, contentMaxWidth, pagePad, contentTopPad, isDesktop],
   );
 
   return (

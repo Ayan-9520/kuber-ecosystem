@@ -370,7 +370,7 @@ export function MainTabNavigator() {
       <Tab.Screen name="Home" component={HomeStackNavigator} options={{ title: 'Home' }} />
       <Tab.Screen name="Academy" component={AcademyStackNavigator} options={{ title: 'Academy' }} />
       <Tab.Screen name="Leads" component={LeadsStackNavigator} options={{ title: 'Leads' }} />
-      <Tab.Screen name="Applications" component={ApplicationsStackNavigator} options={{ title: 'Apps' }} />
+      <Tab.Screen name="Applications" component={ApplicationsStackNavigator} options={{ title: 'Applications' }} />
       <Tab.Screen name="Commissions" component={CommissionsStackNavigator} options={{ title: 'Earnings' }} />
       <Tab.Screen name="Profile" component={ProfileStackNavigator} options={{ title: 'Profile' }} />
     </Tab.Navigator>

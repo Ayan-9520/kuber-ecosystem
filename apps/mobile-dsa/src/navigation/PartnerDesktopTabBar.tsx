@@ -18,7 +18,7 @@ const TAB_ICONS: Record<
   Home: { active: 'home', inactive: 'home-outline', label: 'Home' },
   Academy: { active: 'school', inactive: 'school-outline', label: 'Academy' },
   Leads: { active: 'people', inactive: 'people-outline', label: 'Leads' },
-  Applications: { active: 'document-text', inactive: 'document-text-outline', label: 'Apps' },
+  Applications: { active: 'document-text', inactive: 'document-text-outline', label: 'Applications' },
   Commissions: { active: 'wallet', inactive: 'wallet-outline', label: 'Earnings' },
 };
 
