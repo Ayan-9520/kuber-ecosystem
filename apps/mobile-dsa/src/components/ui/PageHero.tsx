@@ -19,64 +19,89 @@ function createStyles(colors: AppColors, isDesktop: boolean, pagePad: number) {
   return StyleSheet.create({
     outer: {
       paddingHorizontal: pagePad,
-      marginBottom: isDesktop ? spacing.xl : spacing.lg,
+      marginBottom: isDesktop ? spacing.md : spacing.lg,
+    },
+    /** Desktop: compact page title — no giant gradient banner. */
+    desktopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+      paddingBottom: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.borderLight,
+    },
+    desktopLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
+    desktopIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.md,
+      backgroundColor: `${colors.primary}12`,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    desktopTitle: {
+      ...typography.h3,
+      color: colors.text,
+      fontSize: 18,
+      fontWeight: '700',
+      letterSpacing: -0.3,
+    },
+    desktopSub: {
+      ...typography.bodySm,
+      color: colors.textSecondary,
+      fontSize: 12,
+      marginTop: 2,
     },
     shell: {
-      borderRadius: isDesktop ? radius.xl : radius.lg,
+      borderRadius: radius.lg,
       overflow: 'hidden',
       borderWidth: 1,
-      borderColor: `${colors.primary}30`,
+      borderColor: `${colors.primary}25`,
     },
     gradient: {
-      paddingHorizontal: isDesktop ? 32 : spacing.lg,
-      paddingVertical: isDesktop ? 28 : spacing.lg,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.lg,
     },
     row: {
-      flexDirection: isDesktop ? 'row' : 'column',
-      alignItems: isDesktop ? 'center' : 'flex-start',
-      justifyContent: 'space-between',
-      gap: spacing.lg,
+      flexDirection: 'column',
+      gap: spacing.md,
     },
     left: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.md,
-      flex: 1,
-      minWidth: 0,
     },
     iconPlate: {
-      width: isDesktop ? 56 : 48,
-      height: isDesktop ? 56 : 48,
-      borderRadius: radius.lg,
-      backgroundColor: 'rgba(255,255,255,0.14)',
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.22)',
+      width: 40,
+      height: 40,
+      borderRadius: radius.md,
+      backgroundColor: 'rgba(255,255,255,0.12)',
       alignItems: 'center',
       justifyContent: 'center',
     },
     copy: { flex: 1, minWidth: 0 },
     eyebrow: {
       ...typography.caption,
-      color: 'rgba(255,255,255,0.75)',
-      letterSpacing: 1.2,
-      fontWeight: '700',
+      color: 'rgba(255,255,255,0.7)',
+      letterSpacing: 1,
+      fontWeight: '600',
       fontSize: 10,
       textTransform: 'uppercase',
     },
     title: {
       color: '#FFFFFF',
-      fontSize: isDesktop ? 30 : 24,
-      fontWeight: '800',
-      letterSpacing: -0.6,
-      marginTop: 4,
+      fontSize: 22,
+      fontWeight: '700',
+      letterSpacing: -0.4,
+      marginTop: 2,
     },
     subtitle: {
       ...typography.bodySm,
-      color: 'rgba(255,255,255,0.88)',
-      marginTop: 6,
-      fontSize: isDesktop ? 15 : 13,
-      lineHeight: 21,
-      maxWidth: 560,
+      color: 'rgba(255,255,255,0.85)',
+      marginTop: 4,
+      fontSize: 13,
+      lineHeight: 18,
     },
     actions: {
       flexDirection: 'row',
@@ -91,6 +116,31 @@ export function PageHero({ title, subtitle, eyebrow, icon, actions }: PageHeroPr
   const { colors } = useAppTheme();
   const { isDesktop, pagePad } = useResponsiveLayout();
   const styles = useMemo(() => createStyles(colors, isDesktop, pagePad), [colors, isDesktop, pagePad]);
+
+  if (isDesktop) {
+    return (
+      <View style={styles.outer}>
+        <View style={styles.desktopRow}>
+          <View style={styles.desktopLeft}>
+            {icon ? (
+              <View style={styles.desktopIcon}>
+                <Ionicons name={icon} size={16} color={colors.primary} />
+              </View>
+            ) : null}
+            <View style={{ flex: 1, minWidth: 0 }}>
+              {eyebrow ? (
+                <Text style={[styles.eyebrow, { color: colors.textMuted }]}>{eyebrow}</Text>
+              ) : null}
+              <Text style={styles.desktopTitle}>{title}</Text>
+              {subtitle ? <Text style={styles.desktopSub}>{subtitle}</Text> : null}
+            </View>
+          </View>
+          {actions ? <View style={styles.actions}>{actions}</View> : null}
+        </View>
+      </View>
+    );
+  }
+
   const gradientColors = ['#021a14', '#064a3c', '#00a870'] as const;
 
   return (
@@ -101,7 +151,7 @@ export function PageHero({ title, subtitle, eyebrow, icon, actions }: PageHeroPr
             <View style={styles.left}>
               {icon ? (
                 <View style={styles.iconPlate}>
-                  <Ionicons name={icon} size={isDesktop ? 26 : 22} color="#FFFFFF" />
+                  <Ionicons name={icon} size={20} color="#FFFFFF" />
                 </View>
               ) : null}
               <View style={styles.copy}>

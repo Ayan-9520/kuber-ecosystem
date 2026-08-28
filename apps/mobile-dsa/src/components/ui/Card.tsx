@@ -20,10 +20,10 @@ interface CardProps extends ViewProps {
 function createStyles(colors: AppColors, isDesktop: boolean) {
   return StyleSheet.create({
     card: {
-      borderRadius: isDesktop ? radius.xl : radius.lg,
+      borderRadius: isDesktop ? radius.md : radius.lg,
       borderWidth: 1,
-      padding: isDesktop ? spacing.xl : spacing.lg,
-      marginBottom: isDesktop ? spacing.lg : spacing.md,
+      padding: isDesktop ? spacing.md : spacing.lg,
+      marginBottom: isDesktop ? spacing.md : spacing.md,
       ...glassSurface(colors, isDesktop),
       ...cardShadow(false, colors.primary),
       ...premiumHover(),
@@ -41,9 +41,8 @@ function createStyles(colors: AppColors, isDesktop: boolean) {
     title: {
       ...typography.h3,
       color: colors.text,
-      fontSize: isDesktop ? 18 : 17,
-      fontWeight: '800',
-      letterSpacing: -0.3,
+      fontSize: isDesktop ? 15 : 17,
+      fontWeight: '700',
     },
     subtitle: { ...typography.bodySm, color: colors.textSecondary, marginTop: 6, lineHeight: 18 },
     pressed: { opacity: 0.94, transform: [{ scale: 0.995 }] },

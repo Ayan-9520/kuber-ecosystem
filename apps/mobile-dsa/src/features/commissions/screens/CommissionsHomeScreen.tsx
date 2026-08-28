@@ -221,7 +221,7 @@ function tile(
       accessibilityLabel={item.label}
     >
       <View style={styles.tileIcon}>
-        <Ionicons name={item.icon} size={22} color={colors.primary} />
+        <Ionicons name={item.icon} size={18} color={colors.primary} />
       </View>
       <Text style={styles.tileLabel} numberOfLines={2}>
         {item.label}
@@ -241,22 +241,22 @@ function createStyles(colors: AppColors, isDesktop: boolean) {
     stats: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: spacing.md,
-      marginBottom: spacing.lg,
+      gap: spacing.sm,
+      marginBottom: spacing.md,
     },
     grid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: spacing.md,
+      gap: spacing.sm,
     },
     tile: {
-      width: isDesktop ? '23%' : '47%',
-      minWidth: isDesktop ? 140 : '45%',
+      width: isDesktop ? '23.5%' : '47%',
+      minWidth: isDesktop ? 120 : '45%',
       flexGrow: 1,
-      maxWidth: isDesktop ? 220 : '48%',
-      borderRadius: radius.xl,
+      maxWidth: isDesktop ? 200 : '48%',
+      borderRadius: radius.md,
       borderWidth: 1,
-      padding: spacing.lg,
+      padding: spacing.md,
       ...glassSurface(colors, isDesktop),
       ...cardShadow(false, colors.primary),
       ...premiumHover(),
@@ -264,18 +264,18 @@ function createStyles(colors: AppColors, isDesktop: boolean) {
     },
     tilePressed: { opacity: 0.88, transform: [{ scale: 0.98 }] },
     tileIcon: {
-      width: 44,
-      height: 44,
-      borderRadius: radius.md,
-      backgroundColor: `${colors.primary}18`,
+      width: 32,
+      height: 32,
+      borderRadius: radius.sm,
+      backgroundColor: `${colors.primary}14`,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: spacing.sm,
+      marginBottom: spacing.xs,
     },
     tileLabel: {
       ...typography.label,
       color: colors.text,
-      fontSize: 14,
+      fontSize: 12,
       fontWeight: '600',
     },
     tileHint: {

@@ -23,82 +23,81 @@ function createStyles(colors: AppColors, isDesktop: boolean) {
     card: {
       flexGrow: 1,
       flexBasis: '45%',
-      minWidth: 140,
-      borderRadius: isDesktop ? radius.xl : radius.lg,
+      minWidth: isDesktop ? 120 : 140,
+      borderRadius: isDesktop ? radius.md : radius.lg,
       borderWidth: 1,
-      padding: isDesktop ? spacing.xl : spacing.md,
+      padding: isDesktop ? spacing.md : spacing.md,
+      flexDirection: isDesktop ? 'row' : 'column',
+      alignItems: isDesktop ? 'center' : 'flex-start',
+      gap: isDesktop ? spacing.sm : 0,
       ...glassSurface(colors, isDesktop),
       ...cardShadow(false, colors.primary),
       ...premiumHover(),
     },
     cardAccent: {
-      borderColor: `${colors.primary}55`,
-      backgroundColor: isDesktop ? `${colors.primary}0c` : colors.surface,
-      ...cardShadow(true, colors.primary),
+      borderColor: `${colors.primary}40`,
+      backgroundColor: isDesktop ? `${colors.primary}08` : colors.surface,
     },
     iconWrap: {
-      width: isDesktop ? 48 : 40,
-      height: isDesktop ? 48 : 40,
-      borderRadius: radius.lg,
-      backgroundColor: `${colors.primary}1a`,
-      borderWidth: 1,
-      borderColor: `${colors.primary}28`,
+      width: isDesktop ? 34 : 36,
+      height: isDesktop ? 34 : 36,
+      borderRadius: radius.sm,
+      backgroundColor: `${colors.primary}14`,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: spacing.md,
+      marginBottom: isDesktop ? 0 : spacing.sm,
+      flexShrink: 0,
     },
+    body: { flex: 1, minWidth: 0 },
     label: {
       ...typography.caption,
       color: colors.textSecondary,
-      textTransform: 'uppercase',
-      letterSpacing: 0.6,
-      fontSize: isDesktop ? 11 : 11,
-      fontWeight: '700',
+      textTransform: isDesktop ? 'none' : 'uppercase',
+      letterSpacing: isDesktop ? 0 : 0.4,
+      fontSize: 11,
+      fontWeight: '600',
     },
     value: {
-      ...typography.h2,
       color: colors.text,
-      fontSize: isDesktop ? 26 : 22,
-      marginTop: 6,
-      fontWeight: '800',
-      letterSpacing: -0.6,
+      fontSize: isDesktop ? 18 : 20,
+      marginTop: 2,
+      fontWeight: '700',
+      letterSpacing: -0.4,
     },
-    trend: { ...typography.bodySm, color: colors.primary, marginTop: 8, fontWeight: '700' },
+    trend: { ...typography.bodySm, color: colors.primary, marginTop: 4, fontWeight: '600', fontSize: 11 },
     action: {
       alignItems: 'center',
-      flexGrow: 1,
-      minWidth: 88,
+      flexGrow: 0,
+      flexBasis: isDesktop ? 'auto' : undefined,
+      minWidth: isDesktop ? undefined : 72,
     },
-    actionPressed: { opacity: 0.88, transform: [{ scale: 0.96 }] },
-    actionIcon: {
-      width: isDesktop ? 80 : 60,
-      height: isDesktop ? 80 : 60,
-      borderRadius: isDesktop ? radius.xl : radius.lg,
-      ...glassSurface(colors, isDesktop),
-      borderWidth: 1,
+    actionPressed: { opacity: 0.88 },
+    actionPill: {
+      flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: spacing.sm,
-      ...cardShadow(false, colors.primary),
+      gap: 6,
+      paddingVertical: isDesktop ? 8 : 0,
+      paddingHorizontal: isDesktop ? 12 : 0,
+      borderRadius: radius.md,
+      borderWidth: isDesktop ? 1 : 0,
+      borderColor: `${colors.primary}25`,
+      backgroundColor: isDesktop ? colors.card : 'transparent',
       ...premiumHover(),
     },
-    actionIconInner: {
-      width: isDesktop ? 52 : 44,
-      height: isDesktop ? 52 : 44,
-      borderRadius: radius.lg,
-      backgroundColor: `${colors.primary}1c`,
-      borderWidth: 1,
-      borderColor: `${colors.primary}30`,
+    actionIconOnly: {
+      width: isDesktop ? 28 : 52,
+      height: isDesktop ? 28 : 52,
+      borderRadius: isDesktop ? radius.sm : radius.md,
+      backgroundColor: `${colors.primary}12`,
       alignItems: 'center',
       justifyContent: 'center',
+      marginBottom: isDesktop ? 0 : spacing.xs,
     },
     actionLabel: {
       ...typography.label,
       color: colors.text,
-      textAlign: 'center',
-      fontSize: isDesktop ? 13 : 12,
-      lineHeight: 17,
-      fontWeight: '700',
+      fontSize: isDesktop ? 12 : 11,
+      fontWeight: '600',
     },
   });
 }
@@ -110,26 +109,28 @@ export function StatCard({ label, value, icon, trend, accent, onPress, style }: 
 
   const text = String(value);
   const valueFontSize =
-    text.length > 13 ? (isDesktop ? 18 : 16) : text.length > 10 ? (isDesktop ? 20 : 18) : text.length > 8 ? 20 : isDesktop ? 26 : 22;
+    text.length > 13 ? 14 : text.length > 10 ? 16 : text.length > 8 ? 17 : isDesktop ? 18 : 20;
 
   const content = (
     <>
       {icon && (
         <View style={styles.iconWrap}>
-          <Ionicons name={icon} size={isDesktop ? 24 : 20} color={colors.primary} />
+          <Ionicons name={icon} size={isDesktop ? 16 : 18} color={colors.primary} />
         </View>
       )}
-      <Text style={styles.label} numberOfLines={2}>
-        {label}
-      </Text>
-      <Text style={[styles.value, { fontSize: valueFontSize }]} numberOfLines={1} adjustsFontSizeToFit>
-        {text}
-      </Text>
-      {trend && (
-        <Text style={styles.trend} numberOfLines={1}>
-          {trend}
+      <View style={styles.body}>
+        <Text style={styles.label} numberOfLines={1}>
+          {label}
         </Text>
-      )}
+        <Text style={[styles.value, { fontSize: valueFontSize }]} numberOfLines={1} adjustsFontSizeToFit>
+          {text}
+        </Text>
+        {trend ? (
+          <Text style={styles.trend} numberOfLines={1}>
+            {trend}
+          </Text>
+        ) : null}
+      </View>
     </>
   );
 
@@ -140,7 +141,7 @@ export function StatCard({ label, value, icon, trend, accent, onPress, style }: 
           styles.card,
           accent && styles.cardAccent,
           style,
-          pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },
+          pressed && { opacity: 0.92 },
           Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
         ]}
         onPress={onPress}
@@ -179,14 +180,14 @@ export function QuickAction({
       ]}
       onPress={onPress}
     >
-      <View style={styles.actionIcon}>
-        <View style={styles.actionIconInner}>
-          <Ionicons name={icon} size={isDesktop ? 26 : 22} color={colors.primary} />
+      <View style={[styles.actionPill, { borderColor: colors.borderLight, backgroundColor: colors.card }]}>
+        <View style={styles.actionIconOnly}>
+          <Ionicons name={icon} size={isDesktop ? 15 : 20} color={colors.primary} />
         </View>
+        <Text style={styles.actionLabel} numberOfLines={1}>
+          {label}
+        </Text>
       </View>
-      <Text style={styles.actionLabel} numberOfLines={2}>
-        {label}
-      </Text>
     </Pressable>
   );
 }

@@ -487,15 +487,15 @@ function createStyles(
     },
     actionsGrid: {
       paddingHorizontal: pagePad,
-      paddingBottom: spacing.lg,
+      paddingBottom: spacing.md,
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: isDesktop ? spacing.lg : spacing.md,
+      gap: isDesktop ? spacing.sm : spacing.md,
     },
     actionItem: {
-      flexBasis: actionBasis,
-      maxWidth: actionBasis,
-      minWidth: isDesktop ? 100 : 88,
+      flexBasis: isDesktop ? 'auto' : actionBasis,
+      maxWidth: isDesktop ? undefined : actionBasis,
+      minWidth: isDesktop ? undefined : 88,
     },
     academyRow: {
       flexDirection: 'row',
@@ -505,8 +505,8 @@ function createStyles(
       alignItems: 'stretch',
     },
     statHalf: {
-      flexBasis: isDesktop ? '31%' : '47%',
-      minWidth: isDesktop ? 200 : 140,
+      flexBasis: isDesktop ? '24%' : '47%',
+      minWidth: isDesktop ? 160 : 140,
     },
     academyCta: {
       flex: 1,
@@ -520,7 +520,7 @@ function createStyles(
     },
     statCell: {
       flexBasis: statBasis,
-      minWidth: isDesktop ? 200 : 140,
+      minWidth: isDesktop ? 160 : 140,
       maxWidth: isDesktop && statColumns === 4 ? '24%' : undefined,
     },
     listsSection: {

@@ -15,19 +15,19 @@ interface SectionHeaderProps {
 
 function createStyles(colors: AppColors, isDesktop: boolean) {
   return StyleSheet.create({
-    wrap: { marginBottom: isDesktop ? spacing.lg : spacing.sm },
+    wrap: { marginBottom: isDesktop ? spacing.sm : spacing.sm },
     eyebrow: {
       ...typography.caption,
       color: colors.primary,
-      fontWeight: '800',
-      letterSpacing: 1.4,
+      fontWeight: '600',
+      letterSpacing: 0.8,
       fontSize: 10,
       textTransform: 'uppercase',
-      marginBottom: 6,
+      marginBottom: 4,
     },
     row: {
       flexDirection: 'row',
-      alignItems: 'flex-end',
+      alignItems: 'center',
       justifyContent: 'space-between',
       gap: spacing.md,
     },
@@ -35,24 +35,14 @@ function createStyles(colors: AppColors, isDesktop: boolean) {
     title: {
       ...typography.h3,
       color: colors.text,
-      fontSize: isDesktop ? 22 : 17,
-      fontWeight: '800',
-      letterSpacing: -0.4,
+      fontSize: isDesktop ? 16 : 17,
+      fontWeight: '700',
     },
     subtitle: {
       ...typography.bodySm,
       color: colors.textSecondary,
-      marginTop: 4,
-      fontSize: isDesktop ? 14 : 13,
-      lineHeight: 20,
-    },
-    accent: {
-      width: 36,
-      height: 3,
-      borderRadius: 2,
-      backgroundColor: colors.primary,
-      marginTop: 10,
-      opacity: 0.85,
+      marginTop: 2,
+      fontSize: isDesktop ? 12 : 13,
     },
   });
 }
@@ -69,7 +59,6 @@ export function SectionHeader({ title, subtitle, eyebrow, right, style }: Sectio
         <View style={styles.copy}>
           <Text style={styles.title}>{title}</Text>
           {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-          {isDesktop ? <View style={styles.accent} /> : null}
         </View>
         {right}
       </View>

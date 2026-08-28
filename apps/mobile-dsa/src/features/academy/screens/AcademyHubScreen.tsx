@@ -105,8 +105,8 @@ function createStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDeskto
     statGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: spacing.md,
-      marginBottom: spacing.xl,
+      gap: spacing.sm,
+      marginBottom: spacing.md,
     },
     moduleGrid: {
       flexDirection: isDesktop ? 'row' : 'column',
