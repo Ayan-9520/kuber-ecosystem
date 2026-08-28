@@ -2,6 +2,8 @@ export { Button } from './Button';
 export { Card } from './Card';
 export { DashboardHeader } from './DashboardHeader';
 export { Input } from './Input';
+export { PageHero } from './PageHero';
+export { SectionHeader } from './SectionHeader';
 export { StatusBadge } from './StatusBadge';
 export { Screen, EmptyState } from './Screen';
 export { StatCard, QuickAction } from './StatCard';

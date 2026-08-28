@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   type PressableProps,
   StyleSheet,
@@ -8,7 +9,10 @@ import {
   type ViewStyle,
 } from 'react-native';
 
+import { useResponsiveLayout } from '@/hooks';
 import { radius, spacing, typography } from '@/theme';
+import { cardShadow } from '@/theme/elevation';
+import { premiumHover } from '@/theme/premium';
 import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -21,20 +25,24 @@ interface ButtonProps extends PressableProps {
   fullWidth?: boolean;
 }
 
-function createStyles(colors: AppColors) {
+function createStyles(colors: AppColors, isDesktop: boolean) {
   return StyleSheet.create({
     base: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       gap: spacing.sm,
-      paddingVertical: 14,
+      paddingVertical: isDesktop ? 14 : 13,
       paddingHorizontal: spacing.lg,
-      borderRadius: radius.md,
+      borderRadius: isDesktop ? radius.lg : radius.md,
       minHeight: 48,
+      ...premiumHover(),
     },
     fullWidth: { width: '100%' },
-    primary: { backgroundColor: colors.primary },
+    primary: {
+      backgroundColor: colors.primary,
+      ...cardShadow(true, colors.primary),
+    },
     secondary: { backgroundColor: colors.surfaceHover, borderWidth: 1, borderColor: colors.border },
     ghost: { backgroundColor: 'transparent' },
     danger: {
@@ -63,7 +71,8 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { isDesktop } = useResponsiveLayout();
+  const styles = useMemo(() => createStyles(colors, isDesktop), [colors, isDesktop]);
 
   return (
     <Pressable
@@ -73,6 +82,7 @@ export function Button({
         fullWidth && styles.fullWidth,
         (disabled || loading) && styles.disabled,
         pressed && styles.pressed,
+        Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
         style as ViewStyle,
       ]}
       disabled={disabled || loading}

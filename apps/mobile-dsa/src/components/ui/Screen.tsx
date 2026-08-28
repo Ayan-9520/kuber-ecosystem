@@ -1,7 +1,6 @@
 import { type ReactNode, useMemo } from 'react';
 import {
   ActivityIndicator,
-  Platform,
   ScrollView,
   type ScrollViewProps,
   StyleSheet,
@@ -12,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useResponsiveLayout } from '@/hooks';
 import { spacing, typography } from '@/theme';
+import { meshBackground } from '@/theme/premium';
 import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
 
 interface ScreenProps extends ScrollViewProps {
@@ -28,17 +28,12 @@ function createStyles(colors: AppColors, contentMaxWidth: number | undefined, pa
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.background,
-      ...(isDesktop && Platform.OS === 'web'
-        ? ({
-            backgroundImage: `radial-gradient(900px 420px at 8% -8%, ${colors.primary}10, transparent), ${colors.background}`,
-          } as object)
-        : null),
+      ...meshBackground(colors, isDesktop),
     },
     flex: { flex: 1 },
     padded: { paddingHorizontal: pagePad },
     scrollContent: {
-      paddingBottom: isDesktop ? spacing.xxl + 16 : spacing.xxl,
+      paddingBottom: isDesktop ? spacing.xxl + 24 : spacing.xxl,
       width: '100%',
       maxWidth: contentMaxWidth,
       alignSelf: isDesktop ? 'stretch' : 'center',
@@ -54,14 +49,21 @@ function createStyles(colors: AppColors, contentMaxWidth: number | undefined, pa
       alignItems: 'flex-start',
       justifyContent: 'space-between',
       paddingHorizontal: pagePad,
-      paddingVertical: isDesktop ? spacing.lg : spacing.md,
+      paddingTop: isDesktop ? spacing.lg : spacing.md,
+      paddingBottom: isDesktop ? spacing.md : spacing.sm,
       width: '100%',
       maxWidth: contentMaxWidth,
       alignSelf: isDesktop ? 'stretch' : 'center',
     },
     headerLeft: { flex: 1 },
-    title: { ...typography.h1, color: colors.text, fontSize: isDesktop ? 28 : 24 },
-    subtitle: { ...typography.bodySm, color: colors.textMuted, marginTop: 4 },
+    title: {
+      ...typography.h1,
+      color: colors.text,
+      fontSize: isDesktop ? 30 : 24,
+      fontWeight: '800',
+      letterSpacing: -0.6,
+    },
+    subtitle: { ...typography.bodySm, color: colors.textMuted, marginTop: 6, fontSize: isDesktop ? 14 : 13 },
     loading: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
     empty: { alignItems: 'center', paddingVertical: spacing.xxl, paddingHorizontal: spacing.lg },
     emptyTitle: { ...typography.h3, color: colors.textSecondary, textAlign: 'center' },

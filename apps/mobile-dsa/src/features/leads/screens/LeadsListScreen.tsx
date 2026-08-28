@@ -5,8 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useCallback, useState, useMemo } from 'react';
 import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
-import { Button, Card, EmptyState, ListRow, Screen } from '@/components/ui';
-import { useAuth } from '@/hooks';
+import { Button, Card, EmptyState, ListRow, PageHero, Screen } from '@/components/ui';
+import { useAuth, useResponsiveLayout } from '@/hooks';
 import { formatCurrency, getApiErrorMessage, str } from '@/lib/utils';
 import type { LeadsStackParamList } from '@/navigation/types';
 import { leadsService } from '@/services';
@@ -15,7 +15,8 @@ import { spacing } from '@/theme';
 
 export function LeadsListScreen() {
   const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { isDesktop } = useResponsiveLayout();
+  const styles = useMemo(() => createStyles(colors, isDesktop), [colors, isDesktop]);
   const navigation = useNavigation<NativeStackNavigationProp<LeadsStackParamList>>();
   const { partnerId } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
@@ -45,14 +46,24 @@ export function LeadsListScreen() {
   return (
     <Screen
       scroll
+      padded={false}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
       }
     >
+      <PageHero
+        eyebrow="Pipeline"
+        title="Leads"
+        subtitle="Track prospects, priorities and conversions"
+        icon="people"
+        actions={<Button title="+ New Lead" onPress={() => navigation.navigate('CreateLead')} />}
+      />
+
+      <View style={styles.body}>
       <View style={styles.toolbar}>
-        <Button title="+ New Lead" onPress={() => navigation.navigate('CreateLead')} />
-        <Pressable onPress={() => navigation.navigate('LeadAnalytics')}>
-          <Ionicons name="analytics" size={24} color={colors.primary} />
+        <Pressable style={styles.analyticsBtn} onPress={() => navigation.navigate('LeadAnalytics')}>
+          <Ionicons name="analytics" size={18} color={colors.primary} />
+          <Text style={styles.analyticsText}>Analytics</Text>
         </Pressable>
       </View>
 
@@ -94,23 +105,38 @@ export function LeadsListScreen() {
           ))
         )}
       </Card>
+      </View>
     </Screen>
   );
 }
 
-function createStyles(colors: AppColors) {
+function createStyles(colors: AppColors, isDesktop: boolean) {
   return StyleSheet.create({
-  toolbar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
+  body: { paddingHorizontal: isDesktop ? 32 : 16 },
+  toolbar: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: spacing.md },
+  analyticsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: `${colors.primary}40`,
+    backgroundColor: `${colors.primary}0c`,
+  },
+  analyticsText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   filters: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   chip: {
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.sm,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
-  chipTextActive: { color: colors.background },
+  chipText: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
+  chipTextActive: { color: '#FFFFFF' },
 });
 }

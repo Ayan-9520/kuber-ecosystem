@@ -6,12 +6,14 @@ import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ThemeAppearanceCard } from '@/components/ThemeAppearanceCard';
-import { Button, Card, Screen, StatusBadge } from '@/components/ui';
-import { useAuth } from '@/hooks';
+import { Button, Card, PageHero, Screen, StatusBadge } from '@/components/ui';
+import { useAuth, useResponsiveLayout } from '@/hooks';
 import { maskPhone, str } from '@/lib/utils';
 import type { ProfileStackParamList } from '@/navigation/types';
 import { partnersService } from '@/services';
-import { spacing, typography } from '@/theme';
+import { radius, spacing, typography } from '@/theme';
+import { cardShadow } from '@/theme/elevation';
+import { glassSurface, premiumHover } from '@/theme/premium';
 import { useAppTheme } from '@/theme/ThemeProvider';
 
 const MENU: { label: string; screen: keyof ProfileStackParamList; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -31,7 +33,8 @@ export function ProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const { user, partnerId, logout } = useAuth();
   const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { isDesktop } = useResponsiveLayout();
+  const styles = useMemo(() => createStyles(colors, isDesktop), [colors, isDesktop]);
 
   const partner = useQuery({
     queryKey: ['partner-profile', partnerId],
@@ -44,82 +47,126 @@ export function ProfileScreen() {
   const kycStatus = str(partner.data?.kycStatus ?? 'NOT_STARTED');
 
   return (
-    <Screen scroll>
-      <Card>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
-        </View>
-        <Text style={styles.name}>{displayName}</Text>
-        <Text style={styles.sub}>{partner.data?.businessName ? String(partner.data.businessName) : 'DSA Partner'}</Text>
-        <Text style={styles.sub}>{user?.phone ? maskPhone(user.phone) : user?.email}</Text>
-        <View style={styles.badgeRow}>
-          <StatusBadge status={kycStatus} />
-          <StatusBadge status={str(partner.data?.status ?? 'ACTIVE')} />
-        </View>
-        {partner.data?.partnerCode ? (
-          <Text style={styles.code}>Partner Code: {String(partner.data.partnerCode)}</Text>
-        ) : null}
-      </Card>
+    <Screen scroll padded={false}>
+      <PageHero
+        eyebrow="Account"
+        title={displayName}
+        subtitle={partner.data?.businessName ? String(partner.data.businessName) : 'DSA Partner'}
+        icon="person"
+      />
 
-      <ThemeAppearanceCard />
+      <View style={styles.body}>
+        <Card elevated>
+          <View style={styles.profileRow}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
+            </View>
+            <View style={styles.profileMeta}>
+              <Text style={styles.sub}>{user?.phone ? maskPhone(user.phone) : user?.email}</Text>
+              <View style={styles.badgeRow}>
+                <StatusBadge status={kycStatus} />
+                <StatusBadge status={str(partner.data?.status ?? 'ACTIVE')} />
+              </View>
+              {partner.data?.partnerCode ? (
+                <Text style={styles.code}>Partner Code: {String(partner.data.partnerCode)}</Text>
+              ) : null}
+            </View>
+          </View>
+        </Card>
 
-      <Card title="Partner Academy">
-        <Pressable
-          style={styles.menuRow}
-          onPress={() =>
-            navigation.getParent()?.navigate('Academy', { screen: 'AcademyHome' })
-          }
-        >
-          <Ionicons name="school" size={20} color={colors.primary} />
-          <Text style={styles.menuLabel}>Open Academy Hub</Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-        </Pressable>
-      </Card>
+        <ThemeAppearanceCard />
 
-      <Card title="Account">
-        {MENU.map((item) => (
+        <Card title="Partner Academy" elevated>
           <Pressable
-            key={item.screen}
             style={styles.menuRow}
-            onPress={() => (navigation.navigate as (name: keyof ProfileStackParamList) => void)(item.screen)}
+            onPress={() => navigation.getParent()?.navigate('Academy', { screen: 'AcademyHome' })}
           >
-            <Ionicons name={item.icon} size={20} color={colors.primary} />
-            <Text style={styles.menuLabel}>{item.label}</Text>
+            <View style={styles.menuIcon}>
+              <Ionicons name="school" size={20} color={colors.primary} />
+            </View>
+            <Text style={styles.menuLabel}>Open Academy Hub</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
-        ))}
-      </Card>
+        </Card>
 
-      <Button title="Sign Out" variant="secondary" fullWidth onPress={() => void logout()} />
+        <Card title="Account settings" subtitle="Profile, documents & support" elevated>
+          <View style={isDesktop ? styles.menuGrid : undefined}>
+            {MENU.map((item) => (
+              <Pressable
+                key={item.screen}
+                style={({ pressed }) => [styles.menuRow, isDesktop && styles.menuGridItem, pressed && styles.menuPressed]}
+                onPress={() => (navigation.navigate as (name: keyof ProfileStackParamList) => void)(item.screen)}
+              >
+                <View style={styles.menuIcon}>
+                  <Ionicons name={item.icon} size={20} color={colors.primary} />
+                </View>
+                <Text style={styles.menuLabel}>{item.label}</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              </Pressable>
+            ))}
+          </View>
+        </Card>
+
+        <Button title="Sign Out" variant="secondary" fullWidth onPress={() => void logout()} />
+      </View>
     </Screen>
   );
 }
 
-function createStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+function createStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDesktop: boolean) {
   return StyleSheet.create({
+    body: { paddingHorizontal: isDesktop ? 32 : 16 },
+    profileRow: {
+      flexDirection: isDesktop ? 'row' : 'column',
+      alignItems: isDesktop ? 'center' : 'center',
+      gap: spacing.lg,
+    },
     avatar: {
-      width: 64,
-      height: 64,
-      borderRadius: 16,
+      width: isDesktop ? 72 : 64,
+      height: isDesktop ? 72 : 64,
+      borderRadius: radius.xl,
       backgroundColor: colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
-      alignSelf: 'center',
-      marginBottom: spacing.md,
+      ...cardShadow(true, colors.primary),
     },
-    avatarText: { fontSize: 28, fontWeight: '800', color: colors.onPrimary },
-    name: { ...typography.h3, color: colors.text, textAlign: 'center' },
-    sub: { ...typography.bodySm, color: colors.textMuted, textAlign: 'center', marginTop: 4 },
-    badgeRow: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm, marginTop: spacing.md },
-    code: { ...typography.caption, color: colors.primary, textAlign: 'center', marginTop: spacing.sm },
+    avatarText: { fontSize: isDesktop ? 32 : 28, fontWeight: '800', color: colors.onPrimary },
+    profileMeta: { flex: 1, alignItems: isDesktop ? 'flex-start' : 'center' },
+    sub: { ...typography.bodySm, color: colors.textMuted, marginTop: 4 },
+    badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
+    code: { ...typography.caption, color: colors.primary, marginTop: spacing.sm, fontWeight: '700' },
+    menuGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    menuGridItem: {
+      width: '48%',
+      borderBottomWidth: 0,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      ...glassSurface(colors, isDesktop),
+      ...cardShadow(false, colors.primary),
+      ...premiumHover(),
+      paddingHorizontal: spacing.md,
+    },
     menuRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.md,
       paddingVertical: spacing.md,
-      borderBottomWidth: 1,
+      borderBottomWidth: isDesktop ? 0 : 1,
       borderBottomColor: colors.border,
     },
-    menuLabel: { ...typography.body, color: colors.text, flex: 1 },
+    menuPressed: { opacity: 0.9 },
+    menuIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.md,
+      backgroundColor: `${colors.primary}14`,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    menuLabel: { ...typography.body, color: colors.text, flex: 1, fontWeight: '600' },
   });
 }

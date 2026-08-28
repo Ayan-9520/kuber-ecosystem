@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useResponsiveLayout } from '@/hooks';
 import { radius, spacing, typography } from '@/theme';
@@ -31,16 +31,19 @@ function createStyles(colors: AppColors, isDesktop: boolean, contentMaxWidth: nu
       width: '100%',
       maxWidth: contentMaxWidth,
       alignSelf: isDesktop ? 'stretch' : 'center',
-      borderRadius: isDesktop ? radius.lg : radius.xl,
+      borderRadius: isDesktop ? radius.xl : radius.xl,
       overflow: 'hidden',
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.08)',
+      borderColor: 'rgba(255,255,255,0.1)',
       marginTop: isDesktop ? spacing.sm : spacing.sm,
+      ...(isDesktop && Platform.OS === 'web'
+        ? ({ boxShadow: '0 24px 64px rgba(0, 100, 70, 0.28), 0 0 0 1px rgba(255,255,255,0.06)' } as object)
+        : null),
     },
     gradient: {
-      paddingHorizontal: isDesktop ? 36 : spacing.lg,
-      paddingTop: isDesktop ? 28 : spacing.lg,
-      paddingBottom: isDesktop ? 32 : spacing.xl,
+      paddingHorizontal: isDesktop ? 40 : spacing.lg,
+      paddingTop: isDesktop ? 32 : spacing.lg,
+      paddingBottom: isDesktop ? 36 : spacing.xl,
     },
     topRow: {
       flexDirection: 'row',
@@ -203,7 +206,7 @@ export function DashboardHeader({
     [colors, isDesktop, contentMaxWidth, pagePad],
   );
   const initials = name.slice(0, 2).toUpperCase();
-  const gradientColors = ['#032820', '#0B5D4B', '#00C389'] as const;
+  const gradientColors = ['#011612', '#053d32', '#00b87a', '#00d492'] as const;
 
   return (
     <View style={styles.outer}>

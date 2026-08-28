@@ -5,6 +5,7 @@ import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewS
 import { useResponsiveLayout } from '@/hooks';
 import { radius, spacing, typography } from '@/theme';
 import { cardShadow } from '@/theme/elevation';
+import { glassSurface, premiumHover } from '@/theme/premium';
 import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
 
 interface StatCardProps {
@@ -14,7 +15,6 @@ interface StatCardProps {
   trend?: string;
   accent?: boolean;
   onPress?: () => void;
-  /** Override flex basis for responsive grids (e.g. 25% for 4-col). */
   style?: StyleProp<ViewStyle>;
 }
 
@@ -24,78 +24,71 @@ function createStyles(colors: AppColors, isDesktop: boolean) {
       flexGrow: 1,
       flexBasis: '45%',
       minWidth: 140,
-      backgroundColor: colors.card,
-      borderRadius: radius.lg,
+      borderRadius: isDesktop ? radius.xl : radius.lg,
       borderWidth: 1,
-      borderColor: colors.borderLight,
-      padding: isDesktop ? spacing.lg : spacing.md,
-      ...cardShadow(),
-      ...(Platform.OS === 'web'
-        ? ({
-            transitionProperty: 'transform, box-shadow, border-color',
-            transitionDuration: '160ms',
-          } as object)
-        : null),
+      padding: isDesktop ? spacing.xl : spacing.md,
+      ...glassSurface(colors, isDesktop),
+      ...cardShadow(false, colors.primary),
+      ...premiumHover(),
     },
     cardAccent: {
-      borderColor: colors.primary,
-      backgroundColor: colors.surface,
+      borderColor: `${colors.primary}55`,
+      backgroundColor: isDesktop ? `${colors.primary}0c` : colors.surface,
+      ...cardShadow(true, colors.primary),
     },
     iconWrap: {
-      width: isDesktop ? 44 : 40,
-      height: isDesktop ? 44 : 40,
-      borderRadius: radius.md,
-      backgroundColor: `${colors.primary}22`,
+      width: isDesktop ? 48 : 40,
+      height: isDesktop ? 48 : 40,
+      borderRadius: radius.lg,
+      backgroundColor: `${colors.primary}1a`,
+      borderWidth: 1,
+      borderColor: `${colors.primary}28`,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: spacing.sm,
+      marginBottom: spacing.md,
     },
     label: {
       ...typography.caption,
       color: colors.textSecondary,
-      textTransform: 'none',
-      letterSpacing: 0.3,
-      fontSize: isDesktop ? 13 : 12,
-      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+      fontSize: isDesktop ? 11 : 11,
+      fontWeight: '700',
     },
     value: {
       ...typography.h2,
       color: colors.text,
-      fontSize: isDesktop ? 24 : 22,
-      marginTop: 4,
-      fontWeight: '700',
-      letterSpacing: -0.5,
+      fontSize: isDesktop ? 26 : 22,
+      marginTop: 6,
+      fontWeight: '800',
+      letterSpacing: -0.6,
     },
-    trend: { ...typography.bodySm, color: colors.primary, marginTop: 6, fontWeight: '600' },
+    trend: { ...typography.bodySm, color: colors.primary, marginTop: 8, fontWeight: '700' },
     action: {
       alignItems: 'center',
       flexGrow: 1,
       minWidth: 88,
     },
-    actionPressed: { opacity: 0.88, transform: [{ scale: 0.97 }] },
+    actionPressed: { opacity: 0.88, transform: [{ scale: 0.96 }] },
     actionIcon: {
-      width: isDesktop ? 72 : 60,
-      height: isDesktop ? 72 : 60,
-      borderRadius: radius.lg,
-      backgroundColor: colors.card,
+      width: isDesktop ? 80 : 60,
+      height: isDesktop ? 80 : 60,
+      borderRadius: isDesktop ? radius.xl : radius.lg,
+      ...glassSurface(colors, isDesktop),
       borderWidth: 1,
-      borderColor: colors.borderLight,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: spacing.sm,
-      ...cardShadow(),
-      ...(Platform.OS === 'web'
-        ? ({
-            transitionProperty: 'transform, border-color, box-shadow',
-            transitionDuration: '160ms',
-          } as object)
-        : null),
+      ...cardShadow(false, colors.primary),
+      ...premiumHover(),
     },
     actionIconInner: {
-      width: isDesktop ? 48 : 44,
-      height: isDesktop ? 48 : 44,
-      borderRadius: radius.md,
-      backgroundColor: `${colors.primary}18`,
+      width: isDesktop ? 52 : 44,
+      height: isDesktop ? 52 : 44,
+      borderRadius: radius.lg,
+      backgroundColor: `${colors.primary}1c`,
+      borderWidth: 1,
+      borderColor: `${colors.primary}30`,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -104,8 +97,8 @@ function createStyles(colors: AppColors, isDesktop: boolean) {
       color: colors.text,
       textAlign: 'center',
       fontSize: isDesktop ? 13 : 12,
-      lineHeight: 16,
-      fontWeight: '600',
+      lineHeight: 17,
+      fontWeight: '700',
     },
   });
 }
@@ -117,13 +110,13 @@ export function StatCard({ label, value, icon, trend, accent, onPress, style }: 
 
   const text = String(value);
   const valueFontSize =
-    text.length > 13 ? (isDesktop ? 18 : 16) : text.length > 10 ? (isDesktop ? 20 : 18) : text.length > 8 ? 20 : isDesktop ? 24 : 22;
+    text.length > 13 ? (isDesktop ? 18 : 16) : text.length > 10 ? (isDesktop ? 20 : 18) : text.length > 8 ? 20 : isDesktop ? 26 : 22;
 
   const content = (
     <>
       {icon && (
         <View style={styles.iconWrap}>
-          <Ionicons name={icon} size={isDesktop ? 22 : 20} color={colors.primary} />
+          <Ionicons name={icon} size={isDesktop ? 24 : 20} color={colors.primary} />
         </View>
       )}
       <Text style={styles.label} numberOfLines={2}>
@@ -147,7 +140,7 @@ export function StatCard({ label, value, icon, trend, accent, onPress, style }: 
           styles.card,
           accent && styles.cardAccent,
           style,
-          pressed && { opacity: 0.9 },
+          pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },
           Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
         ]}
         onPress={onPress}
@@ -188,7 +181,7 @@ export function QuickAction({
     >
       <View style={styles.actionIcon}>
         <View style={styles.actionIconInner}>
-          <Ionicons name={icon} size={isDesktop ? 24 : 22} color={colors.primary} />
+          <Ionicons name={icon} size={isDesktop ? 26 : 22} color={colors.primary} />
         </View>
       </View>
       <Text style={styles.actionLabel} numberOfLines={2}>

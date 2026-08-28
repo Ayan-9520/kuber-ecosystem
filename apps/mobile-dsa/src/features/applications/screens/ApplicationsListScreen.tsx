@@ -1,11 +1,11 @@
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
-import { RefreshControl, Text } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 
-import { Card, EmptyState, ListRow, Screen } from '@/components/ui';
-import { useAuth } from '@/hooks';
+import { Card, EmptyState, ListRow, PageHero, Screen } from '@/components/ui';
+import { useAuth, useResponsiveLayout } from '@/hooks';
 import { formatCurrency, formatDateTime, getApiErrorMessage, str } from '@/lib/utils';
 import type { ApplicationsStackParamList } from '@/navigation/types';
 import { applicationsService } from '@/services';
@@ -15,6 +15,8 @@ export function ApplicationsListScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ApplicationsStackParamList>>();
   const { partnerId } = useAuth();
   const { colors } = useAppTheme();
+  const { isDesktop } = useResponsiveLayout();
+  const styles = useMemo(() => StyleSheet.create({ body: { paddingHorizontal: isDesktop ? 32 : 16 } }), [isDesktop]);
   const [refreshing, setRefreshing] = useState(false);
 
   const applications = useQuery({
@@ -32,11 +34,19 @@ export function ApplicationsListScreen() {
   return (
     <Screen
       scroll
+      padded={false}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
       }
     >
-      <Card title="Applications" subtitle={`${applications.data?.meta.total ?? 0} in your portfolio`}>
+      <PageHero
+        eyebrow="Portfolio"
+        title="Applications"
+        subtitle="Loan applications in your pipeline"
+        icon="document-text"
+      />
+      <View style={styles.body}>
+      <Card title="Your applications" subtitle={`${applications.data?.meta.total ?? 0} in portfolio`}>
         {!partnerId ? (
           <EmptyState title="Partner not linked" description="Contact support" />
         ) : applications.isLoading ? (
@@ -58,6 +68,7 @@ export function ApplicationsListScreen() {
           ))
         )}
       </Card>
+      </View>
     </Screen>
   );
 }

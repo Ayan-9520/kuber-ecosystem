@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Card, DashboardHeader, EmptyState, QuickAction, Screen, StatCard, StatusBadge } from '@/components/ui';
+import { Card, DashboardHeader, EmptyState, QuickAction, Screen, SectionHeader, StatCard, StatusBadge } from '@/components/ui';
 import { ACADEMY_LEVELS } from '@/features/academy/data/academy';
 import { useAuth, useResponsiveLayout } from '@/hooks';
 import { formatCurrency, str } from '@/lib/utils';
@@ -191,8 +191,11 @@ export function DashboardScreen() {
       />
 
       <View style={styles.sectionHead}>
-        <Text style={styles.sectionTitle}>What should I do today?</Text>
-        <Text style={styles.sectionSub}>Quick actions to grow your business</Text>
+        <SectionHeader
+          eyebrow="Today"
+          title="What should I do today?"
+          subtitle="Quick actions to grow your business"
+        />
       </View>
 
       {isWide ? (
@@ -242,8 +245,11 @@ export function DashboardScreen() {
 
       <View style={styles.section}>
         <View style={styles.sectionHeadInset}>
-          <Text style={styles.sectionTitle}>Kuber Academy</Text>
-          <Text style={styles.sectionSub}>Learn · Certify · Rank — grow as a financial entrepreneur</Text>
+          <SectionHeader
+            eyebrow="Learning"
+            title="Kuber Academy"
+            subtitle="Learn · Certify · Rank — grow as a financial entrepreneur"
+          />
         </View>
         <View style={styles.academyRow}>
           <StatCard
@@ -292,8 +298,7 @@ export function DashboardScreen() {
 
       <View style={styles.section}>
         <View style={styles.sectionHeadInset}>
-          <Text style={styles.sectionTitle}>Pipeline overview</Text>
-          <Text style={styles.sectionSub}>Today's numbers at a glance</Text>
+          <SectionHeader eyebrow="Metrics" title="Pipeline overview" subtitle="Today's numbers at a glance" />
         </View>
         <View style={styles.statGrid}>
           <StatCard style={styles.statCell} label="Today's Leads" value={todayLeads} icon="today" accent onPress={goLeads} />
@@ -324,10 +329,11 @@ export function DashboardScreen() {
       {/* ── MTD Earnings Widget ── */}
       <View style={styles.section}>
         <View style={styles.sectionHeadInset}>
-          <Text style={styles.sectionTitle}>MTD Earnings</Text>
-          <Text style={styles.sectionSub}>
-            Month-to-date · {daysRemaining} days left · target {formatCurrency(MONTHLY_TARGET)}
-          </Text>
+          <SectionHeader
+            eyebrow="Finance"
+            title="MTD Earnings"
+            subtitle={`Month-to-date · ${daysRemaining} days left · target ${formatCurrency(MONTHLY_TARGET)}`}
+          />
         </View>
         <Card elevated>
           <View style={styles.widgetRow}>

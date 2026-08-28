@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { type BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useResponsiveLayout } from '@/hooks';
 import { radius, spacing, typography } from '@/theme';
+import { premiumHover } from '@/theme/premium';
 import { useAppTheme } from '@/theme/ThemeProvider';
 
 const logoK1 = require('../../assets/logo-k1.png');
@@ -20,10 +22,6 @@ const TAB_ICONS: Record<
   Profile: { active: 'person', inactive: 'person-outline', label: 'Profile' },
 };
 
-/**
- * Desktop left rail for Partner DSA web. Used only when isDesktop;
- * mobile keeps the default bottom tab bar.
- */
 export function PartnerDesktopTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useAppTheme();
   const { sidebarWidth } = useResponsiveLayout();
@@ -35,11 +33,18 @@ export function PartnerDesktopTabBar({ state, descriptors, navigation }: BottomT
         {
           width: sidebarWidth,
           backgroundColor: colors.card,
-          borderRightColor: colors.borderLight,
+          borderRightColor: `${colors.primary}22`,
+          ...(Platform.OS === 'web'
+            ? ({
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
+                boxShadow: '4px 0 32px rgba(2, 20, 16, 0.08)',
+              } as object)
+            : null),
         },
       ]}
     >
-      <View style={[styles.brand, { borderBottomColor: colors.borderLight }]}>
+      <View style={[styles.brand, { borderBottomColor: `${colors.primary}18` }]}>
         <View style={styles.logoPlate}>
           <Image source={logoK1} style={styles.logo} accessibilityLabel="KuberOne" />
         </View>
@@ -52,7 +57,8 @@ export function PartnerDesktopTabBar({ state, descriptors, navigation }: BottomT
       <View style={styles.nav} accessibilityRole="tablist">
         {state.routes.map((route, index) => {
           const focused = state.index === index;
-          const { options } = descriptors[route.key];
+          const descriptor = descriptors[route.key];
+          const options = descriptor?.options ?? {};
           const meta = TAB_ICONS[route.name] ?? {
             active: 'ellipse' as const,
             inactive: 'ellipse-outline' as const,
@@ -84,20 +90,39 @@ export function PartnerDesktopTabBar({ state, descriptors, navigation }: BottomT
               onPress={onPress}
               style={({ pressed }) => [
                 styles.item,
+                focused && styles.itemFocused,
                 {
-                  backgroundColor: focused ? `${colors.primary}14` : pressed ? colors.background : 'transparent',
+                  backgroundColor: focused
+                    ? `${colors.primary}16`
+                    : pressed
+                      ? `${colors.primary}08`
+                      : 'transparent',
+                  borderColor: focused ? `${colors.primary}40` : 'transparent',
                 },
+                premiumHover(),
+                Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
               ]}
             >
-              <Ionicons
-                name={focused ? meta.active : meta.inactive}
-                size={22}
-                color={focused ? colors.primary : colors.textSecondary}
-              />
+              {focused ? (
+                <LinearGradient
+                  colors={[`${colors.primary}40`, colors.primary]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={styles.activeBar}
+                />
+              ) : null}
+              <View style={[styles.iconCircle, focused && { backgroundColor: `${colors.primary}22` }]}>
+                <Ionicons
+                  name={focused ? meta.active : meta.inactive}
+                  size={20}
+                  color={focused ? colors.primary : colors.textSecondary}
+                />
+              </View>
               <Text
                 style={[
                   styles.itemLabel,
                   { color: focused ? colors.primary : colors.textSecondary },
+                  focused && styles.itemLabelActive,
                 ]}
                 numberOfLines={1}
               >
@@ -108,8 +133,8 @@ export function PartnerDesktopTabBar({ state, descriptors, navigation }: BottomT
         })}
       </View>
 
-      <View style={[styles.footer, { borderTopColor: colors.borderLight }]}>
-        <Ionicons name="shield-checkmark-outline" size={14} color={colors.primary} />
+      <View style={[styles.footer, { borderTopColor: `${colors.primary}18`, backgroundColor: `${colors.primary}06` }]}>
+        <Ionicons name="shield-checkmark" size={14} color={colors.primary} />
         <Text style={[styles.footerText, { color: colors.textMuted }]}>Kuber Finserve · Secure</Text>
       </View>
     </View>
@@ -119,50 +144,77 @@ export function PartnerDesktopTabBar({ state, descriptors, navigation }: BottomT
 const styles = StyleSheet.create({
   rail: {
     height: '100%',
-    borderRightWidth: StyleSheet.hairlineWidth,
-    paddingTop: spacing.md,
+    borderRightWidth: 1,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.sm,
   },
   brand: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
+    gap: 14,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
     marginBottom: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
   },
   logoPlate: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(13,107,87,0.18)',
+    borderColor: 'rgba(13,107,87,0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  logo: { width: 30, height: 30, resizeMode: 'contain' },
+  logo: { width: 32, height: 32, resizeMode: 'contain' },
   brandCopy: { flex: 1, minWidth: 0 },
-  brandName: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
-  brandTag: { ...typography.caption, marginTop: 2, fontSize: 11 },
-  nav: { flex: 1, paddingHorizontal: spacing.sm, gap: 2 },
+  brandName: { fontSize: 17, fontWeight: '800', letterSpacing: -0.4 },
+  brandTag: { ...typography.caption, marginTop: 2, fontSize: 10, letterSpacing: 0.4, textTransform: 'uppercase' },
+  nav: { flex: 1, paddingHorizontal: spacing.md, gap: 4 },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 12,
+    paddingVertical: 11,
     paddingHorizontal: 12,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  itemLabel: { fontSize: 13, fontWeight: '700', flexShrink: 1 },
+  itemFocused: {},
+  activeBar: {
+    position: 'absolute',
+    left: 0,
+    top: 8,
+    bottom: 8,
+    width: 3,
+    borderRadius: 2,
+  },
+  iconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  itemLabel: { fontSize: 13, fontWeight: '600', flexShrink: 1 },
+  itemLabelActive: { fontWeight: '800' },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
+    marginHorizontal: spacing.md,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderRadius: radius.md,
   },
-  footerText: { ...typography.caption, fontSize: 10 },
+  footerText: { ...typography.caption, fontSize: 10, fontWeight: '600' },
 });

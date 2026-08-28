@@ -8,7 +8,7 @@ export const BREAKPOINTS = {
   xxl: 1600,
 } as const;
 
-export const DESKTOP_SIDEBAR_WIDTH = 248;
+export const DESKTOP_SIDEBAR_WIDTH = 272;
 
 export type LayoutSize = 'compact' | 'medium' | 'wide' | 'ultra';
 

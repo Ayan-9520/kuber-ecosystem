@@ -91,7 +91,7 @@ function LeadsStackNavigator() {
   const screenOptions = useStackScreenOptions();
   return (
     <LeadsStack.Navigator screenOptions={screenOptions}>
-      <LeadsStack.Screen name="LeadsList" component={LeadsListScreen} options={{ title: 'Leads' }} />
+      <LeadsStack.Screen name="LeadsList" component={LeadsListScreen} options={{ title: 'Leads', headerShown: false }} />
       <LeadsStack.Screen
         name="LeadDetail"
         getComponent={() => require('@/features/leads/screens/LeadDetailScreen').LeadDetailScreen}
@@ -120,7 +120,7 @@ function ApplicationsStackNavigator() {
   const screenOptions = useStackScreenOptions();
   return (
     <AppsStack.Navigator screenOptions={screenOptions}>
-      <AppsStack.Screen name="ApplicationsList" component={ApplicationsListScreen} options={{ title: 'Applications' }} />
+      <AppsStack.Screen name="ApplicationsList" component={ApplicationsListScreen} options={{ title: 'Applications', headerShown: false }} />
       <AppsStack.Screen
         name="ApplicationDetail"
         getComponent={() => require('@/features/applications/screens/ApplicationDetailScreen').ApplicationDetailScreen}
@@ -137,7 +137,7 @@ function CommissionsStackNavigator() {
       <CommissionsStack.Screen
         name="CommissionsHome"
         component={CommissionsHomeScreen}
-        options={{ title: 'Earnings & Finance' }}
+        options={{ title: 'Earnings & Finance', headerShown: false }}
       />
       <CommissionsStack.Screen
         name="EarningsDashboard"
@@ -232,7 +232,7 @@ function ProfileStackNavigator() {
   const screenOptions = useStackScreenOptions();
   return (
     <ProfileStack.Navigator screenOptions={screenOptions}>
-      <ProfileStack.Screen name="ProfileHome" component={ProfileScreen} options={{ title: 'Profile' }} />
+      <ProfileStack.Screen name="ProfileHome" component={ProfileScreen} options={{ title: 'Profile', headerShown: false }} />
       <ProfileStack.Screen
         name="BrandingDashboard"
         getComponent={() => require('@/features/profile/screens/BrandingDashboardScreen').BrandingDashboardScreen}

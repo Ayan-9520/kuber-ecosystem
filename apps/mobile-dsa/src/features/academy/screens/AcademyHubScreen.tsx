@@ -2,157 +2,149 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   ACADEMY_LEVELS,
   ACADEMY_MODULES,
   PARTNER_ACADEMY_STATS,
 } from '@/features/academy/data/academy';
-import { Card, Screen, StatCard } from '@/components/ui';
+import { Card, PageHero, Screen, SectionHeader, StatCard } from '@/components/ui';
+import { useResponsiveLayout } from '@/hooks';
 import type { AcademyStackParamList } from '@/navigation/types';
 import { radius, spacing, typography } from '@/theme';
+import { cardShadow } from '@/theme/elevation';
+import { glassSurface, premiumHover } from '@/theme/premium';
 import { useAppTheme } from '@/theme/ThemeProvider';
 
 export function AcademyHubScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AcademyStackParamList>>();
   const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { isDesktop } = useResponsiveLayout();
+  const styles = useMemo(() => createStyles(colors, isDesktop), [colors, isDesktop]);
   const stats = PARTNER_ACADEMY_STATS;
 
   return (
-    <Screen scroll title="Partner Academy" subtitle="Learn · Earn · Grow">
-      <View style={styles.banner}>
-        <Text style={[styles.bannerTitle, { color: colors.primary }]}>KuberOne Academy</Text>
-        <Text style={[styles.bannerSub, { color: colors.textSecondary }]}>
-          Courses, CRM training, certificates and AI tools for partners
-        </Text>
-      </View>
+    <Screen scroll padded={false}>
+      <PageHero
+        eyebrow="Growth"
+        title="Partner Academy"
+        subtitle="Courses, CRM training, certificates and AI tools for partners"
+        icon="school"
+        actions={
+          <Pressable
+            style={styles.heroBtn}
+            onPress={() => navigation.navigate('AcademyModule', { moduleId: 'learning' })}
+          >
+            <Text style={styles.heroBtnText}>Continue learning</Text>
+          </Pressable>
+        }
+      />
 
-      <View style={styles.statRow}>
-        <StatCard label="Progress" value={`${stats.learningProgress}%`} icon="school" accent />
-        <StatCard label="Certificates" value={stats.certificates} icon="ribbon" />
-      </View>
-      <View style={styles.statRow}>
-        <StatCard label="Hours" value={`${stats.learningHours}h`} icon="time" />
-        <StatCard label="Rank" value={`#${stats.partnerRank}`} icon="trophy" />
-      </View>
+      <View style={styles.body}>
+        <View style={styles.statGrid}>
+          <StatCard label="Progress" value={`${stats.learningProgress}%`} icon="school" accent />
+          <StatCard label="Certificates" value={stats.certificates} icon="ribbon" />
+          <StatCard label="Hours" value={`${stats.learningHours}h`} icon="time" />
+          <StatCard label="Rank" value={`#${stats.partnerRank}`} icon="trophy" />
+        </View>
 
-      <Card title="Continue learning" subtitle={stats.continueCourse} elevated>
-        <Pressable
-          style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
-          onPress={() => navigation.navigate('AcademyModule', { moduleId: 'learning' })}
-        >
-          <Text style={styles.primaryBtnText}>Open My Learning</Text>
-        </Pressable>
-      </Card>
+        <SectionHeader title="Academy modules" subtitle="Tap any module to open it" eyebrow="Curriculum" />
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Academy modules</Text>
-      <Text style={[styles.sectionSub, { color: colors.textSecondary }]}>
-        Tap any module to open it
-      </Text>
+        <View style={styles.moduleGrid}>
+          {ACADEMY_MODULES.map((mod) => (
+            <Pressable
+              key={mod.id}
+              onPress={() => navigation.navigate('AcademyModule', { moduleId: mod.id })}
+              style={({ pressed }) => [styles.moduleRow, pressed && styles.modulePressed]}
+            >
+              <View style={styles.moduleIcon}>
+                <Ionicons name={mod.icon as keyof typeof Ionicons.glyphMap} size={22} color={colors.primary} />
+              </View>
+              <View style={styles.moduleBody}>
+                <Text style={styles.moduleTitle}>{mod.title}</Text>
+                <Text style={styles.moduleDesc}>{mod.description}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            </Pressable>
+          ))}
+        </View>
 
-      {ACADEMY_MODULES.map((mod) => (
-        <Pressable
-          key={mod.id}
-          onPress={() => navigation.navigate('AcademyModule', { moduleId: mod.id })}
-          style={[styles.moduleRow, { backgroundColor: colors.card, borderColor: colors.border }]}
-        >
-          <View style={[styles.moduleIcon, { backgroundColor: `${colors.primary}18` }]}>
-            <Ionicons name={mod.icon as keyof typeof Ionicons.glyphMap} size={20} color={colors.primary} />
-          </View>
-          <View style={styles.moduleBody}>
-            <Text style={[styles.moduleTitle, { color: colors.text }]}>{mod.title}</Text>
-            <Text style={[styles.moduleDesc, { color: colors.textSecondary }]}>{mod.description}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-        </Pressable>
-      ))}
-
-      <Card title="Roadmap snapshot" subtitle="Levels 1–10">
-        {ACADEMY_LEVELS.slice(0, 4).map((level) => (
-          <View key={level.id} style={styles.levelRow}>
-            <Text style={[styles.levelLabel, { color: colors.text }]}>
-              L{level.id} {level.title}
-            </Text>
-            <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
-              <View
-                style={[styles.progressFill, { width: `${level.progress}%`, backgroundColor: colors.primary }]}
-              />
+        <Card title="Roadmap snapshot" subtitle="Levels 1–10" elevated>
+          {ACADEMY_LEVELS.slice(0, 4).map((level) => (
+            <View key={level.id} style={styles.levelRow}>
+              <Text style={styles.levelLabel}>
+                L{level.id} {level.title}
+              </Text>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${level.progress}%` }]} />
+              </View>
             </View>
-          </View>
-        ))}
-        <Pressable onPress={() => navigation.navigate('AcademyModule', { moduleId: 'learning' })}>
-          <Text style={{ color: colors.primary, fontWeight: '700', marginTop: spacing.sm }}>
-            View full roadmap →
-          </Text>
-        </Pressable>
-      </Card>
+          ))}
+          <Pressable onPress={() => navigation.navigate('AcademyModule', { moduleId: 'learning' })}>
+            <Text style={styles.link}>View full roadmap →</Text>
+          </Pressable>
+        </Card>
+      </View>
     </Screen>
   );
 }
 
-function createStyles(_colors: ReturnType<typeof useAppTheme>['colors']) {
+function createStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDesktop: boolean) {
   return StyleSheet.create({
-    banner: {
-      marginBottom: spacing.md,
-      paddingBottom: spacing.sm,
+    body: { paddingHorizontal: isDesktop ? 32 : 16 },
+    heroBtn: {
+      backgroundColor: 'rgba(255,255,255,0.16)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.28)',
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
     },
-    bannerTitle: {
-      ...typography.h3,
-      fontWeight: '800',
-    },
-    bannerSub: {
-      ...typography.bodySm,
-      marginTop: 4,
-    },
-    statRow: {
+    heroBtnText: { color: '#FFFFFF', fontWeight: '800', fontSize: 13 },
+    statGrid: {
       flexDirection: 'row',
-      gap: spacing.sm,
-      marginBottom: spacing.sm,
+      flexWrap: 'wrap',
+      gap: spacing.md,
+      marginBottom: spacing.xl,
     },
-    primaryBtn: {
-      marginTop: spacing.sm,
-      borderRadius: radius.lg,
-      paddingVertical: spacing.md,
-      alignItems: 'center',
-    },
-    primaryBtnText: {
-      color: _colors.onPrimary,
-      fontWeight: '700',
-      fontSize: 15,
-    },
-    sectionTitle: {
-      ...typography.h3,
-      fontWeight: '700',
-      marginTop: spacing.lg,
-    },
-    sectionSub: {
-      ...typography.bodySm,
-      marginBottom: spacing.sm,
+    moduleGrid: {
+      flexDirection: isDesktop ? 'row' : 'column',
+      flexWrap: 'wrap',
+      gap: spacing.md,
+      marginBottom: spacing.lg,
     },
     moduleRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm,
-      padding: spacing.md,
-      borderRadius: radius.lg,
-      borderWidth: StyleSheet.hairlineWidth,
-      marginBottom: spacing.sm,
+      gap: spacing.md,
+      padding: spacing.lg,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      width: isDesktop ? '48%' : '100%',
+      ...glassSurface(colors, isDesktop),
+      ...cardShadow(false, colors.primary),
+      ...premiumHover(),
+      ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as const) : null),
     },
+    modulePressed: { opacity: 0.92, transform: [{ scale: 0.995 }] },
     moduleIcon: {
-      width: 40,
-      height: 40,
-      borderRadius: radius.md,
+      width: 48,
+      height: 48,
+      borderRadius: radius.lg,
+      backgroundColor: `${colors.primary}18`,
+      borderWidth: 1,
+      borderColor: `${colors.primary}28`,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    moduleBody: { flex: 1 },
-    moduleTitle: { fontWeight: '700', fontSize: 15 },
-    moduleDesc: { fontSize: 12, marginTop: 2 },
-    levelRow: { marginBottom: spacing.sm },
-    levelLabel: { fontSize: 13, fontWeight: '600', marginBottom: 4 },
-    progressTrack: { height: 8, borderRadius: 999, overflow: 'hidden' },
-    progressFill: { height: '100%', borderRadius: 999 },
+    moduleBody: { flex: 1, minWidth: 0 },
+    moduleTitle: { ...typography.label, color: colors.text, fontSize: 15, fontWeight: '800' },
+    moduleDesc: { ...typography.bodySm, color: colors.textSecondary, marginTop: 4, lineHeight: 18 },
+    levelRow: { marginBottom: spacing.md },
+    levelLabel: { ...typography.label, color: colors.text, marginBottom: 6, fontWeight: '700' },
+    progressTrack: { height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden' },
+    progressFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 4 },
+    link: { color: colors.primary, fontWeight: '800', marginTop: spacing.sm },
   });
 }

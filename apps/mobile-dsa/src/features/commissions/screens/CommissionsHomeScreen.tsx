@@ -8,18 +8,18 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Card, Screen, StatCard } from '@/components/ui';
-import { useAuth } from '@/hooks';
+import { Card, PageHero, Screen, StatCard } from '@/components/ui';
+import { useAuth, useResponsiveLayout } from '@/hooks';
 import { formatCurrency } from '@/lib/utils';
 import type { CommissionsStackParamList } from '@/navigation/types';
 import { commissionsService } from '@/services';
 import { radius, spacing, typography } from '@/theme';
 import { cardShadow } from '@/theme/elevation';
+import { glassSurface, premiumHover } from '@/theme/premium';
 import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
 
 type Nav = NativeStackNavigationProp<CommissionsStackParamList>;
@@ -39,9 +39,8 @@ export function CommissionsHomeScreen() {
   const navigation = useNavigation<Nav>();
   const { partnerId } = useAuth();
   const { colors } = useAppTheme();
-  const { width } = useWindowDimensions();
-  const isWide = Platform.OS === 'web' && width >= 920;
-  const styles = useMemo(() => createStyles(colors, isWide), [colors, isWide]);
+  const { isDesktop } = useResponsiveLayout();
+  const styles = useMemo(() => createStyles(colors, isDesktop), [colors, isDesktop]);
 
   const analytics = useQuery({
     queryKey: ['commission-analytics', partnerId],
@@ -147,6 +146,7 @@ export function CommissionsHomeScreen() {
   return (
     <Screen
       scroll
+      padded={false}
       refreshControl={
         <RefreshControl
           refreshing={analytics.isRefetching}
@@ -155,14 +155,14 @@ export function CommissionsHomeScreen() {
         />
       }
     >
-      <View style={styles.hero}>
-        <Text style={styles.heroTitle}>Your earnings</Text>
-        <Text style={styles.heroSub}>
-          Track commissions, request payouts, and grow your financial business — same ledger finance
-          uses in KuberOne.
-        </Text>
-      </View>
+      <PageHero
+        eyebrow="Finance"
+        title="Your earnings"
+        subtitle="Track commissions, request payouts, and grow your financial business"
+        icon="wallet"
+      />
 
+      <View style={styles.body}>
       {statsUnavailable ? (
         <Text style={[typography.caption, { color: colors.danger, marginBottom: spacing.sm }]}>
           Earnings summary unavailable. Pull down to refresh.
@@ -191,17 +191,18 @@ export function CommissionsHomeScreen() {
         />
       </View>
 
-      <Card title="Quick actions" subtitle="Everyday partner workflow">
+      <Card title="Quick actions" subtitle="Everyday partner workflow" elevated>
         <View style={styles.grid}>{primary.map((item) => tile(item, styles, colors))}</View>
       </Card>
 
-      <Card title="Commission status" subtitle="Filter by live ledger status">
+      <Card title="Commission status" subtitle="Filter by live ledger status" elevated>
         <View style={styles.grid}>{status.map((item) => tile(item, styles, colors))}</View>
       </Card>
 
-      <Card title="More" subtitle="History, tax & growth">
+      <Card title="More" subtitle="History, tax & growth" elevated>
         <View style={styles.grid}>{more.map((item) => tile(item, styles, colors))}</View>
       </Card>
+      </View>
     </Screen>
   );
 }
@@ -234,48 +235,32 @@ function tile(
   );
 }
 
-function createStyles(colors: AppColors, isWide: boolean) {
+function createStyles(colors: AppColors, isDesktop: boolean) {
   return StyleSheet.create({
-    hero: {
-      marginBottom: spacing.md,
-      paddingVertical: spacing.sm,
-    },
-    heroTitle: {
-      ...typography.h2,
-      color: colors.text,
-      fontSize: isWide ? 28 : 24,
-      fontWeight: '700',
-      letterSpacing: -0.4,
-    },
-    heroSub: {
-      ...typography.bodySm,
-      color: colors.textSecondary,
-      marginTop: spacing.xs,
-      maxWidth: 560,
-      lineHeight: 20,
-    },
+    body: { paddingHorizontal: isDesktop ? 32 : 16 },
     stats: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: spacing.sm,
-      marginBottom: spacing.md,
+      gap: spacing.md,
+      marginBottom: spacing.lg,
     },
     grid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: spacing.sm,
+      gap: spacing.md,
     },
     tile: {
-      width: isWide ? '23%' : '47%',
-      minWidth: isWide ? 140 : '45%',
+      width: isDesktop ? '23%' : '47%',
+      minWidth: isDesktop ? 140 : '45%',
       flexGrow: 1,
-      maxWidth: isWide ? 220 : '48%',
-      backgroundColor: colors.surface,
-      borderRadius: radius.lg,
+      maxWidth: isDesktop ? 220 : '48%',
+      borderRadius: radius.xl,
       borderWidth: 1,
-      borderColor: colors.borderLight,
-      padding: spacing.md,
-      ...cardShadow(),
+      padding: spacing.lg,
+      ...glassSurface(colors, isDesktop),
+      ...cardShadow(false, colors.primary),
+      ...premiumHover(),
+      ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as const) : null),
     },
     tilePressed: { opacity: 0.88, transform: [{ scale: 0.98 }] },
     tileIcon: {
