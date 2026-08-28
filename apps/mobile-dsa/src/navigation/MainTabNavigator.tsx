@@ -81,7 +81,7 @@ function AcademyStackNavigator() {
       <AcademyStack.Screen
         name="AcademyModule"
         getComponent={() => require('@/features/academy/screens/AcademyModuleScreen').AcademyModuleScreen}
-        options={{ title: 'Academy Module' }}
+        options={{ title: 'Academy Module', headerShown: false }}
       />
     </AcademyStack.Navigator>
   );

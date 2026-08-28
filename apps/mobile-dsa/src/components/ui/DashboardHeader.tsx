@@ -68,6 +68,11 @@ function createStyles(colors: AppColors, isDesktop: boolean, pagePad: number) {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    desktopAvatarText: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: colors.primary,
+    },
     wrap: {
       borderRadius: radius.lg,
       overflow: 'hidden',
@@ -190,6 +195,13 @@ export function DashboardHeader({
                 <Text style={[styles.pillText, { color: colors.textSecondary, fontSize: 11 }]}>{p.label}</Text>
               </View>
             ))}
+            <Pressable
+              style={styles.desktopIconBtn}
+              onPress={onProfilePress}
+              accessibilityLabel="Profile"
+            >
+              <Text style={styles.desktopAvatarText}>{initials}</Text>
+            </Pressable>
             <Pressable
               style={styles.desktopIconBtn}
               onPress={onNotificationsPress}

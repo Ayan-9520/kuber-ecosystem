@@ -38,7 +38,7 @@ export function OnboardingScreen({ onDone }: Props) {
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [index, setIndex] = useState(0);
-  const slide = SLIDES[index] ?? SLIDES[0];
+  const slide = SLIDES[Math.min(index, SLIDES.length - 1)]!;
   const isLast = index >= SLIDES.length - 1;
 
   const finish = async () => {

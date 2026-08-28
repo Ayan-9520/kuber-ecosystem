@@ -20,8 +20,8 @@ import { useAppTheme } from '@/theme/ThemeProvider';
 export function AcademyHubScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AcademyStackParamList>>();
   const { colors } = useAppTheme();
-  const { isDesktop } = useResponsiveLayout();
-  const styles = useMemo(() => createStyles(colors, isDesktop), [colors, isDesktop]);
+  const { isDesktop, pagePad } = useResponsiveLayout();
+  const styles = useMemo(() => createStyles(colors, isDesktop, pagePad), [colors, isDesktop, pagePad]);
   const stats = PARTNER_ACADEMY_STATS;
 
   return (
@@ -90,9 +90,9 @@ export function AcademyHubScreen() {
   );
 }
 
-function createStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDesktop: boolean) {
+function createStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDesktop: boolean, pagePad: number) {
   return StyleSheet.create({
-    body: { paddingHorizontal: isDesktop ? 32 : 16 },
+    body: { paddingHorizontal: isDesktop ? pagePad : 16 },
     heroBtn: {
       backgroundColor: 'rgba(255,255,255,0.16)',
       borderWidth: 1,

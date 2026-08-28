@@ -39,8 +39,8 @@ export function CommissionsHomeScreen() {
   const navigation = useNavigation<Nav>();
   const { partnerId } = useAuth();
   const { colors } = useAppTheme();
-  const { isDesktop } = useResponsiveLayout();
-  const styles = useMemo(() => createStyles(colors, isDesktop), [colors, isDesktop]);
+  const { isDesktop, pagePad } = useResponsiveLayout();
+  const styles = useMemo(() => createStyles(colors, isDesktop, pagePad), [colors, isDesktop, pagePad]);
 
   const analytics = useQuery({
     queryKey: ['commission-analytics', partnerId],
@@ -235,9 +235,9 @@ function tile(
   );
 }
 
-function createStyles(colors: AppColors, isDesktop: boolean) {
+function createStyles(colors: AppColors, isDesktop: boolean, pagePad: number) {
   return StyleSheet.create({
-    body: { paddingHorizontal: isDesktop ? 32 : 16 },
+    body: { paddingHorizontal: isDesktop ? pagePad : 16 },
     stats: {
       flexDirection: 'row',
       flexWrap: 'wrap',

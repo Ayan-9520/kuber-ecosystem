@@ -10,7 +10,7 @@ const cwd = process.cwd();
 
 process.env.EXPO_OFFLINE = '1';
 
-const pinnedAppEnv = process.env.EXPO_PUBLIC_APP_ENV ?? 'development';
+const pinnedAppEnv = process.env.EXPO_PUBLIC_APP_ENV ?? 'production';
 const pinnedApiBase = process.env.EXPO_PUBLIC_API_BASE_URL ?? '/api/v1';
 
 // Expo loads .env.production when NODE_ENV=production; pin Docker/local values first.

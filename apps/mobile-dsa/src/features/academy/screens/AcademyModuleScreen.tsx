@@ -48,7 +48,7 @@ export function AcademyModuleScreen() {
   const styles = useMemo(() => createStyles(), []);
 
   return (
-    <Screen scroll title={mod.title} subtitle={mod.description}>
+    <Screen scroll title={mod.title} subtitle={mod.description} forceHeader>
       <Card title="Activated in KuberOne" subtitle="Partner Academy feature">
         <Text style={[styles.body, { color: colors.textSecondary }]}>
           This module is live on your partner dashboard. Content syncs with Partner Academy curriculum used

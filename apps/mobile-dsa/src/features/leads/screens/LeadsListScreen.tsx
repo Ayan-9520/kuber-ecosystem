@@ -15,8 +15,8 @@ import { spacing } from '@/theme';
 
 export function LeadsListScreen() {
   const { colors } = useAppTheme();
-  const { isDesktop } = useResponsiveLayout();
-  const styles = useMemo(() => createStyles(colors, isDesktop), [colors, isDesktop]);
+  const { isDesktop, pagePad } = useResponsiveLayout();
+  const styles = useMemo(() => createStyles(colors, isDesktop, pagePad), [colors, isDesktop, pagePad]);
   const navigation = useNavigation<NativeStackNavigationProp<LeadsStackParamList>>();
   const { partnerId } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
@@ -110,9 +110,9 @@ export function LeadsListScreen() {
   );
 }
 
-function createStyles(colors: AppColors, isDesktop: boolean) {
+function createStyles(colors: AppColors, isDesktop: boolean, pagePad: number) {
   return StyleSheet.create({
-  body: { paddingHorizontal: isDesktop ? 32 : 16 },
+  body: { paddingHorizontal: isDesktop ? pagePad : 16 },
   toolbar: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: spacing.md },
   analyticsBtn: {
     flexDirection: 'row',

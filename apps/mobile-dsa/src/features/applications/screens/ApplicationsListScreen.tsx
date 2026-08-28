@@ -15,8 +15,8 @@ export function ApplicationsListScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ApplicationsStackParamList>>();
   const { partnerId } = useAuth();
   const { colors } = useAppTheme();
-  const { isDesktop } = useResponsiveLayout();
-  const styles = useMemo(() => StyleSheet.create({ body: { paddingHorizontal: isDesktop ? 32 : 16 } }), [isDesktop]);
+  const { isDesktop, pagePad } = useResponsiveLayout();
+  const styles = useMemo(() => StyleSheet.create({ body: { paddingHorizontal: isDesktop ? pagePad : 16 } }), [isDesktop, pagePad]);
   const [refreshing, setRefreshing] = useState(false);
 
   const applications = useQuery({
