@@ -1,7 +1,7 @@
 const API_SUFFIX = '/api/v1';
 
 /** Keep in sync with apps/admin/vercel.json tunnel destination. */
-const HOSTED_ADMIN_API_FALLBACK = 'https://kitty-break-shareware-scan.trycloudflare.com';
+const HOSTED_ADMIN_API_FALLBACK = 'https://metric-ceiling-bid-set.trycloudflare.com';
 
 /**
  * Ensure API base URL always ends with /api/v1.
