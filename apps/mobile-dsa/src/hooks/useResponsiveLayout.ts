@@ -9,7 +9,7 @@ export const BREAKPOINTS = {
 } as const;
 
 /** Slim sidebar — fits "Applications" label on desktop. */
-export const DESKTOP_SIDEBAR_WIDTH = 232;
+export const DESKTOP_SIDEBAR_WIDTH = 240;
 
 export type LayoutSize = 'compact' | 'medium' | 'wide' | 'ultra';
 
@@ -41,7 +41,7 @@ export function useResponsiveLayout() {
 
   const pagePad = isDesktop ? 24 : size === 'medium' ? 20 : 16;
   /** Breathing room below tab shell — stops content sticking to top on desktop. */
-  const contentTopPad = isDesktop ? 24 : 8;
+  const contentTopPad = isDesktop ? 48 : 12;
   const sectionGap = isDesktop ? 20 : 16;
   const statColumns = isDesktop ? 4 : 2;
   const actionColumns = isDesktop ? 8 : size === 'medium' ? 4 : 4;

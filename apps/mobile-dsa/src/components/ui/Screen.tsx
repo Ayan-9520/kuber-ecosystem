@@ -23,6 +23,16 @@ const KEEP_SCREEN_HEADER_ROUTES = new Set([
   'Onboarding',
 ]);
 
+/** Main tab hubs — always get desktop top inset (canGoBack is unreliable on web). */
+const DESKTOP_HUB_ROUTES = new Set([
+  'Dashboard',
+  'AcademyHome',
+  'LeadsList',
+  'ApplicationsList',
+  'CommissionsHome',
+  'ProfileHome',
+]);
+
 interface ScreenProps extends ScrollViewProps {
   children: ReactNode;
   title?: string;
@@ -44,7 +54,6 @@ function useShowScreenHeader(
   if (!hasTitle) return false;
   if (forceHeader) return true;
   if (KEEP_SCREEN_HEADER_ROUTES.has(route.name)) return true;
-  // Nested stack routes already show the native header — avoid duplicate titles.
   if (navigation.canGoBack()) return false;
   return true;
 }
@@ -53,7 +62,7 @@ function createStyles(
   colors: AppColors,
   contentMaxWidth: number | undefined,
   pagePad: number,
-  contentTopPad: number,
+  scrollTopPad: number,
   isDesktop: boolean,
 ) {
   return StyleSheet.create({
@@ -64,7 +73,7 @@ function createStyles(
     flex: { flex: 1 },
     padded: { paddingHorizontal: pagePad },
     scrollContent: {
-      paddingTop: contentTopPad,
+      paddingTop: scrollTopPad,
       paddingBottom: isDesktop ? spacing.xl + 16 : spacing.xxl,
       width: '100%',
       maxWidth: contentMaxWidth,
@@ -75,7 +84,6 @@ function createStyles(
       maxWidth: contentMaxWidth,
       alignSelf: isDesktop ? 'stretch' : 'center',
       flex: 1,
-      paddingTop: contentTopPad,
     },
     header: {
       flexDirection: 'row',
@@ -119,15 +127,22 @@ export function Screen({
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const route = useRoute();
   const { colors } = useAppTheme();
   const { contentMaxWidth, pagePad, contentTopPad, isDesktop } = useResponsiveLayout();
+
+  const isDesktopHub = isDesktop && DESKTOP_HUB_ROUTES.has(route.name);
+  const isNested = navigation.canGoBack() && !isDesktopHub;
+  /** Desktop tab hubs: inset on shell; scroll body starts below it. */
+  const containerTopPad = isDesktopHub ? contentTopPad : isDesktop && !isNested ? contentTopPad : insets.top;
+  const scrollTopPad = isDesktopHub || (isDesktop && !isNested) ? 0 : isNested ? 0 : contentTopPad;
+
   const styles = useMemo(
-    () => createStyles(colors, contentMaxWidth, pagePad, contentTopPad, isDesktop),
-    [colors, contentMaxWidth, pagePad, contentTopPad, isDesktop],
+    () => createStyles(colors, contentMaxWidth, pagePad, scrollTopPad, isDesktop),
+    [colors, contentMaxWidth, pagePad, scrollTopPad, isDesktop],
   );
 
   const showHeader = useShowScreenHeader(!!(title || subtitle), forceHeader);
-  const topInset = navigation.canGoBack() ? 0 : insets.top;
 
   const header = showHeader && (title || subtitle) && (
     <View style={styles.header}>
@@ -151,7 +166,7 @@ export function Screen({
 
   if (!scroll) {
     return (
-      <View style={[styles.container, { paddingTop: topInset }]}>
+      <View style={[styles.container, { paddingTop: containerTopPad }]}>
         {header}
         <View style={[styles.bodyShell, ...contentStyle]}>{body}</View>
       </View>
@@ -159,7 +174,7 @@ export function Screen({
   }
 
   return (
-    <View style={[styles.container, { paddingTop: topInset }]}>
+    <View style={[styles.container, { paddingTop: containerTopPad }]}>
       {header}
       <ScrollView
         style={styles.flex}
@@ -183,10 +198,10 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   const { colors } = useAppTheme();
-  const { contentMaxWidth, pagePad, contentTopPad, isDesktop } = useResponsiveLayout();
+  const { contentMaxWidth, pagePad, isDesktop } = useResponsiveLayout();
   const styles = useMemo(
-    () => createStyles(colors, contentMaxWidth, pagePad, contentTopPad, isDesktop),
-    [colors, contentMaxWidth, pagePad, contentTopPad, isDesktop],
+    () => createStyles(colors, contentMaxWidth, pagePad, 0, isDesktop),
+    [colors, contentMaxWidth, pagePad, isDesktop],
   );
 
   return (

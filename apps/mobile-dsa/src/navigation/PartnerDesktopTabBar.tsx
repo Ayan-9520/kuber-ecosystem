@@ -82,12 +82,7 @@ export function PartnerDesktopTabBar({ state, descriptors, navigation }: BottomT
               inactive: 'ellipse-outline' as const,
               label: options.title ?? route.name,
             };
-            const label =
-              typeof options.tabBarLabel === 'string'
-                ? options.tabBarLabel
-                : typeof options.title === 'string'
-                  ? options.title
-                  : meta.label;
+            const label = meta.label;
 
             const onPress = () => {
               const event = navigation.emit({
@@ -216,7 +211,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: radius.md,
   },
-  itemLabel: { fontSize: 13, fontWeight: '500', flexShrink: 1 },
+  itemLabel: { fontSize: 12, fontWeight: '500', flexShrink: 1 },
   itemLabelActive: { fontWeight: '700' },
   accountBlock: {
     borderTopWidth: StyleSheet.hairlineWidth,
