@@ -1,0 +1,372 @@
+/* Shared hub / feature module theming — fixes dark/light contrast across admin pages */
+
+.hub-page,
+[class$='-hub'],
+[class$='-page'],
+.drde-page,
+.bcre-page,
+.earnings-finance,
+.loan-fulfillment {
+  color: var(--color-text);
+}
+
+/* Module / case list cards */
+.drde-module,
+.drde-case-item,
+.earnings-module-card,
+.bcre-tab,
+.bcre-version-item,
+.uat-hub .uat-flow-card,
+.uat-hub .uat-stakeholder-card,
+.uat-hub .uat-approval-row,
+.uat-hub .uat-review-row,
+.uat-hub .uat-risk-row,
+.uat-hub .uat-cert-card,
+.monitoring-hub .component-card,
+.go-live-hub .section-score-card,
+.go-live-hub .workflow-step,
+.go-live-hub .war-room-team-card,
+.go-live-hub .prelaunch-item,
+.go-live-hub .criteria-item,
+.hypercare-hub .monitor-item,
+.hypercare-hub .criteria-item,
+.hypercare-hub .phase-card {
+  background: var(--color-card);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.drde-module.is-active,
+.drde-case-item.is-active,
+.earnings-module-card.is-active,
+.bcre-tab.is-active {
+  background: var(--color-active-surface);
+  border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
+  color: var(--status-success-fg);
+}
+
+.drde-module__label,
+.drde-balance__chip strong,
+.earnings-module-card__label {
+  color: var(--color-text);
+}
+
+.drde-module__desc,
+.drde-field label,
+.drde-balance__chip span,
+.drde-table th,
+.bcre-table th,
+.earnings-module-card__desc,
+.earnings-table th {
+  color: var(--color-text-muted);
+}
+
+/* Native inputs inside feature modules (not using .form-input) */
+.drde-field input,
+.drde-field select,
+.drde-field textarea,
+.bcre-filters input,
+.bcre-filters select,
+.loan-fulfillment .lf-dist-table input {
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+}
+
+.drde-field input:disabled,
+.drde-field select:disabled,
+.drde-field textarea:disabled {
+  background: var(--color-input-disabled-bg);
+  color: var(--color-text-muted);
+}
+
+.drde-field input:focus,
+.drde-field select:focus,
+.drde-field textarea:focus,
+.bcre-filters input:focus,
+.bcre-filters select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+.drde-balance__chip {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.drde-balance__chip.is-ok {
+  background: var(--status-success-bg);
+  border-color: var(--status-success-border);
+}
+
+.drde-balance__chip.is-bad {
+  background: var(--status-danger-bg);
+  border-color: var(--status-danger-border);
+}
+
+.drde-table th,
+.drde-table td,
+.bcre-table th,
+.bcre-table td,
+.earnings-table th,
+.earnings-table td {
+  border-color: var(--color-border);
+}
+
+.drde-locked {
+  background: var(--status-warning-bg);
+  border: 1px solid var(--status-warning-border);
+  color: var(--status-warning-fg);
+}
+
+.drde-role-pill,
+.earnings-finance__role,
+.bcre-pill {
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
+}
+
+.bcre-tab {
+  color: var(--color-text-secondary);
+}
+
+.bcre-upload {
+  border: 1.5px dashed var(--status-success-border);
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
+}
+
+.bcre-error {
+  color: var(--color-danger);
+}
+
+.bcre-ok {
+  color: var(--color-success);
+}
+
+/* UAT status surfaces */
+.uat-hub .uat-readiness-pill {
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-fg);
+}
+
+.uat-hub .uat-readiness-pill.ready {
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
+}
+
+.uat-hub .uat-readiness-pill.blocked {
+  background: var(--status-danger-bg);
+  color: var(--status-danger-fg);
+}
+
+.uat-hub .uat-quality-gate.pass {
+  background: var(--status-success-bg);
+  border-color: var(--status-success-border);
+  color: var(--status-success-fg);
+}
+
+.uat-hub .uat-quality-gate.fail {
+  background: var(--status-danger-bg);
+  border-color: var(--status-danger-border);
+  color: var(--status-danger-fg);
+}
+
+.uat-hub .uat-verdict-banner.approved {
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
+}
+
+.uat-hub .uat-verdict-banner.partial {
+  background: var(--status-warning-bg);
+  color: var(--status-warning-fg);
+}
+
+.uat-hub .uat-verdict-banner.blocked {
+  background: var(--status-danger-bg);
+  color: var(--status-danger-fg);
+}
+
+.uat-hub .uat-cert-card.approved {
+  background: var(--status-success-bg);
+  border-color: var(--status-success-border);
+  color: var(--status-success-fg);
+}
+
+.uat-hub .uat-cert-card.partial {
+  background: var(--status-warning-bg);
+  border-color: var(--status-warning-border);
+  color: var(--status-warning-fg);
+}
+
+.uat-hub .uat-cert-card.pending {
+  background: var(--status-neutral-bg);
+  color: var(--color-text-secondary);
+}
+
+/* Monitoring / observability */
+.monitoring-hub .health-pill {
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-fg);
+}
+
+.monitoring-hub .health-pill.ok {
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
+}
+
+.monitoring-hub .health-pill.degraded {
+  background: var(--status-warning-bg);
+  color: var(--status-warning-fg);
+}
+
+.monitoring-hub .health-pill.down {
+  background: var(--status-danger-bg);
+  color: var(--status-danger-fg);
+}
+
+.observability-hub .pillar-pill {
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-fg);
+}
+
+.observability-hub .pillar-pill.active {
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
+}
+
+.observability-hub .log-level.error {
+  color: var(--color-danger);
+}
+
+.observability-hub .log-level.warn {
+  color: var(--color-warning);
+}
+
+.observability-hub .log-level.info {
+  color: var(--color-info);
+}
+
+.observability-hub .log-level.debug {
+  color: var(--color-text-muted);
+}
+
+/* Hypercare verdicts */
+.hypercare-hub .verdict-stable {
+  background: var(--status-success-bg);
+  border: 1px solid var(--status-success-border);
+  color: var(--status-success-fg);
+}
+
+.hypercare-hub .verdict-stabilizing {
+  background: var(--status-warning-bg);
+  border: 1px solid var(--status-warning-border);
+  color: var(--status-warning-fg);
+}
+
+.hypercare-hub .verdict-unstable {
+  background: var(--status-danger-bg);
+  border: 1px solid var(--status-danger-border);
+  color: var(--status-danger-fg);
+}
+
+.hypercare-hub .verdict-stabilized {
+  background: var(--status-info-bg);
+  border: 1px solid var(--status-info-border);
+  color: var(--status-info-fg);
+}
+
+.hypercare-hub .monitor-item.healthy,
+.hypercare-hub .criteria-item.met {
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
+}
+
+.hypercare-hub .monitor-item.unhealthy,
+.hypercare-hub .criteria-item.pending {
+  background: var(--status-danger-bg);
+  color: var(--status-danger-fg);
+}
+
+.hypercare-hub .phase-card.active {
+  border-color: var(--color-info);
+  background: var(--status-info-bg);
+  color: var(--status-info-fg);
+  font-weight: 600;
+}
+
+/* Go-live */
+.go-live-hub .verdict-ready {
+  background: var(--status-success-bg);
+  border: 1px solid var(--status-success-border);
+  color: var(--status-success-fg);
+}
+
+.go-live-hub .verdict-blocked {
+  background: var(--status-danger-bg);
+  border: 1px solid var(--status-danger-border);
+  color: var(--status-danger-fg);
+}
+
+.go-live-hub .verdict-partial {
+  background: var(--status-warning-bg);
+  border: 1px solid var(--status-warning-border);
+  color: var(--status-warning-fg);
+}
+
+.go-live-hub .workflow-step.active {
+  border-color: var(--color-info);
+  background: var(--status-info-bg);
+  color: var(--status-info-fg);
+  font-weight: 600;
+}
+
+.go-live-hub .workflow-step.done {
+  border-color: var(--status-success-border);
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
+}
+
+.go-live-hub .prelaunch-item.pass,
+.go-live-hub .criteria-item.met {
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
+}
+
+.backup-hub .scope-pill {
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-fg);
+}
+
+.error-tracking-hub .priority-critical {
+  color: var(--color-danger);
+}
+
+.error-tracking-hub .priority-high {
+  color: color-mix(in srgb, var(--color-danger) 80%, var(--color-warning));
+}
+
+.error-tracking-hub .priority-medium {
+  color: var(--color-warning);
+}
+
+.error-tracking-hub .priority-low {
+  color: var(--color-text-muted);
+}
+
+.content-quality-badge.passed {
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
+}
+
+.content-quality-badge.warning {
+  background: var(--status-warning-bg);
+  color: var(--status-warning-fg);
+}
+
+.content-quality-badge.failed {
+  background: var(--status-danger-bg);
+  color: var(--status-danger-fg);
+}

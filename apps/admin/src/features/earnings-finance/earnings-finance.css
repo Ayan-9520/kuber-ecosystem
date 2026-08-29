@@ -10,8 +10,8 @@
   gap: 0.5rem;
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
-  background: var(--color-brand-50, #ecfdf5);
-  color: var(--color-brand-800, #065f46);
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -24,30 +24,42 @@
 
 .earnings-module-card {
   text-align: left;
-  border: 1px solid var(--border-color, #e2e8f0);
+  border: 1px solid var(--color-border);
   border-radius: 1rem;
   padding: 1rem;
-  background: var(--card-bg, #fff);
+  background: var(--color-card);
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.earnings-module-card.is-active .earnings-module-card__label {
+  color: var(--status-success-fg);
+}
+
+.earnings-module-card.is-active .earnings-module-card__desc {
+  color: color-mix(in srgb, var(--status-success-fg) 72%, transparent);
+}
+
+.earnings-module-card.is-active {
+  background: var(--color-active-surface);
 }
 
 .earnings-module-card:hover,
 .earnings-module-card.is-active {
-  border-color: var(--color-brand-500, #10b981);
-  box-shadow: 0 8px 24px -12px rgba(5, 61, 50, 0.25);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-elevated);
 }
 
 .earnings-module-card__label {
   font-weight: 700;
-  color: var(--text-primary, #0f172a);
+  color: var(--color-text);
   margin: 0 0 0.25rem;
 }
 
 .earnings-module-card__desc {
   margin: 0;
   font-size: 0.8rem;
-  color: var(--text-muted, #64748b);
+  color: var(--color-text-muted);
   line-height: 1.4;
 }
 
@@ -70,7 +82,7 @@
 .earnings-table th,
 .earnings-table td {
   padding: 0.65rem 0.75rem;
-  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  border-bottom: 1px solid var(--color-border);
   text-align: left;
   vertical-align: top;
 }
@@ -79,7 +91,7 @@
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--text-muted, #64748b);
+  color: var(--color-text-muted);
 }
 
 .earnings-detail-grid {
@@ -141,7 +153,7 @@
   height: 0.65rem;
   margin-top: 0.35rem;
   border-radius: 999px;
-  background: var(--color-brand-600, #059669);
+  background: var(--color-primary);
   flex-shrink: 0;
 }
 
@@ -151,7 +163,7 @@
   top: 1rem;
   bottom: 0;
   width: 2px;
-  background: var(--border-color, #e2e8f0);
+  background: var(--color-border);
 }
 
 .earnings-timeline__head {
@@ -169,14 +181,14 @@
 .earnings-timeline__meta {
   margin: 0.25rem 0 0;
   font-size: 0.75rem;
-  color: var(--text-muted, #64748b);
+  color: var(--color-text-muted);
 }
 
 .earnings-timeline__comment {
   margin: 0.4rem 0 0;
   padding: 0.5rem 0.65rem;
   border-radius: 0.5rem;
-  background: var(--surface-muted, #f8fafc);
+  background: var(--color-surface);
   font-size: 0.8rem;
-  color: var(--text-secondary, #334155);
+  color: var(--color-text-secondary);
 }

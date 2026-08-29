@@ -1,12 +1,13 @@
 @import './ui.css';
 @import './api-docs.css';
+@import './feature-theme.css';
 @import '../features/support/support.css';
 @import '../features/loan-fulfillment/loan-fulfillment.css';
 
 /* ── KuberOne Enterprise Design System ── */
 /* Tokens: use CSS variables only — no hardcoded colors in components */
 
-:root,
+:root:not([data-theme='light']),
 [data-theme='dark'] {
   color-scheme: dark;
   /* Align with kuberfinserve.com brand greens */
@@ -55,6 +56,38 @@
   --shadow-card: 0 1px 0 color-mix(in srgb, var(--color-primary) 6%, transparent), 0 4px 24px rgba(0, 0, 0, 0.28);
   --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.35);
   --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-primary) 35%, transparent);
+  --color-input-bg: var(--color-surface);
+  --color-input-disabled-bg: color-mix(in srgb, var(--color-surface) 65%, var(--color-bg));
+  --color-active-surface: color-mix(in srgb, var(--color-primary) 14%, var(--color-card));
+  --color-surface-elevated: color-mix(in srgb, var(--color-surface) 88%, var(--color-card));
+  --status-success-bg: color-mix(in srgb, var(--color-success) 18%, var(--color-card));
+  --status-success-fg: #6ee7b7;
+  --status-success-border: color-mix(in srgb, var(--color-success) 42%, transparent);
+  --status-danger-bg: color-mix(in srgb, var(--color-danger) 18%, var(--color-card));
+  --status-danger-fg: #fca5a5;
+  --status-danger-border: color-mix(in srgb, var(--color-danger) 42%, transparent);
+  --status-warning-bg: color-mix(in srgb, var(--color-warning) 18%, var(--color-card));
+  --status-warning-fg: #fcd34d;
+  --status-warning-border: color-mix(in srgb, var(--color-warning) 42%, transparent);
+  --status-info-bg: color-mix(in srgb, var(--color-info) 18%, var(--color-card));
+  --status-info-fg: #7dd3fc;
+  --status-info-border: color-mix(in srgb, var(--color-info) 42%, transparent);
+  --status-neutral-bg: var(--color-surface);
+  --status-neutral-fg: var(--color-text-secondary);
+  --status-neutral-border: var(--color-border);
+  --text-primary: var(--color-text);
+  --text-secondary: var(--color-text-secondary);
+  --text-muted: var(--color-text-muted);
+  --surface: var(--color-card);
+  --surface-muted: var(--color-surface);
+  --surface-secondary: var(--color-surface);
+  --border-color: var(--color-border);
+  --border: var(--color-border);
+  --card-bg: var(--color-card);
+  --color-brand-50: var(--status-success-bg);
+  --color-brand-500: var(--color-primary);
+  --color-brand-600: var(--color-primary-hover);
+  --color-brand-800: var(--status-success-fg);
 }
 
 [data-theme='light'] {
@@ -105,6 +138,38 @@
   --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 20px rgba(3, 40, 32, 0.06);
   --shadow-elevated: 0 8px 30px rgba(3, 40, 32, 0.1);
   --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-primary) 28%, transparent);
+  --color-input-bg: #ffffff;
+  --color-input-disabled-bg: #f4f7f6;
+  --color-active-surface: #ecfdf5;
+  --color-surface-elevated: #eef5f2;
+  --status-success-bg: #ecfdf5;
+  --status-success-fg: #065f46;
+  --status-success-border: #a7f3d0;
+  --status-danger-bg: #fef2f2;
+  --status-danger-fg: #991b1b;
+  --status-danger-border: #fecaca;
+  --status-warning-bg: #fffbeb;
+  --status-warning-fg: #92400e;
+  --status-warning-border: #fde68a;
+  --status-info-bg: #eff6ff;
+  --status-info-fg: #1e40af;
+  --status-info-border: #bfdbfe;
+  --status-neutral-bg: #eef5f2;
+  --status-neutral-fg: #3d5a52;
+  --status-neutral-border: #d7e5df;
+  --text-primary: var(--color-text);
+  --text-secondary: var(--color-text-secondary);
+  --text-muted: var(--color-text-muted);
+  --surface: var(--color-card);
+  --surface-muted: var(--color-surface);
+  --surface-secondary: var(--color-surface);
+  --border-color: var(--color-border);
+  --border: var(--color-border);
+  --card-bg: var(--color-card);
+  --color-brand-50: var(--status-success-bg);
+  --color-brand-500: var(--color-primary);
+  --color-brand-600: var(--color-primary-hover);
+  --color-brand-800: var(--status-success-fg);
 }
 
 :root {

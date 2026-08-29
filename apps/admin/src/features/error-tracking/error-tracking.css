@@ -4,10 +4,21 @@
   text-transform: uppercase;
 }
 
-.error-tracking-hub .priority-critical { color: #dc2626; }
-.error-tracking-hub .priority-high { color: #ea580c; }
-.error-tracking-hub .priority-medium { color: #ca8a04; }
-.error-tracking-hub .priority-low { color: #64748b; }
+.error-tracking-hub .priority-critical {
+  color: var(--color-danger);
+}
+
+.error-tracking-hub .priority-high {
+  color: color-mix(in srgb, var(--color-danger) 80%, var(--color-warning));
+}
+
+.error-tracking-hub .priority-medium {
+  color: var(--color-warning);
+}
+
+.error-tracking-hub .priority-low {
+  color: var(--color-text-muted);
+}
 
 .error-tracking-hub .detail-grid {
   display: grid;

@@ -61,9 +61,20 @@
   margin-bottom: var(--space-2);
 }
 
-.content-quality-badge.passed { background: color-mix(in srgb, #22c55e 20%, transparent); color: #22c55e; }
-.content-quality-badge.warning { background: color-mix(in srgb, #f59e0b 20%, transparent); color: #f59e0b; }
-.content-quality-badge.failed { background: color-mix(in srgb, #ef4444 20%, transparent); color: #ef4444; }
+.content-quality-badge.passed {
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
+}
+
+.content-quality-badge.warning {
+  background: var(--status-warning-bg);
+  color: var(--status-warning-fg);
+}
+
+.content-quality-badge.failed {
+  background: var(--status-danger-bg);
+  color: var(--status-danger-fg);
+}
 
 @media (max-width: 900px) {
   .content-studio { grid-template-columns: 1fr; }

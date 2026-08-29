@@ -7,7 +7,7 @@
 
 .infrastructure-hub .arch-layer {
   padding: 0.35rem 0.75rem;
-  background: var(--color-surface-elevated, #f4f4f5);
+  background: var(--color-surface-elevated);
   border-radius: 0.375rem;
   font-size: 0.8125rem;
 }

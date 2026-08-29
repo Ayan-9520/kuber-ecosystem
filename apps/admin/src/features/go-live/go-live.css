@@ -14,9 +14,9 @@
 
 .go-live-hub .section-score-card {
   padding: 0.75rem 1rem;
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 8px;
-  background: var(--surface-secondary, #f9fafb);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
 }
 
 .go-live-hub .approval-row {
@@ -24,7 +24,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 0;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .go-live-hub .gate-row {
@@ -45,24 +45,27 @@
 
 .go-live-hub .verdict-banner {
   padding: 1rem 1.25rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   margin-bottom: 1.5rem;
   font-weight: 600;
 }
 
 .go-live-hub .verdict-ready {
-  background: color-mix(in srgb, var(--color-success, #16a34a) 15%, transparent);
-  border: 1px solid var(--color-success, #16a34a);
+  background: var(--status-success-bg);
+  border: 1px solid var(--status-success-border);
+  color: var(--status-success-fg);
 }
 
 .go-live-hub .verdict-blocked {
-  background: color-mix(in srgb, var(--color-danger, #dc2626) 12%, transparent);
-  border: 1px solid var(--color-danger, #dc2626);
+  background: var(--status-danger-bg);
+  border: 1px solid var(--status-danger-border);
+  color: var(--status-danger-fg);
 }
 
 .go-live-hub .verdict-partial {
-  background: color-mix(in srgb, #ca8a04 12%, transparent);
-  border: 1px solid #ca8a04;
+  background: var(--status-warning-bg);
+  border: 1px solid var(--status-warning-border);
+  color: var(--status-warning-fg);
 }
 
 .go-live-hub .workflow-steps {
@@ -75,19 +78,22 @@
 .go-live-hub .workflow-step {
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
-  border: 1px solid var(--border-color, #e5e7eb);
+  border: 1px solid var(--color-border);
   font-size: 0.875rem;
+  background: var(--color-card);
 }
 
 .go-live-hub .workflow-step.active {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: var(--color-info);
+  background: var(--status-info-bg);
+  color: var(--status-info-fg);
   font-weight: 600;
 }
 
 .go-live-hub .workflow-step.done {
-  border-color: #16a34a;
-  background: #f0fdf4;
+  border-color: var(--status-success-border);
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
 }
 
 .go-live-hub .war-room-teams,
@@ -102,17 +108,19 @@
 .go-live-hub .prelaunch-item,
 .go-live-hub .criteria-item {
   padding: 0.75rem;
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
 }
 
 .go-live-hub .prelaunch-item.pass,
 .go-live-hub .criteria-item.met {
-  background: #f0fdf4;
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
 }
 
 .go-live-hub .event-row,
 .go-live-hub .incident-row {
   padding: 0.75rem 0;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  border-bottom: 1px solid var(--color-border);
 }

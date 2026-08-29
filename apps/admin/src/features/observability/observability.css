@@ -8,14 +8,15 @@
 .observability-hub .pillar-pill {
   padding: 0.5rem 0.75rem;
   border-radius: 0.5rem;
-  background: var(--surface-muted, #f1f5f9);
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-fg);
   font-size: 0.875rem;
   text-align: center;
 }
 
 .observability-hub .pillar-pill.active {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
 }
 
 .observability-hub .coverage-bar {
@@ -31,10 +32,21 @@
   text-transform: uppercase;
 }
 
-.observability-hub .log-level.error { color: #dc2626; }
-.observability-hub .log-level.warn { color: #ca8a04; }
-.observability-hub .log-level.info { color: #2563eb; }
-.observability-hub .log-level.debug { color: #64748b; }
+.observability-hub .log-level.error {
+  color: var(--color-danger);
+}
+
+.observability-hub .log-level.warn {
+  color: var(--color-warning);
+}
+
+.observability-hub .log-level.info {
+  color: var(--color-info);
+}
+
+.observability-hub .log-level.debug {
+  color: var(--color-text-muted);
+}
 
 .observability-hub .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

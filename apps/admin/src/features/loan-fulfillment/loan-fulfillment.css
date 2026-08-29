@@ -4,12 +4,12 @@
   --lf-primary-hover: #1c6a7a;
   --lf-secondary: #10662a;
   --lf-accent: #b0e9b2;
-  --lf-accent-soft: color-mix(in srgb, var(--lf-accent) 35%, var(--color-card, #fff));
-  --lf-surface: var(--color-card, #ffffff);
-  --lf-surface-muted: color-mix(in srgb, var(--lf-primary) 4%, var(--color-card, #fff));
-  --lf-border: color-mix(in srgb, var(--lf-primary) 18%, var(--color-border, #e2e8f0));
-  --lf-muted: var(--color-text-muted, #64748b);
-  --lf-text: var(--color-text, #0f172a);
+  --lf-accent-soft: color-mix(in srgb, var(--lf-accent) 35%, var(--color-card));
+  --lf-surface: var(--color-card);
+  --lf-surface-muted: color-mix(in srgb, var(--lf-primary) 4%, var(--color-card));
+  --lf-border: color-mix(in srgb, var(--lf-primary) 18%, var(--color-border));
+  --lf-muted: var(--color-text-muted);
+  --lf-text: var(--color-text);
   --lf-shadow: 0 10px 28px -16px color-mix(in srgb, var(--lf-primary) 45%, transparent);
   --lf-radius: 0.9rem;
   display: flex;
@@ -101,9 +101,9 @@
 }
 
 .loan-fulfillment .lf-stage-pill--terminal {
-  background: color-mix(in srgb, #fecaca 40%, var(--lf-surface));
-  color: #991b1b;
-  border-color: #fecaca;
+  background: var(--status-danger-bg);
+  color: var(--status-danger-fg);
+  border-color: var(--status-danger-border);
 }
 
 .loan-fulfillment .lf-stage-pill--done {
@@ -141,7 +141,7 @@
   padding: 0 0.35rem;
   border-radius: 999px;
   background: var(--lf-primary);
-  color: #fff;
+  color: var(--color-on-primary);
   font-size: 0.7rem;
   font-weight: 700;
   line-height: 1;
@@ -341,7 +341,7 @@
 }
 
 .loan-fulfillment .lf-dist-bad {
-  color: #b91c1c;
+  color: var(--color-danger);
   font-weight: 700;
   font-size: 0.8rem;
 }
