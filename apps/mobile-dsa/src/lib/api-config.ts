@@ -8,7 +8,7 @@ const API_SUFFIX = '/api/v1';
  * Keep in sync with apps/mobile-dsa/vercel.json EXPO_PUBLIC_API_BASE_URL.
  * Never use same-origin /api on partner.kuberone.online — Vercel→trycloudflare rewrites 502.
  */
-const HOSTED_PARTNER_API_FALLBACK = 'https://metric-ceiling-bid-set.trycloudflare.com';
+const HOSTED_PARTNER_API_FALLBACK = 'https://scholars-rpm-cake-app.trycloudflare.com';
 
 function normalizeApiBaseUrl(url: string): string {
   const trimmed = url.trim().replace(/\/+$/, '');
@@ -52,7 +52,9 @@ export function resolveApiBaseUrl(): string {
     const win = globalThis as typeof globalThis & { location?: { hostname?: string } };
     const host = win.location?.hostname;
     if (host && isHostedPartnerWebHostname(host)) {
-      return normalizeApiBaseUrl(configured || HOSTED_PARTNER_API_FALLBACK);
+      const absoluteConfigured =
+        configured && /^https?:\/\//i.test(configured) ? configured : undefined;
+      return normalizeApiBaseUrl(absoluteConfigured || HOSTED_PARTNER_API_FALLBACK);
     }
   }
 

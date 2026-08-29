@@ -1,7 +1,7 @@
 const API_SUFFIX = '/api/v1';
 
 /** Keep in sync with apps/admin/vercel.json tunnel destination. */
-const HOSTED_ADMIN_API_FALLBACK = 'https://metric-ceiling-bid-set.trycloudflare.com';
+const HOSTED_ADMIN_API_FALLBACK = 'https://scholars-rpm-cake-app.trycloudflare.com';
 
 /**
  * Ensure API base URL always ends with /api/v1.
@@ -36,7 +36,9 @@ function isHostedAdminHostname(hostname: string): boolean {
 export function resolveApiBaseUrl(): string {
   const configured = import.meta.env.VITE_API_BASE_URL?.trim();
   if (typeof window !== 'undefined' && isHostedAdminHostname(window.location.hostname)) {
-    return normalizeApiBaseUrl(configured || HOSTED_ADMIN_API_FALLBACK);
+    const absoluteConfigured =
+      configured && /^https?:\/\//i.test(configured) ? configured : undefined;
+    return normalizeApiBaseUrl(absoluteConfigured || HOSTED_ADMIN_API_FALLBACK);
   }
   if (configured) return normalizeApiBaseUrl(configured);
   return API_SUFFIX;
