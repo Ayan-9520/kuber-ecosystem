@@ -7,6 +7,7 @@ import { useAuth, useResponsiveLayout } from '@/hooks';
 import { maskPhone, str } from '@/lib/utils';
 import { partnersService } from '@/services';
 import { radius, spacing, typography } from '@/theme';
+import { glassSurface } from '@/theme/premium';
 import { useAppTheme } from '@/theme/ThemeProvider';
 
 const logoK1 = require('../../assets/logo-k1.png');
@@ -37,6 +38,9 @@ export function PartnerDesktopTabBar({ state, descriptors, navigation }: BottomT
   });
 
   const displayName = str(partner.data?.contactName ?? partner.data?.businessName ?? user?.phone ?? 'Partner');
+  const businessName = str(partner.data?.businessName);
+  const partnerCode = str(partner.data?.partnerCode);
+  const tier = str(partner.data?.commissionTier ?? 'SILVER');
   const initials = displayName.slice(0, 2).toUpperCase();
   const profileFocused = state.routes[state.index]?.name === 'Profile';
 
@@ -48,26 +52,45 @@ export function PartnerDesktopTabBar({ state, descriptors, navigation }: BottomT
     <View
       style={[
         styles.rail,
+        glassSurface(colors, true),
         {
           width: sidebarWidth,
-          backgroundColor: colors.card,
           borderRightColor: colors.borderLight,
         },
       ]}
     >
-      <View style={[styles.brand, { borderBottomColor: colors.borderLight }]}>
-        <View style={styles.logoPlate}>
-          <Image source={logoK1} style={styles.logo} accessibilityLabel="KuberOne" />
+      <View style={[styles.brandShell, { borderBottomColor: colors.borderLight }]}>
+        <View
+          style={[
+            styles.brandGlow,
+            Platform.OS === 'web' && {
+              backgroundImage: `linear-gradient(135deg, ${colors.primary}22 0%, transparent 55%)`,
+            },
+          ]}
+        />
+        <View style={styles.brand}>
+          <View style={[styles.logoPlate, { borderColor: `${colors.primary}30` }]}>
+            <Image source={logoK1} style={styles.logo} accessibilityLabel="KuberOne" />
+          </View>
+          <View style={styles.brandCopy}>
+            <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>
+              KuberOne
+            </Text>
+            <Text style={[styles.brandTag, { color: colors.primary }]} numberOfLines={1}>
+              Partner Network
+            </Text>
+          </View>
         </View>
-        <View style={styles.brandCopy}>
-          <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>
-            KuberOne
-          </Text>
-          <Text style={[styles.brandTag, { color: colors.textMuted }]} numberOfLines={1}>
-            Partner
-          </Text>
-        </View>
+        {partnerCode ? (
+          <View style={[styles.codePill, { backgroundColor: `${colors.primary}12`, borderColor: `${colors.primary}28` }]}>
+            <Text style={[styles.codeText, { color: colors.primary }]} numberOfLines={1}>
+              {partnerCode}
+            </Text>
+          </View>
+        ) : null}
       </View>
+
+      <Text style={[styles.navLabel, { color: colors.textMuted }]}>Navigation</Text>
 
       <View style={styles.nav} accessibilityRole="tablist">
         {state.routes
@@ -103,21 +126,31 @@ export function PartnerDesktopTabBar({ state, descriptors, navigation }: BottomT
                 onPress={onPress}
                 style={({ pressed }) => [
                   styles.item,
-                  {
-                    backgroundColor: focused ? `${colors.primary}14` : pressed ? colors.surface : 'transparent',
-                  },
+                  focused && [
+                    styles.itemActive,
+                    {
+                      backgroundColor: `${colors.primary}14`,
+                      borderColor: `${colors.primary}35`,
+                    },
+                  ],
+                  !focused && pressed && { backgroundColor: colors.surface },
                   Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
                 ]}
               >
-                <Ionicons
-                  name={focused ? meta.active : meta.inactive}
-                  size={17}
-                  color={focused ? colors.primary : colors.textSecondary}
-                />
+                {focused ? (
+                  <View style={[styles.activeBar, { backgroundColor: colors.primary }]} />
+                ) : null}
+                <View style={[styles.iconPlate, { backgroundColor: focused ? `${colors.primary}18` : colors.surface }]}>
+                  <Ionicons
+                    name={focused ? meta.active : meta.inactive}
+                    size={18}
+                    color={focused ? colors.primary : colors.textSecondary}
+                  />
+                </View>
                 <Text
                   style={[
                     styles.itemLabel,
-                    { color: focused ? colors.primary : colors.textSecondary },
+                    { color: focused ? colors.text : colors.textSecondary },
                     focused && styles.itemLabelActive,
                   ]}
                   numberOfLines={1}
@@ -135,9 +168,12 @@ export function PartnerDesktopTabBar({ state, descriptors, navigation }: BottomT
           accessibilityLabel="Open profile"
           onPress={goProfile}
           style={({ pressed }) => [
-            styles.accountRow,
-            profileFocused && { backgroundColor: `${colors.primary}10` },
-            pressed && { opacity: 0.9 },
+            styles.accountCard,
+            {
+              backgroundColor: profileFocused ? `${colors.primary}10` : colors.surface,
+              borderColor: profileFocused ? `${colors.primary}35` : colors.borderLight,
+            },
+            pressed && { opacity: 0.92 },
             Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
           ]}
         >
@@ -149,8 +185,11 @@ export function PartnerDesktopTabBar({ state, descriptors, navigation }: BottomT
               {displayName}
             </Text>
             <Text style={[styles.accountSub, { color: colors.textMuted }]} numberOfLines={1}>
-              {user?.phone ? maskPhone(user.phone) : 'Account'}
+              {businessName || (user?.phone ? maskPhone(user.phone) : 'Partner account')}
             </Text>
+            <View style={[styles.tierPill, { backgroundColor: `${colors.primary}14` }]}>
+              <Text style={[styles.tierText, { color: colors.primary }]}>{tier} tier</Text>
+            </View>
           </View>
           <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
         </Pressable>
@@ -161,6 +200,7 @@ export function PartnerDesktopTabBar({ state, descriptors, navigation }: BottomT
           onPress={() => void logout()}
           style={({ pressed }) => [
             styles.signOut,
+            { borderColor: colors.borderLight },
             pressed && { opacity: 0.85 },
             Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
           ]}
@@ -177,74 +217,130 @@ const styles = StyleSheet.create({
   rail: {
     height: '100%',
     borderRightWidth: StyleSheet.hairlineWidth,
-    paddingTop: spacing.md,
+  },
+  brandShell: {
+    position: 'relative',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+    marginBottom: spacing.xs,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  brandGlow: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.9,
   },
   brand: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-    marginBottom: spacing.xs,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 12,
   },
   logoPlate: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(13,107,87,0.15)',
   },
-  logo: { width: 24, height: 24, resizeMode: 'contain' },
+  logo: { width: 26, height: 26, resizeMode: 'contain' },
   brandCopy: { flex: 1, minWidth: 0 },
-  brandName: { fontSize: 14, fontWeight: '700', letterSpacing: -0.2 },
-  brandTag: { ...typography.caption, fontSize: 10, marginTop: 1 },
-  nav: { flex: 1, paddingHorizontal: spacing.sm, gap: 2, paddingTop: spacing.xs },
+  brandName: { fontSize: 15, fontWeight: '800', letterSpacing: -0.3 },
+  brandTag: { ...typography.caption, fontSize: 10, marginTop: 2, fontWeight: '700', letterSpacing: 0.4 },
+  codePill: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radius.full,
+    borderWidth: 1,
+  },
+  codeText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
+  navLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  nav: { flex: 1, paddingHorizontal: spacing.sm, gap: 4 },
   item: {
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 8,
+    paddingVertical: 9,
     paddingHorizontal: 10,
     borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    overflow: 'hidden',
   },
-  itemLabel: { fontSize: 12, fontWeight: '500', flexShrink: 1 },
+  itemActive: {},
+  activeBar: {
+    position: 'absolute',
+    left: 0,
+    top: 8,
+    bottom: 8,
+    width: 3,
+    borderRadius: radius.full,
+  },
+  iconPlate: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  itemLabel: { fontSize: 13, fontWeight: '500', flexShrink: 1 },
   itemLabelActive: { fontWeight: '700' },
   accountBlock: {
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.sm,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
-    gap: 4,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    gap: 8,
   },
-  accountRow: {
+  accountCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: radius.md,
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: radius.lg,
+    borderWidth: 1,
   },
   avatar: {
-    width: 32,
-    height: 32,
+    width: 38,
+    height: 38,
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { fontSize: 11, fontWeight: '800' },
+  avatarText: { fontSize: 12, fontWeight: '800' },
   accountCopy: { flex: 1, minWidth: 0 },
-  accountName: { fontSize: 12, fontWeight: '700' },
-  accountSub: { fontSize: 10, marginTop: 1 },
+  accountName: { fontSize: 13, fontWeight: '700' },
+  accountSub: { fontSize: 11, marginTop: 2 },
+  tierPill: {
+    alignSelf: 'flex-start',
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radius.full,
+  },
+  tierText: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
   signOut: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 10,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   signOutText: { fontSize: 12, fontWeight: '600' },
 });

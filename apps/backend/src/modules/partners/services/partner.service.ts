@@ -182,8 +182,54 @@ export const partnerService = {
   },
 
   async register(input: RegisterPartnerInput) {
-    const existingPhone = await partnerRepository.findUserByPhone(input.phone);
-    if (existingPhone) throw new ConflictError('Phone already registered');
+    const deletedPartner = await partnerRepository.findByPhoneIncludingDeleted(input.phone);
+    if (deletedPartner?.deletedAt) {
+      const role = await partnerRepository.findRoleByCode('DSA_PARTNER');
+      if (!role) throw new NotFoundError('Role', 'DSA_PARTNER');
+
+      const partner = await partnerRepository.reactivatePartnerApplication({
+        partnerId: deletedPartner.id,
+        userId: deletedPartner.userId,
+        phone: input.phone,
+        email: input.email,
+        businessName: input.businessName ?? '',
+        contactName: input.contactName,
+        roleId: role.id,
+      });
+
+      return toPartnerResponse(partner);
+    }
+
+    const existingUser = await partnerRepository.findUserByPhone(input.phone);
+    if (existingUser) {
+      const existingPartner = await partnerRepository.findByPhone(input.phone);
+      if (existingPartner) {
+        throw new ConflictError('Phone already registered');
+      }
+      if (existingUser.userType !== 'CUSTOMER') {
+        throw new ConflictError('Phone already registered');
+      }
+
+      const partnerType = await partnerRepository.findPartnerTypeByCode(input.partnerTypeCode);
+      if (!partnerType) throw new NotFoundError('Partner type', input.partnerTypeCode);
+
+      const role = await partnerRepository.findRoleByCode('DSA_PARTNER');
+      if (!role) throw new NotFoundError('Role', 'DSA_PARTNER');
+
+      const partnerCode = await generatePartnerCode(input.partnerTypeCode);
+      const partner = await partnerRepository.registerPartnerFromExistingCustomer({
+        userId: existingUser.id,
+        phone: input.phone,
+        email: input.email,
+        businessName: input.businessName ?? '',
+        contactName: input.contactName,
+        partnerTypeId: partnerType.id,
+        partnerCode,
+        roleId: role.id,
+      });
+
+      return toPartnerResponse(partner);
+    }
 
     const partnerType = await partnerRepository.findPartnerTypeByCode(input.partnerTypeCode);
     if (!partnerType) throw new NotFoundError('Partner type', input.partnerTypeCode);

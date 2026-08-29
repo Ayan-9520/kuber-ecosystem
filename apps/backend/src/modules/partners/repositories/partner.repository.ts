@@ -33,6 +33,13 @@ export const partnerRepository = {
       include: partnerInclude,
     }),
 
+  findByPhoneIncludingDeleted: (phone: string) =>
+    prisma.partner.findFirst({
+      where: { phone },
+      orderBy: { updatedAt: 'desc' },
+      include: partnerInclude,
+    }),
+
   findByEmail: (email: string) =>
     prisma.partner.findFirst({
       where: { email, deletedAt: null },
@@ -77,6 +84,55 @@ export const partnerRepository = {
       include: partnerInclude,
     }),
 
+  reactivatePartnerApplication: (input: {
+    partnerId: string;
+    userId: string;
+    phone: string;
+    email?: string;
+    businessName: string;
+    contactName: string;
+    roleId: string;
+  }) =>
+    prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: input.userId },
+        data: {
+          userType: 'PARTNER',
+          status: 'PENDING',
+          ...(input.email ? { email: input.email.toLowerCase() } : {}),
+        },
+      });
+
+      const existingRole = await tx.userRole.findFirst({
+        where: { userId: input.userId, roleId: input.roleId },
+      });
+      if (!existingRole) {
+        await tx.userRole.create({
+          data: {
+            userId: input.userId,
+            roleId: input.roleId,
+            isPrimary: true,
+          },
+        });
+      }
+
+      const partner = await tx.partner.update({
+        where: { id: input.partnerId },
+        data: {
+          deletedAt: null,
+          status: 'PENDING',
+          kycStatus: 'NOT_STARTED',
+          businessName: input.businessName,
+          contactName: input.contactName,
+          phone: input.phone,
+          email: input.email ? input.email.toLowerCase() : undefined,
+        },
+        include: partnerInclude,
+      });
+
+      return partner;
+    }),
+
   registerPartner: (input: {
     phone: string;
     email?: string;
@@ -108,6 +164,58 @@ export const partnerRepository = {
       const partner = await tx.partner.create({
         data: {
           userId: user.id,
+          partnerTypeId: input.partnerTypeId,
+          partnerCode: input.partnerCode,
+          businessName: input.businessName,
+          contactName: input.contactName,
+          phone: input.phone,
+          email: input.email ? input.email.toLowerCase() : undefined,
+          kycStatus: 'NOT_STARTED',
+          status: 'PENDING',
+        },
+        include: partnerInclude,
+      });
+
+      return partner;
+    }),
+
+  /** Website Become Partner when phone already exists as a customer lead/account. */
+  registerPartnerFromExistingCustomer: (input: {
+    userId: string;
+    phone: string;
+    email?: string;
+    businessName: string;
+    contactName: string;
+    partnerTypeId: string;
+    partnerCode: string;
+    roleId: string;
+  }) =>
+    prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: input.userId },
+        data: {
+          userType: 'PARTNER',
+          status: 'PENDING',
+          ...(input.email ? { email: input.email.toLowerCase() } : {}),
+        },
+      });
+
+      const existingRole = await tx.userRole.findFirst({
+        where: { userId: input.userId, roleId: input.roleId },
+      });
+      if (!existingRole) {
+        await tx.userRole.create({
+          data: {
+            userId: input.userId,
+            roleId: input.roleId,
+            isPrimary: true,
+          },
+        });
+      }
+
+      const partner = await tx.partner.create({
+        data: {
+          userId: input.userId,
           partnerTypeId: input.partnerTypeId,
           partnerCode: input.partnerCode,
           businessName: input.businessName,

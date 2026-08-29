@@ -255,7 +255,28 @@ export const websiteIntakeService = {
       return { duplicate: false, partner, message: 'Partner application created in KuberOne' };
     } catch (err) {
       if (err instanceof ConflictError) {
-        return { duplicate: true, partner: null, message: err.message };
+        const existing =
+          (await partnerRepository.findByPhone(input.phone)) ??
+          (await partnerRepository.findByPhoneIncludingDeleted(input.phone));
+        const partner = existing
+          ? {
+              id: existing.id,
+              userId: existing.userId,
+              partnerCode: existing.partnerCode,
+              businessName: existing.businessName,
+              contactName: existing.contactName,
+              phone: existing.phone,
+              email: existing.email,
+              kycStatus: existing.kycStatus,
+              status: existing.status,
+              commissionTier: existing.commissionTier,
+              partnerType: existing.partnerType?.name,
+              partnerTypeId: existing.partnerTypeId,
+              createdAt: existing.createdAt.toISOString(),
+              updatedAt: existing.updatedAt.toISOString(),
+            }
+          : null;
+        return { duplicate: true, partner, message: err.message };
       }
       throw err;
     }

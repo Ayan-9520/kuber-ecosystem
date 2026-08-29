@@ -8,8 +8,8 @@ export const BREAKPOINTS = {
   xxl: 1600,
 } as const;
 
-/** Slim sidebar — fits "Applications" label on desktop. */
-export const DESKTOP_SIDEBAR_WIDTH = 240;
+/** Desktop sidebar width — room for labels + account block. */
+export const DESKTOP_SIDEBAR_WIDTH = 268;
 
 export type LayoutSize = 'compact' | 'medium' | 'wide' | 'ultra';
 
