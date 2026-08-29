@@ -48,7 +48,11 @@
   --color-stat-icon-bg: color-mix(in srgb, var(--color-primary) 14%, transparent);
   --color-auth-glow-1: color-mix(in srgb, var(--color-primary) 10%, transparent);
   --color-auth-glow-2: color-mix(in srgb, var(--color-primary) 7%, transparent);
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.25);
+  --glass-card-bg: color-mix(in srgb, var(--color-card) 88%, transparent);
+  --glass-border: color-mix(in srgb, var(--color-primary) 14%, var(--color-border));
+  --mesh-accent-1: color-mix(in srgb, var(--color-primary) 9%, transparent);
+  --mesh-accent-2: color-mix(in srgb, var(--color-accent) 6%, transparent);
+  --shadow-card: 0 1px 0 color-mix(in srgb, var(--color-primary) 6%, transparent), 0 4px 24px rgba(0, 0, 0, 0.28);
   --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.35);
   --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
@@ -94,7 +98,11 @@
   --color-stat-icon-bg: color-mix(in srgb, var(--color-primary) 10%, transparent);
   --color-auth-glow-1: color-mix(in srgb, var(--color-primary) 8%, transparent);
   --color-auth-glow-2: color-mix(in srgb, var(--color-primary) 5%, transparent);
-  --shadow-card: 0 1px 3px rgba(3, 40, 32, 0.06), 0 4px 16px rgba(3, 40, 32, 0.05);
+  --glass-card-bg: color-mix(in srgb, var(--color-card) 92%, transparent);
+  --glass-border: color-mix(in srgb, var(--color-primary) 12%, var(--color-border));
+  --mesh-accent-1: color-mix(in srgb, var(--color-primary) 7%, transparent);
+  --mesh-accent-2: color-mix(in srgb, var(--color-accent) 5%, transparent);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 20px rgba(3, 40, 32, 0.06);
   --shadow-elevated: 0 8px 30px rgba(3, 40, 32, 0.1);
   --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-primary) 28%, transparent);
 }
@@ -112,11 +120,13 @@
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 32px;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --sidebar-width: 268px;
-  --topbar-height: 64px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --sidebar-width: 240px;
+  --topbar-height: 56px;
+  --content-max-width: 1360px;
+  --section-gap: 1.25rem;
   --transition-fast: 150ms ease;
   --transition-base: 220ms ease;
 }

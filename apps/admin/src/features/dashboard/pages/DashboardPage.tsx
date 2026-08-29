@@ -267,28 +267,27 @@ export function DashboardPage() {
         />
       </div>
 
-      <div style={{ marginBottom: '1.5rem' }}>
+      <div className="mb-section">
         <Card title="Partner Academy — activated modules">
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          <div className="chip-row">
             {ACADEMY_MODULES.map((m) => (
               <button
                 key={m.id}
                 type="button"
-                className="btn btn-secondary"
-                style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem' }}
+                className="btn btn-secondary btn-xs"
                 onClick={() => navigate('/academy')}
               >
                 {m.title}
               </button>
             ))}
           </div>
-          <button type="button" className="btn btn-primary" onClick={() => navigate('/academy')}>
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate('/academy')}>
             Open Partner Academy Hub
           </button>
         </Card>
       </div>
 
-      <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
+      <div className="grid-2 mb-section">
         <Card title="Branch Performance">
           {branchData.length === 0 ? (
             <EmptyState title="No branch data" description="Lead performance by branch will appear here." />
@@ -330,7 +329,7 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
+      <div className="grid-2 mb-section">
         <Card title="Leads by Status">
           {statusData.length === 0 ? (
             <EmptyState title="No status breakdown" />

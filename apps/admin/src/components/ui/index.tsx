@@ -112,9 +112,11 @@ export function StatCard({ label, value, icon, change, onClick }: StatCardProps)
       onClick={onClick}
     >
       {icon && <div className="stat-card-icon">{icon}</div>}
-      <span className="stat-card-label">{label}</span>
-      <span className="stat-card-value">{value}</span>
-      {change && <span className="stat-card-change">{change}</span>}
+      <div className="stat-card-body">
+        <span className="stat-card-label">{label}</span>
+        <span className="stat-card-value">{value}</span>
+        {change && <span className="stat-card-change">{change}</span>}
+      </div>
     </Tag>
   );
 }
