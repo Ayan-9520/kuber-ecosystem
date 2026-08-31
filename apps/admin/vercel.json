@@ -1,21 +1,21 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "echo 'Using prebuilt admin dist'",
-  "buildCommand": "echo 'Prebuilt — API https://scholars-rpm-cake-app.trycloudflare.com'",
+  "buildCommand": "echo 'Prebuilt — API https://budapest-contains-buildings-judge.trycloudflare.com'",
   "outputDirectory": "dist",
   "framework": null,
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://scholars-rpm-cake-app.trycloudflare.com/api/:path*"
+      "destination": "https://budapest-contains-buildings-judge.trycloudflare.com/api/:path*"
     },
     {
       "source": "/health",
-      "destination": "https://scholars-rpm-cake-app.trycloudflare.com/health/live"
+      "destination": "https://budapest-contains-buildings-judge.trycloudflare.com/health/live"
     },
     {
       "source": "/health/:path*",
-      "destination": "https://scholars-rpm-cake-app.trycloudflare.com/health/:path*"
+      "destination": "https://budapest-contains-buildings-judge.trycloudflare.com/health/:path*"
     },
     {
       "source": "/(.*)",
