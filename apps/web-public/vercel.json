@@ -7,11 +7,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://pearl-episodes-designing-pal.trycloudflare.com/api/:path*"
+      "destination": "https://accomplished-governing-eminem-traffic.trycloudflare.com/api/:path*"
     },
     {
       "source": "/health/:path*",
-      "destination": "https://pearl-episodes-designing-pal.trycloudflare.com/health/:path*"
+      "destination": "https://accomplished-governing-eminem-traffic.trycloudflare.com/health/:path*"
     },
     {
       "source": "/(.*)",
