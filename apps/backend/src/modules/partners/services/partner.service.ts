@@ -9,6 +9,8 @@ import type {
 import { ConflictError, NotFoundError } from '../../../shared/errors/app-error.js';
 import { partnerRepository } from '../repositories/partner.repository.js';
 
+import { partnerNotificationService } from './partner-notification.service.js';
+
 export interface RequestContext {
   actorId: string;
 }
@@ -127,6 +129,7 @@ export const partnerService = {
   async update(id: string, input: UpdatePartnerInput) {
     const existing = await partnerRepository.findById(id);
     if (!existing) throw new NotFoundError('Partner', id);
+    const previousStatus = existing.status;
 
     if (input.phone) {
       const existingPhone = await partnerRepository.findUserByPhone(input.phone);
@@ -156,6 +159,30 @@ export const partnerService = {
       };
       const userStatus = userStatusMap[input.status] ?? 'PENDING';
       await partnerRepository.updateUserStatus(partner.userId, userStatus);
+    }
+
+    if (input.status !== undefined && input.status !== previousStatus) {
+      void partnerNotificationService
+        .notifyStatusChange({
+          partner: {
+            id: partner.id,
+            userId: partner.userId,
+            partnerCode: partner.partnerCode,
+            businessName: partner.businessName,
+            contactName: partner.contactName,
+            phone: partner.phone,
+            email: partner.email,
+            status: partner.status,
+          },
+          previousStatus,
+          newStatus: partner.status,
+        })
+        .catch((err: unknown) => {
+          console.error(
+            '[partner-notification]',
+            err instanceof Error ? err.message : err,
+          );
+        });
     }
 
     // Real marketplace flow: KYC verified → public professional website goes live with starter content

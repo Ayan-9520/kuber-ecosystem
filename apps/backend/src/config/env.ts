@@ -66,6 +66,8 @@ const backendEnvSchema = baseEnvSchema
     DEPLOYMENT_ROLLOUT_PHASE: z.enum(['staged', 'full']).default('staged'),
     /** Optional shared secret for website → API dual-write (X-Website-Api-Key). */
     WEBSITE_INTAKE_API_KEY: z.string().min(16).optional(),
+    /** Hostinger callback when admin approves/rejects a partner in KuberOne. */
+    KUBERFINSERVE_PARTNER_SYNC_URL: z.string().url().optional(),
   });
 
 export type BackendEnv = z.infer<typeof backendEnvSchema>;
