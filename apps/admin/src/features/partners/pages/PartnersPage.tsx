@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
-import { DetailDrawer } from '@/components/common/DetailDrawer';
+import { DetailModal } from '@/components/common/DetailModal';
 import { PaginatedListView } from '@/components/common/PaginatedListView';
 import { PageHeader, StatCard } from '@/components/ui';
 import { StatusBadge } from '@/components/ui/Badge';
@@ -11,7 +11,10 @@ import { useDebounce, usePagination } from '@/hooks';
 import { fieldStr, formatDate, formatDateTime } from '@/lib/utils';
 import { partnersService } from '@/services';
 
+import styles from './PartnersPage.module.css';
+
 type CommissionTier = 'SILVER' | 'GOLD' | 'PLATINUM' | 'DIAMOND';
+type ActionTone = 'success' | 'info' | 'warn';
 
 const TIER_COLORS: Record<CommissionTier, { bg: string; color: string; label: string }> = {
   SILVER: { bg: '#e5e7eb', color: '#374151', label: 'Silver' },
@@ -19,6 +22,8 @@ const TIER_COLORS: Record<CommissionTier, { bg: string; color: string; label: st
   PLATINUM: { bg: '#dbeafe', color: '#1e40af', label: 'Platinum' },
   DIAMOND: { bg: '#ede9fe', color: '#6d28d9', label: 'Diamond' },
 };
+
+const PARTNER_LOGIN_URL = 'https://partner.kuberone.online/login';
 
 function TierBadge({ tier }: { tier: string }) {
   const config = TIER_COLORS[tier as CommissionTier] ?? TIER_COLORS.SILVER;
@@ -39,10 +44,17 @@ function TierBadge({ tier }: { tier: string }) {
   );
 }
 
+function actionAlertClass(tone: ActionTone): string {
+  if (tone === 'success') return styles.alertSuccess ?? '';
+  if (tone === 'warn') return styles.alertWarn ?? '';
+  return styles.alertInfo ?? '';
+}
+
 export function PartnersPage() {
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionTone, setActionTone] = useState<ActionTone>('info');
   const [tierFilter, setTierFilter] = useState<string>('');
   const [overrideTier, setOverrideTier] = useState<CommissionTier | ''>('');
   const debouncedSearch = useDebounce(search);
@@ -76,6 +88,11 @@ export function PartnersPage() {
     enabled: !!selectedId,
   });
 
+  const showMessage = (message: string, tone: ActionTone = 'info') => {
+    setActionMessage(message);
+    setActionTone(tone);
+  };
+
   const statusMutation = useMutation({
     mutationFn: ({
       id,
@@ -88,16 +105,24 @@ export function PartnersPage() {
     }) => partnersService.update(id, { status, ...(kycStatus ? { kycStatus } : {}) }),
     onSuccess: (_data, vars) => {
       void queryClient.invalidateQueries({ queryKey: ['partners'] });
-      setActionMessage(
-        vars.status === 'ACTIVE'
-          ? vars.kycStatus === 'VERIFIED'
-            ? 'Partner approved + KYC verified. They can login and skip the KYC wall; public profile can go live.'
-            : 'Partner approved (ACTIVE). They can login with mobile / email / Partner Code + OTP.'
-          : 'Partner rejected.',
+      if (vars.status === 'REJECTED') {
+        showMessage('Partner application rejected. They cannot log in.', 'warn');
+        return;
+      }
+      if (vars.kycStatus === 'VERIFIED') {
+        showMessage(
+          'Partner approved and KYC marked verified. Approval email sent — full app access without KYC wall.',
+          'success',
+        );
+        return;
+      }
+      showMessage(
+        'Partner approved. Approval email sent — they can log in and upload KYC documents in the Partner App.',
+        'success',
       );
     },
     onError: (err: Error) => {
-      setActionMessage(err.message || 'Could not update partner status.');
+      showMessage(err.message || 'Could not update partner status.', 'warn');
     },
   });
 
@@ -106,14 +131,15 @@ export function PartnersPage() {
       partnersService.update(id, { kycStatus }),
     onSuccess: (_data, vars) => {
       void queryClient.invalidateQueries({ queryKey: ['partners'] });
-      setActionMessage(
+      showMessage(
         vars.kycStatus === 'VERIFIED'
-          ? 'KYC verified. Partner can use full app and publish public profile.'
-          : `KYC set to ${vars.kycStatus}.`,
+          ? 'KYC verified. Partner gets full access and can publish their public profile.'
+          : `KYC status updated to ${vars.kycStatus.replace('_', ' ').toLowerCase()}.`,
+        vars.kycStatus === 'VERIFIED' ? 'success' : 'info',
       );
     },
     onError: (err: Error) => {
-      setActionMessage(err.message || 'Could not update KYC status.');
+      showMessage(err.message || 'Could not update KYC status.', 'warn');
     },
   });
 
@@ -125,7 +151,7 @@ export function PartnersPage() {
       setActionMessage(null);
     },
     onError: (err: Error) => {
-      setActionMessage(err.message || 'Could not remove partner.');
+      showMessage(err.message || 'Could not remove partner.', 'warn');
     },
   });
 
@@ -134,11 +160,11 @@ export function PartnersPage() {
       partnersService.update(id, { commissionTier }),
     onSuccess: (_data, vars) => {
       void queryClient.invalidateQueries({ queryKey: ['partners'] });
-      setActionMessage(`Tier updated to ${TIER_COLORS[vars.commissionTier].label}.`);
+      showMessage(`Commission tier updated to ${TIER_COLORS[vars.commissionTier].label}.`, 'success');
       setOverrideTier('');
     },
     onError: (err: Error) => {
-      setActionMessage(err.message || 'Could not update tier.');
+      showMessage(err.message || 'Could not update tier.', 'warn');
     },
   });
 
@@ -184,33 +210,66 @@ export function PartnersPage() {
   ];
 
   const partnerStatus = detail ? fieldStr(detail, 'status') : '';
+  const kycStatus = detail ? fieldStr(detail, 'kycStatus') : '';
+  const isBusy =
+    statusMutation.isPending || deleteMutation.isPending || kycMutation.isPending || tierMutation.isPending;
+
+  const approvePartner = (withKyc: boolean) => {
+    if (!selectedId || !detail) return;
+    const name = fieldStr(detail, 'contactName') || fieldStr(detail, 'businessName');
+    const code = fieldStr(detail, 'partnerCode');
+    const msg = withKyc
+      ? `Fast-track approve ${name} (${code})?\n\nThey will get login access AND KYC will be marked verified without document review. Use only for trusted partners.`
+      : `Approve ${name} (${code})?\n\nThey can log in via OTP and must upload KYC documents in the Partner App. You verify KYC after reviewing Documents.`;
+    if (!window.confirm(msg)) return;
+    statusMutation.mutate({
+      id: selectedId,
+      status: 'ACTIVE',
+      ...(withKyc ? { kycStatus: 'VERIFIED' as const } : {}),
+    });
+  };
+
+  const rejectPartner = () => {
+    if (!selectedId || !detail) return;
+    const name = fieldStr(detail, 'contactName') || fieldStr(detail, 'businessName');
+    if (!window.confirm(`Reject application for ${name}? They will not be able to log in.`)) return;
+    statusMutation.mutate({ id: selectedId, status: 'REJECTED' });
+  };
+
+  const verifyKyc = () => {
+    if (!selectedId || !detail) return;
+    const name = fieldStr(detail, 'contactName') || fieldStr(detail, 'businessName');
+    if (
+      !window.confirm(
+        `Mark KYC as verified for ${name}?\n\nConfirm you have reviewed their documents in Documents / KYC Center.`,
+      )
+    )
+      return;
+    kycMutation.mutate({ id: selectedId, kycStatus: 'VERIFIED' });
+  };
 
   return (
     <div className="page-container">
-      <PageHeader title="Partners" subtitle="Partner network, KYC status, and commission tiers" />
+      <PageHeader
+        title="Partners"
+        subtitle="Review applications, approve login access, and verify KYC after document review"
+      />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div className={styles.statsRow}>
         <StatCard label="Total Partners" value={tierCounts.total} />
-        <StatCard label="Silver" value={tierCounts.SILVER} />
-        <StatCard label="Gold" value={tierCounts.GOLD} />
-        <StatCard label="Platinum+" value={tierCounts.PLATINUM + tierCounts.DIAMOND} />
+        <StatCard label="Silver (this page)" value={tierCounts.SILVER} />
+        <StatCard label="Gold (this page)" value={tierCounts.GOLD} />
+        <StatCard label="Platinum+ (this page)" value={tierCounts.PLATINUM + tierCounts.DIAMOND} />
       </div>
 
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', alignItems: 'center' }}>
-        <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Tier:</label>
+      <div className={styles.filters}>
+        <span className={styles.filterLabel}>Tier filter</span>
         <select
+          className={styles.filterSelect}
           value={tierFilter}
           onChange={(e) => setTierFilter(e.target.value)}
-          style={{
-            padding: '0.4rem 0.75rem',
-            borderRadius: '0.375rem',
-            border: '1px solid var(--color-border, #d1d5db)',
-            fontSize: '0.875rem',
-            background: 'var(--color-bg-primary, #fff)',
-            color: 'var(--color-text-primary, #111)',
-          }}
         >
-          <option value="">All Tiers</option>
+          <option value="">All tiers</option>
           <option value="SILVER">Silver</option>
           <option value="GOLD">Gold</option>
           <option value="PLATINUM">Platinum</option>
@@ -221,7 +280,7 @@ export function PartnersPage() {
       <PaginatedListView
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search partners by name, code, or phone..."
+        searchPlaceholder="Search by name, code, phone, or email…"
         isLoading={isLoading}
         data={data?.items ?? []}
         meta={data?.meta}
@@ -232,12 +291,13 @@ export function PartnersPage() {
           setSelectedId(String(row.id));
         }}
         emptyTitle="No partners found"
-        emptyDescription="Partners will appear here once onboarded to the network."
+        emptyDescription="Partner applications from the website will appear here after sync."
       />
 
-      <DetailDrawer
+      <DetailModal
         open={!!selectedId}
-        title={detail ? fieldStr(detail, 'businessName') || fieldStr(detail, 'contactName') : 'Partner Details'}
+        size="lg"
+        title={detail ? fieldStr(detail, 'businessName') || fieldStr(detail, 'contactName') : 'Partner review'}
         subtitle={detail ? fieldStr(detail, 'partnerCode') : undefined}
         onClose={() => {
           setSelectedId(null);
@@ -250,179 +310,194 @@ export function PartnersPage() {
           </div>
         ) : detail ? (
           <>
-            <div className="info-grid" style={{ marginBottom: '1.5rem' }}>
-              <div>
-                <div className="info-item-label">Contact</div>
-                <div className="info-item-value">{fieldStr(detail, 'contactName')}</div>
+            {actionMessage ? (
+              <div className={actionAlertClass(actionTone)} role="status">
+                {actionMessage}
               </div>
-              <div>
-                <div className="info-item-label">Phone</div>
-                <div className="info-item-value">{fieldStr(detail, 'phone')}</div>
-              </div>
-              <div>
-                <div className="info-item-label">Email</div>
-                <div className="info-item-value">{fieldStr(detail, 'email')}</div>
-              </div>
-              <div>
-                <div className="info-item-label">Commission Tier</div>
-                <div className="info-item-value">{fieldStr(detail, 'commissionTier')}</div>
-              </div>
-              <div>
-                <div className="info-item-label">KYC Status</div>
-                <div className="info-item-value">
-                  <StatusBadge status={fieldStr(detail, 'kycStatus')} />
-                </div>
-              </div>
-              <div>
-                <div className="info-item-label">Status</div>
-                <div className="info-item-value">
-                  <StatusBadge status={fieldStr(detail, 'status')} />
-                </div>
-              </div>
-            </div>
+            ) : null}
 
-            <div style={{ marginBottom: '1.5rem' }}>
-            <Card title="Commission Tier">
-              <div style={{ marginBottom: '0.75rem' }}>
-                <span style={{ fontSize: '0.875rem', marginRight: '0.5rem' }}>Current:</span>
+            <div className={styles.statusHero}>
+              <div className={styles.statusHeroItem}>
+                <div className={styles.statusHeroLabel}>Account</div>
+                <StatusBadge status={partnerStatus || 'PENDING'} />
+              </div>
+              <div className={styles.statusHeroItem}>
+                <div className={styles.statusHeroLabel}>KYC</div>
+                <StatusBadge status={kycStatus || 'NOT_STARTED'} />
+              </div>
+              <div className={styles.statusHeroItem}>
+                <div className={styles.statusHeroLabel}>Tier</div>
                 <TierBadge tier={fieldStr(detail, 'commissionTier') || 'SILVER'} />
               </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '1rem', lineHeight: 1.6 }}>
-                <strong>Tier thresholds:</strong><br />
-                Gold: ₹1L revenue or 50 leads<br />
-                Platinum: ₹5L revenue or 200 leads<br />
-                Diamond: ₹25L revenue or 1,000 leads
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <select
-                  value={overrideTier}
-                  onChange={(e) => setOverrideTier(e.target.value as CommissionTier | '')}
-                  style={{
-                    padding: '0.4rem 0.75rem',
-                    borderRadius: '0.375rem',
-                    border: '1px solid var(--color-border, #d1d5db)',
-                    fontSize: '0.875rem',
-                    background: 'var(--color-bg-primary, #fff)',
-                    color: 'var(--color-text-primary, #111)',
-                  }}
-                >
-                  <option value="">Override tier…</option>
-                  <option value="SILVER">Silver</option>
-                  <option value="GOLD">Gold</option>
-                  <option value="PLATINUM">Platinum</option>
-                  <option value="DIAMOND">Diamond</option>
-                </select>
-                <Button
-                  type="button"
-                  disabled={!overrideTier || tierMutation.isPending}
-                  onClick={() => {
-                    if (selectedId && overrideTier) {
-                      tierMutation.mutate({ id: selectedId, commissionTier: overrideTier });
-                    }
-                  }}
-                >
-                  {tierMutation.isPending ? 'Updating…' : 'Update Tier'}
-                </Button>
-              </div>
-            </Card>
             </div>
 
-            {actionMessage && (
-              <p style={{ fontSize: '0.875rem', marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>
-                {actionMessage}
-              </p>
-            )}
-
-            {partnerStatus === 'PENDING' && (
-              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-                <Button
-                  type="button"
-                  disabled={statusMutation.isPending || deleteMutation.isPending || kycMutation.isPending}
-                  onClick={() =>
-                    selectedId &&
-                    statusMutation.mutate({ id: selectedId, status: 'ACTIVE', kycStatus: 'VERIFIED' })
-                  }
-                >
-                  {statusMutation.isPending ? 'Updating…' : 'Approve Partner + KYC'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={statusMutation.isPending || deleteMutation.isPending || kycMutation.isPending}
-                  onClick={() => selectedId && statusMutation.mutate({ id: selectedId, status: 'REJECTED' })}
-                >
-                  Reject
-                </Button>
+            <div className={styles.infoGrid}>
+              <div>
+                <div className={styles.infoLabel}>Contact</div>
+                <div className={styles.infoValue}>{fieldStr(detail, 'contactName')}</div>
               </div>
-            )}
+              <div>
+                <div className={styles.infoLabel}>Phone</div>
+                <div className={styles.infoValue}>{fieldStr(detail, 'phone')}</div>
+              </div>
+              <div>
+                <div className={styles.infoLabel}>Email</div>
+                <div className={styles.infoValue}>{fieldStr(detail, 'email')}</div>
+              </div>
+              <div>
+                <div className={styles.infoLabel}>Partner type</div>
+                <div className={styles.infoValue}>{fieldStr(detail, 'partnerType') || 'DSA'}</div>
+              </div>
+            </div>
 
-            {partnerStatus === 'ACTIVE' && fieldStr(detail, 'kycStatus') !== 'VERIFIED' ? (
-              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-                <p style={{ width: '100%', fontSize: '0.85rem', color: 'var(--color-text-secondary)', margin: 0 }}>
-                  Partner can login, but KYC screen still shows until verified.
+            {partnerStatus === 'PENDING' ? (
+              <div className={styles.actionBlock}>
+                <h3 className={styles.actionTitle}>Application review</h3>
+                <p className={styles.actionHint}>
+                  <strong>Real CRM flow:</strong> first approve login access. Partner uploads PAN / agreement in the
+                  Partner App → you review under <strong>Documents</strong> → then verify KYC. Approval email is sent
+                  automatically.
                 </p>
-                <Button
-                  type="button"
-                  disabled={kycMutation.isPending || statusMutation.isPending || deleteMutation.isPending}
-                  onClick={() => selectedId && kycMutation.mutate({ id: selectedId, kycStatus: 'VERIFIED' })}
-                >
-                  {kycMutation.isPending ? 'Verifying…' : 'Approve KYC'}
-                </Button>
+                <div className={styles.actionRow}>
+                  <Button type="button" disabled={isBusy} onClick={() => approvePartner(false)}>
+                    {statusMutation.isPending ? 'Processing…' : 'Approve partner'}
+                  </Button>
+                  <Button type="button" variant="secondary" disabled={isBusy} onClick={rejectPartner}>
+                    Reject
+                  </Button>
+                </div>
+                <p className={styles.actionHint} style={{ marginBottom: 0, marginTop: '0.75rem' }}>
+                  Trusted / demo partner only:{' '}
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => approvePartner(true)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      color: 'var(--color-primary)',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      font: 'inherit',
+                    }}
+                  >
+                    Fast-track approve + verify KYC
+                  </button>
+                </p>
               </div>
             ) : null}
 
-            {selectedId && fieldStr(detail, 'partnerCode') !== 'DSA-DEMO-001' ? (
-              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={deleteMutation.isPending || statusMutation.isPending}
-                  onClick={() => {
-                    if (!selectedId) return;
-                    const code = fieldStr(detail, 'partnerCode');
-                    const ok = window.confirm(
-                      `Remove partner ${code || selectedId}? They will leave the active network list (soft delete — real CRM style).`,
-                    );
-                    if (ok) deleteMutation.mutate(selectedId);
-                  }}
-                >
-                  {deleteMutation.isPending ? 'Removing…' : 'Remove Partner'}
-                </Button>
+            {partnerStatus === 'ACTIVE' && kycStatus !== 'VERIFIED' ? (
+              <div className={styles.actionBlock}>
+                <h3 className={styles.actionTitle}>KYC verification</h3>
+                <p className={styles.actionHint}>
+                  Partner can log in but sees the KYC upload screen until you verify documents. Check{' '}
+                  <strong>Documents</strong> before confirming.
+                </p>
+                <div className={styles.actionRow}>
+                  <Button type="button" disabled={isBusy} onClick={verifyKyc}>
+                    {kycMutation.isPending ? 'Verifying…' : 'Verify KYC'}
+                  </Button>
+                </div>
               </div>
             ) : null}
 
-            {partnerStatus === 'ACTIVE' && (
-              <Card title="Next step for partner">
-                <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', margin: 0 }}>
-                  Login with registered mobile <strong>{fieldStr(detail, 'phone')}</strong>
+            {partnerStatus === 'ACTIVE' ? (
+              <div className={`${styles.section} ${styles.alertInfo}`}>
+                <p className={styles.loginCard}>
+                  Partner login:{' '}
+                  <a className={styles.loginLink} href={PARTNER_LOGIN_URL} target="_blank" rel="noreferrer">
+                    partner.kuberone.online
+                  </a>{' '}
+                  or kuberfinserve.com/partner-login
+                  <br />
+                  Use mobile <strong>{fieldStr(detail, 'phone')}</strong>
                   {fieldStr(detail, 'email') ? (
                     <>
                       , email <strong>{fieldStr(detail, 'email')}</strong>
                     </>
                   ) : null}
-                  , or Partner Code <strong>{fieldStr(detail, 'partnerCode')}</strong>.
-                  <br />
-                  OTP on Partner App (<code>localhost:8082</code>) or website <strong>/partner-login</strong>.
-                  Dev OTP: <strong>123456</strong>.
+                  , or code <strong>{fieldStr(detail, 'partnerCode')}</strong> — OTP via SMS / email.
                 </p>
+              </div>
+            ) : null}
+
+            <div className={styles.section}>
+              <Card title="Commission tier">
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <span style={{ fontSize: '0.875rem', marginRight: '0.5rem' }}>Current:</span>
+                  <TierBadge tier={fieldStr(detail, 'commissionTier') || 'SILVER'} />
+                </div>
+                <p className={styles.tierMeta}>
+                  Auto-upgrade thresholds: Gold ₹1L / 50 leads · Platinum ₹5L / 200 leads · Diamond ₹25L / 1,000 leads
+                </p>
+                <div className={styles.tierRow}>
+                  <select
+                    className={styles.filterSelect}
+                    value={overrideTier}
+                    onChange={(e) => setOverrideTier(e.target.value as CommissionTier | '')}
+                  >
+                    <option value="">Override tier…</option>
+                    <option value="SILVER">Silver</option>
+                    <option value="GOLD">Gold</option>
+                    <option value="PLATINUM">Platinum</option>
+                    <option value="DIAMOND">Diamond</option>
+                  </select>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={!overrideTier || tierMutation.isPending}
+                    onClick={() => {
+                      if (selectedId && overrideTier) {
+                        tierMutation.mutate({ id: selectedId, commissionTier: overrideTier });
+                      }
+                    }}
+                  >
+                    {tierMutation.isPending ? 'Updating…' : 'Update tier'}
+                  </Button>
+                </div>
               </Card>
-            )}
+            </div>
+
+            {selectedId && fieldStr(detail, 'partnerCode') !== 'DSA-DEMO-001' ? (
+              <div className={styles.actionRow}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={isBusy}
+                  onClick={() => {
+                    if (!selectedId) return;
+                    const code = fieldStr(detail, 'partnerCode');
+                    if (
+                      !window.confirm(
+                        `Remove partner ${code || selectedId} from the active network? (Soft delete — record kept for audit.)`,
+                      )
+                    )
+                      return;
+                    deleteMutation.mutate(selectedId);
+                  }}
+                >
+                  {deleteMutation.isPending ? 'Removing…' : 'Remove partner'}
+                </Button>
+              </div>
+            ) : null}
 
             <Card title="Timeline">
-              <div className="info-grid">
+              <div className={styles.infoGrid}>
                 <div>
-                  <div className="info-item-label">Created</div>
-                  <div className="info-item-value">{formatDateTime(detail.createdAt as string)}</div>
+                  <div className={styles.infoLabel}>Applied</div>
+                  <div className={styles.infoValue}>{formatDateTime(detail.createdAt as string)}</div>
                 </div>
                 <div>
-                  <div className="info-item-label">Updated</div>
-                  <div className="info-item-value">{formatDateTime(detail.updatedAt as string)}</div>
+                  <div className={styles.infoLabel}>Last updated</div>
+                  <div className={styles.infoValue}>{formatDateTime(detail.updatedAt as string)}</div>
                 </div>
               </div>
             </Card>
           </>
         ) : null}
-      </DetailDrawer>
+      </DetailModal>
     </div>
   );
 }
