@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 
-import { clearTokens, getAccessToken, getRefreshToken, isOnboardingDone } from '@/lib/storage';
 import { setMemoryAccessToken } from '@/lib/api';
+import { partnerNeedsKyc } from '@/lib/partnerSession';
+import { clearTokens, getAccessToken, getRefreshToken, isOnboardingDone } from '@/lib/storage';
 import { authService } from '@/services';
-import { clearCredentials, setCredentials } from '@/store/slices/authSlice';
+import { clearCredentials, setCredentials, setRequiresPartnerKyc } from '@/store/slices/authSlice';
 
 const BOOTSTRAP_TIMEOUT_MS = 8_000;
 
@@ -44,6 +45,10 @@ export function useAuthBootstrap() {
           return;
         }
 
+        const needsKyc = await partnerNeedsKyc(me.partnerId);
+        if (!mounted) return;
+
+        dispatch(setRequiresPartnerKyc(needsKyc));
         dispatch(
           setCredentials({
             accessToken: token,

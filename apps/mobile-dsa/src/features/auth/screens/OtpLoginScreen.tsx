@@ -1,18 +1,20 @@
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
-import { useDispatch } from 'react-redux';
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 
 import { PremiumAuthShell } from '@/components/auth/PremiumAuthShell';
 import { Button, Input } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { API_BASE_URL, setMemoryAccessToken } from '@/lib/api';
-import { clearTokens, setTokens } from '@/lib/storage';
+import { partnerNeedsKyc } from '@/lib/partnerSession';
+import { clearTokens, getAccessToken, getRefreshToken, setTokens } from '@/lib/storage';
 import { getApiErrorMessage, normalizePhone } from '@/lib/utils';
 import { validateOtp } from '@/lib/validation';
 import type { AuthStackParamList } from '@/navigation/types';
-import { authService, partnersService, partnerBrandingService } from '@/services';
+import { authService, partnerBrandingService } from '@/services';
+import type { RootState } from '@/store';
 import { setRequiresPartnerKyc } from '@/store/slices/authSlice';
 import { spacing, typography } from '@/theme';
 
@@ -53,13 +55,16 @@ export function OtpLoginScreen() {
   const route = useRoute<OtpLoginRoute>();
   const dispatch = useDispatch();
   const { login } = useAuth();
+  const isAuthenticated = useSelector((s: RootState) => s.auth.isAuthenticated);
   const [identifier, setIdentifier] = useState(route.params?.phone ?? '');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(!!route.params?.phone);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [restoring, setRestoring] = useState(false);
   const ssoTried = useRef(false);
+  const sessionRescueTried = useRef(false);
 
   useEffect(() => {
     if (route.params?.phone) {
@@ -67,14 +72,6 @@ export function OtpLoginScreen() {
       setOtpSent(true);
     }
   }, [route.params?.phone]);
-
-  // Drop stale session tokens on the login screen so bootstrap /auth/me does not 401-spam.
-  // Skip when SSO tokens are present — we apply those instead.
-  useEffect(() => {
-    if (readSsoTokensFromUrl()) return;
-    setMemoryAccessToken(null);
-    void clearTokens();
-  }, []);
 
   // Warm Cloudflare / Vercel proxy so first OTP / login is less likely to 502.
   useEffect(() => {
@@ -96,16 +93,7 @@ export function OtpLoginScreen() {
       throw new Error('This app is for verified Financial Partners only');
     }
 
-    let needsKyc = false;
-    if (me.partnerId) {
-      try {
-        const partner = await partnersService.getById(me.partnerId);
-        needsKyc = String(partner.kycStatus) !== 'VERIFIED';
-      } catch {
-        needsKyc = false;
-      }
-    }
-
+    const needsKyc = await partnerNeedsKyc(me.partnerId);
     dispatch(setRequiresPartnerKyc(needsKyc));
     await login(accessToken, refreshToken, me);
     void partnerBrandingService.getMyProfile().catch(() => undefined);
@@ -117,6 +105,7 @@ export function OtpLoginScreen() {
     const sso = readSsoTokensFromUrl();
     if (!sso) return;
     ssoTried.current = true;
+    setRestoring(true);
     setLoading(true);
     setError('');
     void (async () => {
@@ -128,10 +117,56 @@ export function OtpLoginScreen() {
         setError(getApiErrorMessage(e));
       } finally {
         setLoading(false);
+        setRestoring(false);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot SSO on mount
   }, []);
+
+  // Keep existing session when partner revisits /login — do not force OTP again.
+  useEffect(() => {
+    if (ssoTried.current || sessionRescueTried.current || isAuthenticated) return;
+    if (readSsoTokensFromUrl()) return;
+
+    sessionRescueTried.current = true;
+    setRestoring(true);
+    setLoading(true);
+    void (async () => {
+      try {
+        const accessToken = await getAccessToken();
+        const refreshToken = await getRefreshToken();
+        if (!accessToken || !refreshToken) return;
+
+        setMemoryAccessToken(accessToken);
+        const me = await authService.me();
+        if (me.userType !== 'PARTNER') {
+          setMemoryAccessToken(null);
+          await clearTokens();
+          return;
+        }
+
+        await finishWithTokens(accessToken, refreshToken);
+      } catch {
+        setMemoryAccessToken(null);
+        await clearTokens();
+      } finally {
+        setLoading(false);
+        setRestoring(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot session restore
+  }, [isAuthenticated]);
+
+  if (isAuthenticated || restoring) {
+    return (
+      <PremiumAuthShell variant="partner">
+        <View style={styles.restoring}>
+          <ActivityIndicator size="large" color="#0D6B57" />
+          <Text style={styles.restoringText}>Opening your dashboard…</Text>
+        </View>
+      </PremiumAuthShell>
+    );
+  }
 
   const sendOtp = async () => {
     const id = normalizeIdentifier(identifier);
@@ -323,6 +358,17 @@ function createStyles() {
       marginTop: spacing.md,
       textTransform: 'uppercase',
       letterSpacing: 0.4,
+    },
+    restoring: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.xl,
+      gap: spacing.md,
+    },
+    restoringText: {
+      ...typography.body,
+      color: '#64748B',
+      textAlign: 'center',
     },
   });
 }
