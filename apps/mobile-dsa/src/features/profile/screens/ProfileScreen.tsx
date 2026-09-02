@@ -9,29 +9,15 @@ import { ThemeAppearanceCard } from '@/components/ThemeAppearanceCard';
 import { Button, Card, PageHero, Screen, SectionHeader, StatusBadge } from '@/components/ui';
 import { useAuth, useResponsiveLayout } from '@/hooks';
 import { maskPhone, str } from '@/lib/utils';
+import { PARTNER_MOBILE_PROFILE_MENU } from '@/navigation/partnerSidebarNav';
 import type { ProfileStackParamList } from '@/navigation/types';
 import { partnersService } from '@/services';
 import { radius, spacing, typography } from '@/theme';
 import { accentGlow } from '@/theme/premium';
 import { useAppTheme } from '@/theme/ThemeProvider';
 
-const MENU: {
-  label: string;
-  screen: keyof ProfileStackParamList;
-  icon: keyof typeof Ionicons.glyphMap;
-  hint: string;
-}[] = [
-  { label: 'My Brand Profile', screen: 'BrandingDashboard', icon: 'ribbon', hint: 'Public partner page' },
-  { label: 'Bank Account', screen: 'BankAccount', icon: 'card', hint: 'Payout details' },
-  { label: 'KYC Status', screen: 'PartnerKycStatus', icon: 'shield-checkmark', hint: 'Verification progress' },
-  { label: 'Documents', screen: 'Documents', icon: 'folder', hint: 'Upload & manage files' },
-  { label: 'Document Deficiencies', screen: 'DocumentDeficiencies', icon: 'alert-circle', hint: 'Action required' },
-  { label: 'Customers', screen: 'CustomersList', icon: 'people', hint: 'Your client list' },
-  { label: 'Referrals', screen: 'Referrals', icon: 'gift', hint: 'Invite partners' },
-  { label: 'Referral Analytics', screen: 'ReferralAnalytics', icon: 'analytics', hint: 'Performance insights' },
-  { label: 'Support', screen: 'Support', icon: 'headset', hint: 'Get help' },
-  { label: 'Settings', screen: 'Settings', icon: 'settings', hint: 'App preferences' },
-];
+const SIDEBAR_HINT_DESKTOP =
+  'Documents, KYC, bank and brand settings are in the left sidebar under Account.';
 
 export function ProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
@@ -66,7 +52,7 @@ export function ProfileScreen() {
         />
       ) : (
         <View style={styles.desktopHead}>
-          <SectionHeader title="Account settings" subtitle="Profile, documents and preferences" />
+          <SectionHeader title="Profile" subtitle="Your partner identity and preferences" />
         </View>
       )}
 
@@ -100,30 +86,7 @@ export function ProfileScreen() {
         </Card>
 
         {isDesktop ? (
-          <View style={styles.quickGrid}>
-            <View style={styles.quickGridItem}>
-              <Card title="Partner Academy" subtitle="Courses, certificates and growth tracks">
-                <Pressable
-                  style={[styles.academyCta, { backgroundColor: `${colors.primary}10`, borderColor: `${colors.primary}28` }]}
-                  onPress={() => navigation.getParent()?.navigate('Academy', { screen: 'AcademyHome' })}
-                >
-                  <View style={[styles.menuIconPlate, { backgroundColor: `${colors.primary}20` }]}>
-                    <Ionicons name="school" size={20} color={colors.primary} />
-                  </View>
-                  <View style={styles.academyCopy}>
-                    <Text style={[styles.academyTitle, { color: colors.text }]}>Open Academy Hub</Text>
-                    <Text style={[styles.academyHint, { color: colors.textMuted }]}>
-                      Continue learning and unlock certifications
-                    </Text>
-                  </View>
-                  <Ionicons name="arrow-forward" size={18} color={colors.primary} />
-                </Pressable>
-              </Card>
-            </View>
-            <View style={styles.quickGridItem}>
-              <ThemeAppearanceCard />
-            </View>
-          </View>
+          <ThemeAppearanceCard />
         ) : (
           <>
             <ThemeAppearanceCard />
@@ -137,37 +100,27 @@ export function ProfileScreen() {
                 <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </Pressable>
             </Card>
+            <Card title="Account">
+              {PARTNER_MOBILE_PROFILE_MENU.map((item) => (
+                <Pressable
+                  key={item.screen}
+                  style={styles.menuRow}
+                  onPress={() => (navigation.navigate as (name: keyof ProfileStackParamList) => void)(item.screen)}
+                >
+                  <Ionicons name={item.icon} size={18} color={colors.primary} />
+                  <Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                </Pressable>
+              ))}
+            </Card>
           </>
         )}
 
-        <Card title="Manage" subtitle={isDesktop ? 'Account tools and compliance' : undefined}>
-          <View style={isDesktop ? styles.menuGrid : undefined}>
-            {MENU.map((item) => (
-              <Pressable
-                key={item.screen}
-                style={({ pressed }) => [
-                  isDesktop ? styles.menuTile : styles.menuRow,
-                  isDesktop && { borderColor: colors.borderLight, backgroundColor: pressed ? colors.surface : 'transparent' },
-                  Platform.OS === 'web' && isDesktop && ({ cursor: 'pointer' } as const),
-                ]}
-                onPress={() => (navigation.navigate as (name: keyof ProfileStackParamList) => void)(item.screen)}
-              >
-                <View style={[styles.menuIconPlate, { backgroundColor: `${colors.primary}14` }]}>
-                  <Ionicons name={item.icon} size={18} color={colors.primary} />
-                </View>
-                <View style={styles.menuTileCopy}>
-                  <Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text>
-                  {isDesktop ? (
-                    <Text style={[styles.menuHint, { color: colors.textMuted }]} numberOfLines={1}>
-                      {item.hint}
-                    </Text>
-                  ) : null}
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-              </Pressable>
-            ))}
-          </View>
-        </Card>
+        {isDesktop ? (
+          <Card title="Quick tip" variant="glass">
+            <Text style={[styles.sidebarHint, { color: colors.textSecondary }]}>{SIDEBAR_HINT_DESKTOP}</Text>
+          </Card>
+        ) : null}
 
         {!isDesktop ? (
           <Button title="Sign Out" variant="secondary" fullWidth onPress={() => void logout()} />
@@ -207,48 +160,7 @@ function createStyles(
     },
     tierBadgeText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
     code: { ...typography.caption, marginTop: spacing.md, fontWeight: '700', fontSize: 12, letterSpacing: 0.3 },
-    quickGrid: {
-      flexDirection: 'row',
-      gap: spacing.md,
-      alignItems: 'stretch',
-    },
-    quickGridItem: { flex: 1, minWidth: 0 },
-    academyCta: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.md,
-      padding: spacing.md,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-    },
-    academyCopy: { flex: 1, minWidth: 0 },
-    academyTitle: { fontSize: 14, fontWeight: '700' },
-    academyHint: { fontSize: 12, marginTop: 4 },
-    menuGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: spacing.sm,
-      marginTop: spacing.xs,
-    },
-    menuTile: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      width: '48.5%',
-      paddingVertical: spacing.md,
-      paddingHorizontal: spacing.sm,
-      borderRadius: radius.lg,
-      borderWidth: StyleSheet.hairlineWidth,
-    },
-    menuTileCopy: { flex: 1, minWidth: 0 },
-    menuIconPlate: {
-      width: 36,
-      height: 36,
-      borderRadius: 10,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    menuHint: { fontSize: 11, marginTop: 2 },
+    sidebarHint: { ...typography.bodySm, lineHeight: 20 },
     menuRow: {
       flexDirection: 'row',
       alignItems: 'center',

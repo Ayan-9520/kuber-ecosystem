@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { type BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useQuery } from '@tanstack/react-query';
-import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth, useResponsiveLayout } from '@/hooks';
 import { maskPhone, str } from '@/lib/utils';
+import { PARTNER_SIDEBAR_ACCOUNT_NAV } from '@/navigation/partnerSidebarNav';
+import type { ProfileStackParamList } from '@/navigation/types';
 import { partnersService } from '@/services';
 import { radius, spacing, typography } from '@/theme';
 import { glassSurface } from '@/theme/premium';
@@ -25,6 +27,14 @@ const TAB_ICONS: Record<
 
 const HIDDEN_FROM_NAV = new Set(['Profile']);
 
+function activeProfileScreen(state: BottomTabBarProps['state']): keyof ProfileStackParamList {
+  const profileTab = state.routes.find((r) => r.name === 'Profile');
+  const nested = profileTab?.state;
+  if (!nested?.routes?.length) return 'ProfileHome';
+  const idx = nested.index ?? 0;
+  return (nested.routes[idx]?.name ?? 'ProfileHome') as keyof ProfileStackParamList;
+}
+
 export function PartnerDesktopTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useAppTheme();
   const { sidebarWidth } = useResponsiveLayout();
@@ -42,11 +52,64 @@ export function PartnerDesktopTabBar({ state, descriptors, navigation }: BottomT
   const partnerCode = str(partner.data?.partnerCode);
   const tier = str(partner.data?.commissionTier ?? 'SILVER');
   const initials = displayName.slice(0, 2).toUpperCase();
-  const profileFocused = state.routes[state.index]?.name === 'Profile';
+  const profileScreen = activeProfileScreen(state);
+  const onProfileTab = state.routes[state.index]?.name === 'Profile';
+  const profileHomeFocused = onProfileTab && profileScreen === 'ProfileHome';
 
-  const goProfile = () => {
+  const goProfileHome = () => {
     navigation.navigate('Profile', { screen: 'ProfileHome' });
   };
+
+  const goAccountScreen = (screen: keyof ProfileStackParamList) => {
+    navigation.navigate('Profile', { screen });
+  };
+
+  const renderNavItem = (
+    key: string,
+    label: string,
+    iconActive: keyof typeof Ionicons.glyphMap,
+    iconInactive: keyof typeof Ionicons.glyphMap,
+    focused: boolean,
+    onPress: () => void,
+  ) => (
+    <Pressable
+      key={key}
+      accessibilityRole="button"
+      accessibilityState={{ selected: focused }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.item,
+        focused && [
+          styles.itemActive,
+          {
+            backgroundColor: `${colors.primary}14`,
+            borderColor: `${colors.primary}35`,
+          },
+        ],
+        !focused && pressed && { backgroundColor: colors.surface },
+        Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
+      ]}
+    >
+      {focused ? <View style={[styles.activeBar, { backgroundColor: colors.primary }]} /> : null}
+      <View style={[styles.iconPlate, { backgroundColor: focused ? `${colors.primary}18` : colors.surface }]}>
+        <Ionicons
+          name={focused ? iconActive : iconInactive}
+          size={18}
+          color={focused ? colors.primary : colors.textSecondary}
+        />
+      </View>
+      <Text
+        style={[
+          styles.itemLabel,
+          { color: focused ? colors.text : colors.textSecondary },
+          focused && styles.itemLabelActive,
+        ]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
 
   return (
     <View
@@ -90,88 +153,64 @@ export function PartnerDesktopTabBar({ state, descriptors, navigation }: BottomT
         ) : null}
       </View>
 
-      <Text style={[styles.navLabel, { color: colors.textMuted }]}>Navigation</Text>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <Text style={[styles.navLabel, { color: colors.textMuted }]}>Workspace</Text>
 
-      <View style={styles.nav} accessibilityRole="tablist">
-        {state.routes
-          .filter((route) => !HIDDEN_FROM_NAV.has(route.name))
-          .map((route) => {
-            const index = state.routes.findIndex((r) => r.key === route.key);
-            const focused = state.index === index;
-            const descriptor = descriptors[route.key];
-            const options = descriptor?.options ?? {};
-            const meta = TAB_ICONS[route.name] ?? {
-              active: 'ellipse' as const,
-              inactive: 'ellipse-outline' as const,
-              label: options.title ?? route.name,
-            };
-            const label = meta.label;
+        <View style={styles.nav} accessibilityRole="tablist">
+          {state.routes
+            .filter((route) => !HIDDEN_FROM_NAV.has(route.name))
+            .map((route) => {
+              const index = state.routes.findIndex((r) => r.key === route.key);
+              const focused = state.index === index;
+              const descriptor = descriptors[route.key];
+              const options = descriptor?.options ?? {};
+              const meta = TAB_ICONS[route.name] ?? {
+                active: 'ellipse' as const,
+                inactive: 'ellipse-outline' as const,
+                label: options.title ?? route.name,
+              };
 
-            const onPress = () => {
-              const event = navigation.emit({
-                type: 'tabPress',
-                target: route.key,
-                canPreventDefault: true,
-              });
-              if (!focused && !event.defaultPrevented) {
-                navigation.navigate(route.name, route.params);
-              }
-            };
+              const onPress = () => {
+                const event = navigation.emit({
+                  type: 'tabPress',
+                  target: route.key,
+                  canPreventDefault: true,
+                });
+                if (!focused && !event.defaultPrevented) {
+                  navigation.navigate(route.name, route.params);
+                }
+              };
 
-            return (
-              <Pressable
-                key={route.key}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: focused }}
-                onPress={onPress}
-                style={({ pressed }) => [
-                  styles.item,
-                  focused && [
-                    styles.itemActive,
-                    {
-                      backgroundColor: `${colors.primary}14`,
-                      borderColor: `${colors.primary}35`,
-                    },
-                  ],
-                  !focused && pressed && { backgroundColor: colors.surface },
-                  Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
-                ]}
-              >
-                {focused ? (
-                  <View style={[styles.activeBar, { backgroundColor: colors.primary }]} />
-                ) : null}
-                <View style={[styles.iconPlate, { backgroundColor: focused ? `${colors.primary}18` : colors.surface }]}>
-                  <Ionicons
-                    name={focused ? meta.active : meta.inactive}
-                    size={18}
-                    color={focused ? colors.primary : colors.textSecondary}
-                  />
-                </View>
-                <Text
-                  style={[
-                    styles.itemLabel,
-                    { color: focused ? colors.text : colors.textSecondary },
-                    focused && styles.itemLabelActive,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {label}
-                </Text>
-              </Pressable>
+              return renderNavItem(route.key, meta.label, meta.active, meta.inactive, focused, onPress);
+            })}
+        </View>
+
+        <Text style={[styles.navLabel, styles.accountNavLabel, { color: colors.textMuted }]}>Account</Text>
+        <View style={styles.nav}>
+          {PARTNER_SIDEBAR_ACCOUNT_NAV.map((item) => {
+            const focused = onProfileTab && profileScreen === item.screen;
+            return renderNavItem(
+              item.screen,
+              item.label,
+              item.icon,
+              item.iconOutline,
+              focused,
+              () => goAccountScreen(item.screen),
             );
           })}
-      </View>
+        </View>
+      </ScrollView>
 
       <View style={[styles.accountBlock, { borderTopColor: colors.borderLight }]}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Open profile"
-          onPress={goProfile}
+          accessibilityLabel="Open profile overview"
+          onPress={goProfileHome}
           style={({ pressed }) => [
             styles.accountCard,
             {
-              backgroundColor: profileFocused ? `${colors.primary}10` : colors.surface,
-              borderColor: profileFocused ? `${colors.primary}35` : colors.borderLight,
+              backgroundColor: profileHomeFocused ? `${colors.primary}10` : colors.surface,
+              borderColor: profileHomeFocused ? `${colors.primary}35` : colors.borderLight,
             },
             pressed && { opacity: 0.92 },
             Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
@@ -258,6 +297,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   codeText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: spacing.sm },
   navLabel: {
     fontSize: 10,
     fontWeight: '700',
@@ -266,7 +307,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     marginBottom: spacing.xs,
   },
-  nav: { flex: 1, paddingHorizontal: spacing.sm, gap: 4 },
+  accountNavLabel: { marginTop: spacing.md },
+  nav: { paddingHorizontal: spacing.sm, gap: 4 },
   item: {
     position: 'relative',
     flexDirection: 'row',
