@@ -1,7 +1,7 @@
 const API_SUFFIX = '/api/v1';
 
 /** Keep in sync with apps/admin/vercel.json tunnel destination. */
-const HOSTED_ADMIN_API_FALLBACK = 'https://oils-zinc-met-urban.trycloudflare.com';
+const HOSTED_ADMIN_API_FALLBACK = 'https://tutorials-reprints-pushed-developmental.trycloudflare.com';
 
 /**
  * Ensure API base URL always ends with /api/v1.

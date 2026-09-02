@@ -8,7 +8,7 @@ const API_SUFFIX = '/api/v1';
  * Keep in sync with apps/mobile-dsa/vercel.json EXPO_PUBLIC_API_BASE_URL.
  * Never use same-origin /api on partner.kuberone.online — Vercel→trycloudflare rewrites 502.
  */
-const HOSTED_PARTNER_API_FALLBACK = 'https://oils-zinc-met-urban.trycloudflare.com';
+const HOSTED_PARTNER_API_FALLBACK = 'https://tutorials-reprints-pushed-developmental.trycloudflare.com';
 
 function normalizeApiBaseUrl(url: string): string {
   const trimmed = url.trim().replace(/\/+$/, '');
