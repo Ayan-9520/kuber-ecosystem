@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, CheckCircle, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CheckCircle, ExternalLink, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -14,8 +14,15 @@ import {
   PageHeader,
   StatusBadge,
 } from '@/components/ui';
+import {
+  applicationDisplay,
+  documentOwnerDisplay,
+  documentOwnerTypeLabel,
+  documentNumberDisplay,
+  documentTypeDisplay,
+  fileSizeDisplay,
+} from '@/lib/entity-display';
 import { formatDateTime, getApiErrorMessage } from '@/lib/utils';
-import { customerDisplayName, documentNumberDisplay, documentTypeDisplay } from '@/lib/entity-display';
 import { documentsService } from '@/services/index';
 
 function str(v: unknown): string {
@@ -46,6 +53,12 @@ export function DocumentDetailPage() {
     enabled: !!id,
   });
 
+  const downloadLink = useQuery({
+    queryKey: ['document-download', id],
+    queryFn: () => documentsService.downloadUrl(id!),
+    enabled: !!id && !!document.data,
+  });
+
   const ocrResults = useQuery({
     queryKey: ['document-ocr', id],
     queryFn: () => documentsService.ocrResults({ documentId: id!, page: 1, limit: 10 }),
@@ -65,12 +78,18 @@ export function DocumentDetailPage() {
   });
 
   const verifyMutation = useMutation({
-    mutationFn: () => documentsService.verify(id!, { notes: verifyNotes || undefined }),
+    mutationFn: () =>
+      documentsService.verify(id!, {
+        result: 'APPROVED',
+        mode: 'MANUAL',
+        notes: verifyNotes || undefined,
+      }),
     onSuccess: () => {
       setActionSuccess('Document verified successfully');
       setActionError('');
       queryClient.invalidateQueries({ queryKey: ['document', id] });
       queryClient.invalidateQueries({ queryKey: ['document-verification', id] });
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
     },
     onError: (err) => setActionError(getApiErrorMessage(err)),
   });
@@ -81,6 +100,7 @@ export function DocumentDetailPage() {
       setActionSuccess('Document approved successfully');
       setActionError('');
       queryClient.invalidateQueries({ queryKey: ['document', id] });
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
     },
     onError: (err) => setActionError(getApiErrorMessage(err)),
   });
@@ -98,13 +118,16 @@ export function DocumentDetailPage() {
   }
 
   const data = document.data;
+  const isPartnerDoc = String(data.ownerType ?? '') === 'PARTNER';
+  const ownerLabel = documentOwnerTypeLabel(data);
+  const previewUrl = downloadLink.data?.downloadUrl;
   const isActionLoading = verifyMutation.isPending || approveMutation.isPending;
 
   return (
     <div className="page-container">
       <PageHeader
         title={documentTypeDisplay(data)}
-        subtitle={`Document ${documentNumberDisplay(data)}`}
+        subtitle={`${ownerLabel}: ${documentOwnerDisplay(data)} · ${documentNumberDisplay(data)}`}
         actions={
           <Button variant="ghost" onClick={() => navigate('/documents')}>
             <ArrowLeft size={16} />
@@ -118,6 +141,7 @@ export function DocumentDetailPage() {
         {data.verificationStatus != null && String(data.verificationStatus) !== '' ? (
           <StatusBadge status={str(data.verificationStatus)} />
         ) : null}
+        {isPartnerDoc ? <StatusBadge status="PARTNER KYC" /> : null}
       </div>
 
       {actionError && <div className="alert alert-error">{actionError}</div>}
@@ -128,20 +152,32 @@ export function DocumentDetailPage() {
           <Card title="Document Preview" className="detail-section">
             <div className="info-grid">
               <InfoItem label="Document Type" value={documentTypeDisplay(data)} />
-              <InfoItem label="Customer" value={customerDisplayName(data)} />
-              <InfoItem label="Application" value={str(data.applicationId)} />
+              <InfoItem label={ownerLabel} value={documentOwnerDisplay(data)} />
+              {isPartnerDoc ? (
+                <>
+                  <InfoItem label="Partner Code" value={str(data.partnerCode)} />
+                  <InfoItem label="Business" value={str(data.partnerBusinessName)} />
+                  <InfoItem label="Phone" value={str(data.partnerPhone)} />
+                </>
+              ) : null}
+              <InfoItem label="Application" value={applicationDisplay(data)} />
               <InfoItem label="File Name" value={str(data.fileName ?? data.originalFileName)} />
               <InfoItem label="MIME Type" value={str(data.mimeType)} />
-              <InfoItem label="File Size" value={data.fileSize ? `${Math.round(Number(data.fileSize) / 1024)} KB` : '—'} />
+              <InfoItem label="File Size" value={fileSizeDisplay(data)} />
               <InfoItem label="Uploaded" value={formatDateTime((data.uploadedAt ?? data.createdAt) as string)} />
               <InfoItem label="Uploaded By" value={str(data.uploadedByName ?? data.uploadedBy)} />
             </div>
-            {typeof data.fileUrl === 'string' && data.fileUrl ? (
+            {previewUrl ? (
               <div style={{ marginTop: '1rem' }}>
-                <a href={data.fileUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">
-                  Open Document
+                <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">
+                  <ExternalLink size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+                  Open / Download Document
                 </a>
               </div>
+            ) : downloadLink.isLoading ? (
+              <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                Loading preview link…
+              </p>
             ) : null}
           </Card>
 
@@ -149,7 +185,10 @@ export function DocumentDetailPage() {
             {ocrResults.isLoading ? (
               <LoadingSpinner />
             ) : (ocrResults.data?.items.length ?? 0) === 0 ? (
-              <EmptyState title="No OCR data" description="OCR extraction results will appear here." />
+              <EmptyState
+                title="No OCR data"
+                description="Manual review is fine for partner KYC. OCR runs automatically when configured."
+              />
             ) : (
               <DataTable
                 columns={[
@@ -196,7 +235,7 @@ export function DocumentDetailPage() {
               <CanAccess permission="documents.verify">
                 <Button
                   loading={verifyMutation.isPending}
-                  disabled={isActionLoading}
+                  disabled={isActionLoading || data.status === 'VERIFIED'}
                   onClick={() => verifyMutation.mutate()}
                 >
                   <ShieldCheck size={16} />
@@ -207,7 +246,7 @@ export function DocumentDetailPage() {
                 <Button
                   variant="secondary"
                   loading={approveMutation.isPending}
-                  disabled={isActionLoading}
+                  disabled={isActionLoading || data.status === 'VERIFIED'}
                   onClick={() => approveMutation.mutate()}
                 >
                   <CheckCircle size={16} />
@@ -215,6 +254,12 @@ export function DocumentDetailPage() {
                 </Button>
               </CanAccess>
             </div>
+            {isPartnerDoc ? (
+              <p style={{ marginTop: '1rem', fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                After all partner docs are verified, go to <strong>Partners</strong> and click{' '}
+                <strong>Verify KYC</strong>.
+              </p>
+            ) : null}
           </Card>
 
           <Card title="Deficiencies">

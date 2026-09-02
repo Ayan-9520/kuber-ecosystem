@@ -92,6 +92,7 @@ export const documentsService = {
   verificationResults: (params: Record<string, unknown>) => apiGetPaginated<Record<string, unknown>>('/verification-results', params),
   verify: (id: string, data: unknown) => apiPost(`/documents/${id}/verify`, data),
   approve: (id: string) => apiPost(`/documents/${id}/approve`),
+  downloadUrl: (id: string) => apiGet<{ downloadUrl: string; expiresIn?: number }>(`/documents/${id}/download-url`),
 };
 
 export const productsService = {

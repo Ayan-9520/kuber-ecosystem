@@ -67,21 +67,52 @@ export function sha256Checksum(buffer: Buffer): string {
 type DocumentWithType = {
   documentType?: { name?: string | null; code?: string | null } | null;
   customer?: { customerCode?: string | null; fullName?: string | null } | null;
-  uploadedBy?: { email?: string | null; fullName?: string | null } | null;
+  partner?: {
+    partnerCode?: string | null;
+    contactName?: string | null;
+    businessName?: string | null;
+    phone?: string | null;
+    email?: string | null;
+  } | null;
+  application?: { applicationNumber?: string | null } | null;
+  uploadedBy?: { email?: string | null; phone?: string | null } | null;
   documentCode?: string | null;
+  fileSizeBytes?: bigint | number | null;
+  ownerType?: string | null;
   [key: string]: unknown;
 };
+
+function partnerDisplayName(partner: DocumentWithType['partner']): string | null {
+  if (!partner) return null;
+  return partner.contactName?.trim() || partner.businessName?.trim() || partner.partnerCode?.trim() || null;
+}
 
 /** Flatten nested relations for API consumers (admin + mobile). */
 export function serializeDocument<T extends DocumentWithType>(doc: T) {
   const type = doc.documentType;
   const customer = doc.customer;
+  const partner = doc.partner;
+  const application = doc.application;
   const uploadedBy = doc.uploadedBy;
   const typeLabel =
     type?.name?.trim() ||
     (type?.code ? type.code.trim().replace(/_/g, ' ') : null);
+  const partnerName = partnerDisplayName(partner);
+  const ownerType = doc.ownerType ?? null;
+  const ownerDisplayName =
+    ownerType === 'PARTNER'
+      ? partnerName
+        ? partner?.partnerCode
+          ? `${partnerName} (${partner.partnerCode})`
+          : partnerName
+        : (partner?.partnerCode ?? null)
+      : (customer?.fullName ?? null);
+
   return {
     ...doc,
+    fileSizeBytes:
+      doc.fileSizeBytes != null ? Number(doc.fileSizeBytes) : doc.fileSizeBytes,
+    fileSize: doc.fileSizeBytes != null ? Number(doc.fileSizeBytes) : null,
     documentNumber: doc.documentCode ?? null,
     documentTypeName: type?.name ?? null,
     documentTypeCode: type?.code ?? null,
@@ -89,7 +120,14 @@ export function serializeDocument<T extends DocumentWithType>(doc: T) {
     type: typeLabel ?? (typeof doc.type === 'string' ? doc.type : null),
     customerName: customer?.fullName ?? null,
     customerCode: customer?.customerCode ?? null,
-    uploadedByName: uploadedBy?.fullName ?? uploadedBy?.email ?? null,
+    partnerName,
+    partnerCode: partner?.partnerCode ?? null,
+    partnerBusinessName: partner?.businessName ?? null,
+    partnerPhone: partner?.phone ?? null,
+    partnerEmail: partner?.email ?? null,
+    ownerDisplayName,
+    applicationNumber: application?.applicationNumber ?? null,
+    uploadedByName: uploadedBy?.email ?? uploadedBy?.phone ?? null,
   };
 }
 

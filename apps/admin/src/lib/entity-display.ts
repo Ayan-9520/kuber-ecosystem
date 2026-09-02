@@ -27,6 +27,52 @@ export function customerDisplayName(row: Record<string, unknown>): string {
   return id ? String(id) : '—';
 }
 
+/** Partner or customer label for document list/detail (real CRM owner column). */
+export function documentOwnerDisplay(row: Record<string, unknown>): string {
+  const ownerType = String(row.ownerType ?? '');
+  if (ownerType === 'PARTNER') {
+    const flat = row.ownerDisplayName ?? row.partnerName;
+    if (flat != null && String(flat).trim()) return String(flat);
+    const nested = row.partner as Record<string, unknown> | undefined;
+    const name =
+      nested?.contactName ??
+      nested?.businessName ??
+      row.partnerCode ??
+      nested?.partnerCode;
+    if (name != null && String(name).trim()) {
+      const code = row.partnerCode ?? nested?.partnerCode;
+      return code ? `${name} (${code})` : String(name);
+    }
+    return row.partnerId ? String(row.partnerId) : '—';
+  }
+  const customer = customerDisplayName(row);
+  return customer !== '—' ? customer : '—';
+}
+
+export function documentOwnerTypeLabel(row: Record<string, unknown>): string {
+  const ownerType = String(row.ownerType ?? 'CUSTOMER');
+  if (ownerType === 'PARTNER') return 'Partner';
+  if (ownerType === 'CUSTOMER') return 'Customer';
+  if (ownerType === 'APPLICATION') return 'Application';
+  return ownerType.replace(/_/g, ' ');
+}
+
+export function applicationDisplay(row: Record<string, unknown>): string {
+  const num = row.applicationNumber ?? (row.application as Record<string, unknown> | undefined)?.applicationNumber;
+  if (num != null && String(num).trim()) return String(num);
+  return row.applicationId ? String(row.applicationId) : '—';
+}
+
+export function fileSizeDisplay(row: Record<string, unknown>): string {
+  const raw = row.fileSize ?? row.fileSizeBytes;
+  if (raw == null || raw === '') return '—';
+  const bytes = Number(raw);
+  if (!Number.isFinite(bytes) || bytes <= 0) return '—';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 /** Document type label from flat or nested API fields (never "[object Object]"). */
 export function documentTypeDisplay(row: Record<string, unknown>): string {
   return documentTypeLabel(row);

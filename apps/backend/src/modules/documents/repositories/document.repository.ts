@@ -7,8 +7,17 @@ const documentInclude = {
   customer: { select: { id: true, customerCode: true, fullName: true } },
   lead: { select: { id: true, leadNumber: true } },
   application: { select: { id: true, applicationNumber: true } },
-  partner: { select: { id: true, partnerCode: true } },
-  uploadedBy: { select: { id: true, email: true } },
+  partner: {
+    select: {
+      id: true,
+      partnerCode: true,
+      contactName: true,
+      businessName: true,
+      phone: true,
+      email: true,
+    },
+  },
+  uploadedBy: { select: { id: true, email: true, phone: true } },
 } satisfies Prisma.DocumentInclude;
 
 export const documentRepository = {

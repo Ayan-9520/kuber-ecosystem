@@ -14,7 +14,7 @@ import {
 } from '@/components/ui';
 import { useDebounce, usePagination } from '@/hooks';
 import { formatDateTime } from '@/lib/utils';
-import { customerDisplayName, documentNumberDisplay, documentTypeDisplay } from '@/lib/entity-display';
+import { documentNumberDisplay, documentOwnerDisplay, documentTypeDisplay } from '@/lib/entity-display';
 import { documentsService } from '@/services/index';
 
 const STATUS_OPTIONS = [
@@ -25,6 +25,12 @@ const STATUS_OPTIONS = [
   { value: 'REJECTED', label: 'Rejected' },
   { value: 'DEFICIENT', label: 'Deficient' },
   { value: 'EXPIRED', label: 'Expired' },
+];
+
+const OWNER_OPTIONS = [
+  { value: '', label: 'All owners' },
+  { value: 'PARTNER', label: 'Partner KYC' },
+  { value: 'CUSTOMER', label: 'Customer' },
 ];
 
 function str(v: unknown): string {
@@ -38,21 +44,24 @@ export function DocumentsPage() {
   const { page, limit, setPage, reset } = usePagination();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState(searchParams.get('status') ?? '');
+  const [ownerType, setOwnerType] = useState(searchParams.get('ownerType') ?? '');
   const debouncedSearch = useDebounce(search);
 
   useEffect(() => {
     setStatus(searchParams.get('status') ?? '');
+    setOwnerType(searchParams.get('ownerType') ?? '');
     reset();
   }, [searchParams, reset]);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['documents', page, limit, debouncedSearch, status],
+    queryKey: ['documents', page, limit, debouncedSearch, status, ownerType],
     queryFn: () =>
       documentsService.list({
         page,
         limit,
         search: debouncedSearch || undefined,
         status: status || undefined,
+        ownerType: ownerType || undefined,
         sortBy: 'createdAt',
         sortOrder: 'desc',
       }),
@@ -60,10 +69,11 @@ export function DocumentsPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Documents" subtitle="Review and verify customer documents" />
+      <PageHeader title="Documents" subtitle="Review and verify customer and partner KYC documents" />
 
       <div className="filter-bar">
         <SearchInput value={search} onChange={setSearch} placeholder="Search documents..." />
+        <Select options={OWNER_OPTIONS} value={ownerType} onChange={(e) => setOwnerType(e.target.value)} />
         <Select options={STATUS_OPTIONS} value={status} onChange={(e) => setStatus(e.target.value)} />
       </div>
 
@@ -82,7 +92,7 @@ export function DocumentsPage() {
             columns={[
               { key: 'documentNumber', header: 'Doc #', render: (r) => documentNumberDisplay(r) },
               { key: 'documentType', header: 'Type', render: (r) => documentTypeDisplay(r) },
-              { key: 'customerName', header: 'Customer', render: (r) => customerDisplayName(r) },
+              { key: 'ownerDisplay', header: 'Owner', render: (r) => documentOwnerDisplay(r) },
               {
                 key: 'status',
                 header: 'Verification',
