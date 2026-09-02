@@ -1,3 +1,5 @@
+import { useNavigation } from '@react-navigation/native';
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -6,6 +8,7 @@ import { useDispatch } from 'react-redux';
 import { Button, Card, EmptyState, Screen, StatusBadge } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { formatDate, str } from '@/lib/utils';
+import type { AuthStackParamList } from '@/navigation/types';
 import { documentsService, partnersService } from '@/services';
 import { setRequiresPartnerKyc } from '@/store/slices/authSlice';
 import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
@@ -15,6 +18,7 @@ export function PartnerKycScreen() {
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const dispatch = useDispatch();
+  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const { partnerId } = useAuth();
 
   const partner = useQuery({
@@ -71,9 +75,16 @@ export function PartnerKycScreen() {
           onPress={() => dispatch(setRequiresPartnerKyc(false))}
         />
       ) : (
-        <Text style={styles.note}>
-          Upload required documents via Profile → Documents. Access unlocks after KYC verification.
-        </Text>
+        <>
+          <Button
+            title="Upload KYC Documents"
+            fullWidth
+            onPress={() => navigation.navigate('PartnerDocuments')}
+          />
+          <Text style={styles.note}>
+            After upload, compliance will review and unlock full access.
+          </Text>
+        </>
       )}
     </Screen>
   );

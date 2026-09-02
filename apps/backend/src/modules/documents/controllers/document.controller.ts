@@ -28,7 +28,7 @@ export const documentController = {
     res.json(successResponse(await documentService.getById(req.user!, req.params.id as string)));
   },
   upload: async (req: Request, res: Response) => {
-    res.status(201).json(successResponse(await documentService.upload(req.body, ctx(req))));
+    res.status(201).json(successResponse(await documentService.upload(req.body, ctx(req), req.user!)));
   },
   presignUpload: async (req: Request, res: Response) => {
     res.json(successResponse(await documentService.presignUpload(req.body, ctx(req))));

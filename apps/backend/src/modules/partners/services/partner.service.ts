@@ -6,9 +6,10 @@ import type {
   UpdatePartnerInput,
 } from '@kuberone/shared-validation';
 
-import { ConflictError, NotFoundError } from '../../../shared/errors/app-error.js';
+import { AppError, ConflictError, NotFoundError } from '../../../shared/errors/app-error.js';
 import { partnerRepository } from '../repositories/partner.repository.js';
 
+import { assertPartnerCanVerifyKyc } from './partner-kyc.service.js';
 import { partnerNotificationService } from './partner-notification.service.js';
 
 export interface RequestContext {
@@ -186,7 +187,11 @@ export const partnerService = {
     }
 
     // Real marketplace flow: KYC verified → public professional website goes live with starter content
-    if (input.kycStatus === 'VERIFIED') {
+    if (input.kycStatus === 'VERIFIED' && existing.kycStatus !== 'VERIFIED') {
+      const isFastTrackApprove = input.status === 'ACTIVE' && previousStatus === 'PENDING';
+      if (!isFastTrackApprove) {
+        await assertPartnerCanVerifyKyc(id);
+      }
       try {
         const { partnerBrandService } = await import(
           '../../partner-branding/services/partner-brand.service.js'

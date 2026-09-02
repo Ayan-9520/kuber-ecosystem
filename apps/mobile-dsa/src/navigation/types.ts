@@ -6,6 +6,8 @@ export type AuthStackParamList = {
   OtpLogin: { phone?: string; fromRegister?: boolean } | undefined;
   PartnerRegister: undefined;
   PartnerKyc: undefined;
+  PartnerDocuments: undefined;
+  UploadDocument: undefined;
 };
 
 export type HomeStackParamList = {

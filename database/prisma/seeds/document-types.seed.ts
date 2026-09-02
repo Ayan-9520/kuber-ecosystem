@@ -22,6 +22,12 @@ const DOCUMENT_TYPES = [
   { code: 'PHOTO', name: 'Photo', category: DocumentTypeCategory.IDENTITY, requiresOcr: false },
   { code: 'SIGNATURE', name: 'Signature', category: DocumentTypeCategory.IDENTITY, requiresOcr: false },
   { code: 'CHEQUE', name: 'Cancelled Cheque', category: DocumentTypeCategory.KYC, requiresOcr: true },
+  {
+    code: 'PARTNER_AGREEMENT',
+    name: 'Partnership Agreement',
+    category: DocumentTypeCategory.AGREEMENT,
+    requiresOcr: false,
+  },
 ];
 
 const DEFAULT_MIME = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];

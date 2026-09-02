@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useDebounce, usePagination } from '@/hooks';
 import { fieldStr, formatDate, formatDateTime } from '@/lib/utils';
-import { partnersService } from '@/services';
+import { partnersService, documentsService } from '@/services';
 
 import styles from './PartnersPage.module.css';
 
@@ -24,6 +24,7 @@ const TIER_COLORS: Record<CommissionTier, { bg: string; color: string; label: st
 };
 
 const PARTNER_LOGIN_URL = 'https://partner.kuberone.online/login';
+const PARTNER_KYC_REQUIRED = ['PAN', 'AADHAAR', 'CHEQUE'] as const;
 
 function TierBadge({ tier }: { tier: string }) {
   const config = TIER_COLORS[tier as CommissionTier] ?? TIER_COLORS.SILVER;
@@ -88,6 +89,19 @@ export function PartnersPage() {
     enabled: !!selectedId,
   });
 
+  const { data: partnerDocs } = useQuery({
+    queryKey: ['partner-kyc-docs', selectedId],
+    queryFn: () =>
+      documentsService.list({
+        partnerId: selectedId!,
+        ownerType: 'PARTNER',
+        limit: 50,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      }),
+    enabled: !!selectedId,
+  });
+
   const showMessage = (message: string, tone: ActionTone = 'info') => {
     setActionMessage(message);
     setActionTone(tone);
@@ -127,15 +141,30 @@ export function PartnersPage() {
   });
 
   const kycMutation = useMutation({
-    mutationFn: ({ id, kycStatus }: { id: string; kycStatus: 'VERIFIED' | 'REJECTED' | 'IN_PROGRESS' }) =>
-      partnersService.update(id, { kycStatus }),
+    mutationFn: ({
+      id,
+      kycStatus,
+    }: {
+      id: string;
+      kycStatus: 'VERIFIED' | 'REJECTED' | 'IN_PROGRESS' | 'NOT_STARTED' | 'SUBMITTED';
+    }) => partnersService.update(id, { kycStatus }),
     onSuccess: (_data, vars) => {
       void queryClient.invalidateQueries({ queryKey: ['partners'] });
+      void queryClient.invalidateQueries({ queryKey: ['partner-kyc-docs', vars.id] });
+      if (vars.kycStatus === 'VERIFIED') {
+        showMessage(
+          'KYC verified. Partner gets full access and can publish their public profile.',
+          'success',
+        );
+        return;
+      }
+      if (vars.kycStatus === 'NOT_STARTED') {
+        showMessage('KYC reset. Partner must upload documents again before re-verification.', 'info');
+        return;
+      }
       showMessage(
-        vars.kycStatus === 'VERIFIED'
-          ? 'KYC verified. Partner gets full access and can publish their public profile.'
-          : `KYC status updated to ${vars.kycStatus.replace('_', ' ').toLowerCase()}.`,
-        vars.kycStatus === 'VERIFIED' ? 'success' : 'info',
+        `KYC status updated to ${vars.kycStatus.replace(/_/g, ' ').toLowerCase()}.`,
+        vars.kycStatus === 'REJECTED' ? 'warn' : 'info',
       );
     },
     onError: (err: Error) => {
@@ -211,6 +240,17 @@ export function PartnersPage() {
 
   const partnerStatus = detail ? fieldStr(detail, 'status') : '';
   const kycStatus = detail ? fieldStr(detail, 'kycStatus') : '';
+  const uploadedKycCodes = useMemo(() => {
+    const codes = new Set<string>();
+    for (const doc of partnerDocs?.items ?? []) {
+      const code = fieldStr(doc, 'documentTypeCode') || fieldStr(doc, 'documentTypeName');
+      if (code) codes.add(code.toUpperCase());
+    }
+    return codes;
+  }, [partnerDocs?.items]);
+  const missingKycTypes = PARTNER_KYC_REQUIRED.filter((code) => !uploadedKycCodes.has(code));
+  const kycDocCount = partnerDocs?.meta.total ?? partnerDocs?.items.length ?? 0;
+  const canVerifyKyc = kycDocCount > 0 && missingKycTypes.length === 0;
   const isBusy =
     statusMutation.isPending || deleteMutation.isPending || kycMutation.isPending || tierMutation.isPending;
 
@@ -239,13 +279,29 @@ export function PartnersPage() {
   const verifyKyc = () => {
     if (!selectedId || !detail) return;
     const name = fieldStr(detail, 'contactName') || fieldStr(detail, 'businessName');
+    if (missingKycTypes.length > 0) {
+      showMessage(`Cannot verify yet — missing: ${missingKycTypes.join(', ')}`, 'warn');
+      return;
+    }
     if (
       !window.confirm(
-        `Mark KYC as verified for ${name}?\n\nConfirm you have reviewed their documents in Documents / KYC Center.`,
+        `Mark KYC as verified for ${name}?\n\nConfirm you have reviewed PAN, Aadhaar and cheque in Documents.`,
       )
     )
       return;
     kycMutation.mutate({ id: selectedId, kycStatus: 'VERIFIED' });
+  };
+
+  const resetKyc = () => {
+    if (!selectedId || !detail) return;
+    const name = fieldStr(detail, 'contactName') || fieldStr(detail, 'businessName');
+    if (
+      !window.confirm(
+        `Reset KYC for ${name} to "not started"?\n\nThey will need to upload documents again and you must re-verify after review.`,
+      )
+    )
+      return;
+    kycMutation.mutate({ id: selectedId, kycStatus: 'NOT_STARTED' });
   };
 
   return (
@@ -388,18 +444,63 @@ export function PartnersPage() {
               </div>
             ) : null}
 
-            {partnerStatus === 'ACTIVE' && kycStatus !== 'VERIFIED' ? (
+            {partnerStatus === 'ACTIVE' ? (
               <div className={styles.actionBlock}>
-                <h3 className={styles.actionTitle}>KYC verification</h3>
+                <h3 className={styles.actionTitle}>KYC documents</h3>
                 <p className={styles.actionHint}>
-                  Partner can log in but sees the KYC upload screen until you verify documents. Check{' '}
-                  <strong>Documents</strong> before confirming.
+                  Real flow: partner uploads PAN, Aadhaar, cheque (+ agreement) in the Partner App → you review
+                  here → then verify KYC.
                 </p>
-                <div className={styles.actionRow}>
-                  <Button type="button" disabled={isBusy} onClick={verifyKyc}>
-                    {kycMutation.isPending ? 'Verifying…' : 'Verify KYC'}
-                  </Button>
+                <div className={styles.infoGrid}>
+                  <div>
+                    <div className={styles.infoLabel}>Uploaded</div>
+                    <div className={styles.infoValue}>{kycDocCount} file(s)</div>
+                  </div>
+                  <div>
+                    <div className={styles.infoLabel}>Missing required</div>
+                    <div className={styles.infoValue}>
+                      {missingKycTypes.length ? missingKycTypes.join(', ') : 'None — ready to verify'}
+                    </div>
+                  </div>
                 </div>
+                {(partnerDocs?.items.length ?? 0) > 0 ? (
+                  <ul className={styles.actionHint} style={{ marginTop: '0.5rem', paddingLeft: '1.1rem' }}>
+                    {partnerDocs?.items.map((doc) => (
+                      <li key={String(doc.id)}>
+                        {fieldStr(doc, 'documentTypeName') || fieldStr(doc, 'fileName')} —{' '}
+                        {fieldStr(doc, 'status')}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className={styles.actionHint}>No documents uploaded yet.</p>
+                )}
+                <div className={styles.actionRow}>
+                  {kycStatus !== 'VERIFIED' ? (
+                    <Button type="button" disabled={isBusy || !canVerifyKyc} onClick={verifyKyc}>
+                      {kycMutation.isPending ? 'Verifying…' : 'Verify KYC'}
+                    </Button>
+                  ) : null}
+                  {kycStatus === 'VERIFIED' || kycDocCount === 0 ? (
+                    <Button type="button" variant="secondary" disabled={isBusy} onClick={resetKyc}>
+                      Reset KYC
+                    </Button>
+                  ) : null}
+                </div>
+                {kycStatus !== 'VERIFIED' && !canVerifyKyc ? (
+                  <p className={styles.actionHint} style={{ marginBottom: 0 }}>
+                    Verify KYC unlocks after partner uploads PAN, Aadhaar and cancelled cheque.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            {partnerStatus === 'ACTIVE' && kycStatus === 'VERIFIED' && kycDocCount === 0 ? (
+              <div className={`${styles.section} ${styles.alertWarn}`}>
+                <p className={styles.actionHint} style={{ margin: 0 }}>
+                  KYC is marked verified but no documents are on file. Click <strong>Reset KYC</strong> so the
+                  partner can upload and you can run the real review flow.
+                </p>
               </div>
             ) : null}
 

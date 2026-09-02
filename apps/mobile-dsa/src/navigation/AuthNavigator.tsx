@@ -5,6 +5,8 @@ import type { AuthStackParamList } from './types';
 import { OtpLoginScreen } from '@/features/auth/screens/OtpLoginScreen';
 import { PartnerKycScreen } from '@/features/auth/screens/PartnerKycScreen';
 import { PartnerRegisterScreen } from '@/features/auth/screens/PartnerRegisterScreen';
+import { DocumentsScreen } from '@/features/profile/screens/DocumentsScreen';
+import { UploadDocumentScreen } from '@/features/profile/screens/UploadDocumentScreen';
 import { useAppTheme } from '@/theme/ThemeProvider';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -27,6 +29,8 @@ export function AuthNavigator({ initialRouteName = 'OtpLogin' }: AuthNavigatorPr
       <Stack.Screen name="OtpLogin" component={OtpLoginScreen} />
       <Stack.Screen name="PartnerRegister" component={PartnerRegisterScreen} />
       <Stack.Screen name="PartnerKyc" component={PartnerKycScreen} />
+      <Stack.Screen name="PartnerDocuments" component={DocumentsScreen} />
+      <Stack.Screen name="UploadDocument" component={UploadDocumentScreen} />
     </Stack.Navigator>
   );
 }

@@ -13,6 +13,7 @@ import { AppError, NotFoundError } from '../../../shared/errors/app-error.js';
 import { appLogger } from '../../../shared/observability/logger.js';
 import { applyDocumentScope, assertDocumentAccess } from '../../../shared/utils/data-scope.js';
 import { authAuditRepository } from '../../auth/repositories/audit.repository.js';
+import { markPartnerKycSubmitted } from '../../partners/services/partner-kyc.service.js';
 import { documentTypeRepository } from '../repositories/document-type.repository.js';
 import { documentVersionRepository } from '../repositories/document-version.repository.js';
 import { documentRepository } from '../repositories/document.repository.js';
@@ -116,18 +117,30 @@ export const documentService = {
     return serializeDocument(doc);
   },
 
-  async upload(input: UploadDocumentInput, ctx: RequestContext) {
-    const buffer = decodeBase64Content(input.contentBase64);
-    const mimeType = normalizeDocumentMimeType(input.mimeType);
-    const docType = await validateDocumentType(input.documentTypeId, mimeType, buffer.length);
-    const ownerId = resolveOwnerId(input);
-    const s3Key = buildS3Key(input.ownerType, ownerId, docType.code, input.fileName);
+  async upload(input: UploadDocumentInput, ctx: RequestContext, actor?: AuthenticatedUser) {
+    let payload = { ...input };
+    if (actor?.userType === 'PARTNER' && actor.partnerId) {
+      payload = {
+        ...payload,
+        ownerType: 'PARTNER',
+        partnerId: actor.partnerId,
+      };
+      if (input.partnerId && input.partnerId !== actor.partnerId) {
+        throw new AppError(403, 'FORBIDDEN', 'Cannot upload documents for another partner');
+      }
+    }
+
+    const buffer = decodeBase64Content(payload.contentBase64);
+    const mimeType = normalizeDocumentMimeType(payload.mimeType);
+    const docType = await validateDocumentType(payload.documentTypeId, mimeType, buffer.length);
+    const ownerId = resolveOwnerId(payload);
+    const s3Key = buildS3Key(payload.ownerType, ownerId, docType.code, payload.fileName);
     const checksum = sha256Checksum(buffer);
 
     try {
       await s3StorageService.uploadObject(s3Key, buffer, mimeType, {
         documentType: docType.code,
-        ownerType: input.ownerType,
+        ownerType: payload.ownerType,
         ownerId,
       });
     } catch (err) {
@@ -148,17 +161,17 @@ export const documentService = {
     const lastCode = await documentRepository.getLastDocumentCode();
     const document = await documentRepository.create({
       documentCode: generateDocumentCode(lastCode?.documentCode),
-      ...ownerFields(input),
-      documentTypeId: input.documentTypeId,
+      ...ownerFields(payload),
+      documentTypeId: payload.documentTypeId,
       s3Key,
-      fileName: input.fileName,
+      fileName: payload.fileName,
       mimeType,
       fileSizeBytes: BigInt(buffer.length),
       checksum,
       currentVersion: 1,
       status: 'UPLOADED',
-      expiresAt: input.expiresAt,
-      metadata: input.metadata as Prisma.InputJsonValue,
+      expiresAt: payload.expiresAt,
+      metadata: payload.metadata as Prisma.InputJsonValue,
       uploadedById: ctx.actorId,
     });
 
@@ -166,7 +179,7 @@ export const documentService = {
       documentId: document.id,
       versionNumber: 1,
       s3Key,
-      fileName: input.fileName,
+      fileName: payload.fileName,
       mimeType,
       fileSizeBytes: BigInt(buffer.length),
       checksum,
@@ -174,7 +187,7 @@ export const documentService = {
       uploadedById: ctx.actorId,
     });
 
-    if (input.runOcr) {
+    if (payload.runOcr) {
       try {
         await ocrResultService.run(
           { documentId: document.id, documentVersionId: version.id, provider: 'INTERNAL' },
@@ -195,8 +208,12 @@ export const documentService = {
       }
     }
 
-    if (input.autoVerify) {
+    if (payload.autoVerify) {
       await verificationResultService.autoVerify(document.id, ctx);
+    }
+
+    if (payload.ownerType === 'PARTNER' && payload.partnerId) {
+      await markPartnerKycSubmitted(payload.partnerId);
     }
 
     await auditDocumentMutation(authAuditRepository.log, ctx, 'DOCUMENT_UPLOADED', 'document', document.id, {
