@@ -26,8 +26,8 @@
   --radius: 16px;
   --radius-lg: 24px;
   --radius-full: 9999px;
-  --font: 'Manrope', system-ui, sans-serif;
-  --font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'Fraunces', Georgia, serif;
 }
 
 [data-theme='dark'] {

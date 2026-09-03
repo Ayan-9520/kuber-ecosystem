@@ -5,15 +5,11 @@ import { useTheme } from '@/theme/ThemeProvider';
 
 import './SiteHeader.css';
 
-interface SiteHeaderProps {
-  variant?: 'default' | 'immersive';
-}
-
-export function SiteHeader({ variant = 'default' }: SiteHeaderProps) {
+export function SiteHeader() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className={`site-header${variant === 'immersive' ? ' site-header--immersive' : ''}`}>
+    <header className="site-header">
       <div className="container site-header__inner">
         <Link to="/" className="site-header__brand">
           <ShieldCheck size={26} className="site-header__logo" />

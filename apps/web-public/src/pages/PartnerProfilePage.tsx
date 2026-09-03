@@ -73,39 +73,6 @@ function initialsFromName(name: string) {
   return (parts[0]?.slice(0, 2) ?? 'KV').toUpperCase();
 }
 
-function ProfileVisual({ profile }: { profile: PartnerProfile }) {
-  if (profile.photoUrl) {
-    return (
-      <div className="profile-visual profile-visual--photo">
-        <img src={profile.photoUrl} alt={profile.displayName} className="profile-visual__photo" />
-        <span className="profile-visual__seal-mini">
-          <Shield size={14} /> Verified
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="profile-visual profile-visual--seal" aria-hidden>
-      <div className="profile-visual__orbit" />
-      <div className="profile-visual__ring">
-        <svg viewBox="0 0 200 200" className="profile-visual__ring-svg">
-          <defs>
-            <path id="sealCircle" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0" />
-          </defs>
-          <text className="profile-visual__ring-text">
-            <textPath href="#sealCircle" startOffset="0%">
-              KUBER VERIFIED PROFESSIONAL · TRUSTED ADVISOR ·
-            </textPath>
-          </text>
-        </svg>
-        <strong className="profile-visual__initials">{initialsFromName(profile.displayName)}</strong>
-      </div>
-      {profile.companyName ? <p className="profile-visual__firm">{profile.companyName}</p> : null}
-    </div>
-  );
-}
-
 function ProfileActions({ profile }: { profile: PartnerProfile }) {
   const [showCard, setShowCard] = useState(false);
 
@@ -119,29 +86,31 @@ function ProfileActions({ profile }: { profile: PartnerProfile }) {
             target="_blank"
             rel="noreferrer"
           >
-            Book a private consultation
+            <Calendar size={16} /> Book Consultation
           </a>
         ) : (
           <a href="#consultation" className="profile-actions__primary">
-            Book a private consultation
+            <Calendar size={16} /> Book Consultation
           </a>
         )}
-
-        <div className="profile-actions__links">
-          {profile.contact.phone ? (
-            <a href={`tel:${profile.contact.phone}`}>
-              <Phone size={15} /> Call
-            </a>
-          ) : null}
-          {profile.contact.whatsapp ? (
-            <a href={`https://wa.me/91${profile.contact.whatsapp}`} target="_blank" rel="noreferrer">
-              <MessageCircle size={15} /> WhatsApp
-            </a>
-          ) : null}
-          <button type="button" onClick={() => setShowCard(true)}>
-            <QrCode size={15} /> Digital card
-          </button>
-        </div>
+        {profile.contact.phone ? (
+          <a href={`tel:${profile.contact.phone}`} className="profile-actions__secondary">
+            <Phone size={16} /> Call
+          </a>
+        ) : null}
+        {profile.contact.whatsapp ? (
+          <a
+            href={`https://wa.me/91${profile.contact.whatsapp}`}
+            className="profile-actions__secondary"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <MessageCircle size={16} /> WhatsApp
+          </a>
+        ) : null}
+        <button type="button" className="profile-actions__secondary" onClick={() => setShowCard(true)}>
+          <QrCode size={16} /> Digital Card
+        </button>
       </div>
       {showCard ? <DigitalBusinessCard profile={profile} onClose={() => setShowCard(false)} /> : null}
     </>
@@ -151,9 +120,10 @@ function ProfileActions({ profile }: { profile: PartnerProfile }) {
 function ProfileHero({ profile }: { profile: PartnerProfile }) {
   const verified = profile.badges[0];
   const meta = [
-    profile.experienceYears ? `${profile.experienceYears}+ years` : null,
+    profile.experienceYears ? `${profile.experienceYears}+ yrs` : null,
     profile.location.label || null,
     profile.languages.length ? profile.languages.slice(0, 3).join(' · ') : null,
+    profile.businessSince ? `Since ${profile.businessSince}` : null,
   ].filter(Boolean) as string[];
 
   return (
@@ -162,39 +132,79 @@ function ProfileHero({ profile }: { profile: PartnerProfile }) {
         className="profile-hero__cover"
         style={profile.coverImageUrl ? { backgroundImage: `url(${profile.coverImageUrl})` } : undefined}
       />
-      <div className="profile-hero__veil" aria-hidden />
-      <div className="profile-hero__glow" aria-hidden />
+      <div className="profile-hero__shade" aria-hidden />
 
       <div className="profile-hero__body">
-        <div className="profile-hero__layout">
-          <div className="profile-hero__copy">
-            <p className="profile-hero__eyebrow">
-              <BadgeCheck size={14} />
-              {verified?.label ?? 'Verified Professional'}
-            </p>
+        <div className="profile-hero__panel">
+          <div className="profile-hero__identity">
+            <div className="profile-hero__avatar">
+              {profile.photoUrl ? (
+                <img src={profile.photoUrl} alt={profile.displayName} />
+              ) : (
+                <span>{initialsFromName(profile.displayName)}</span>
+              )}
+              <em className="profile-hero__verified" title="Kuber Verified">
+                <BadgeCheck size={16} />
+              </em>
+            </div>
 
-            <h1>{profile.displayName}</h1>
-
-            <p className="profile-hero__role">
-              {profile.designation}
-              {profile.companyName ? <span> · {profile.companyName}</span> : null}
-            </p>
-
-            {profile.tagline ? <p className="profile-hero__tagline">{profile.tagline}</p> : null}
-
-            {meta.length ? (
-              <ul className="profile-hero__meta">
-                {meta.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            ) : null}
-
-            <ProfileActions profile={profile} />
+            <div className="profile-hero__copy">
+              <p className="profile-hero__eyebrow">
+                <Shield size={13} />
+                {verified?.label ?? 'Kuber Verified Professional'}
+              </p>
+              <h1>{profile.displayName}</h1>
+              <p className="profile-hero__role">{profile.designation}</p>
+              {profile.companyName ? (
+                <p className="profile-hero__company">
+                  <Building2 size={15} /> {profile.companyName}
+                </p>
+              ) : null}
+              {profile.tagline ? <p className="profile-hero__tagline">{profile.tagline}</p> : null}
+              {meta.length ? (
+                <div className="profile-hero__meta">
+                  {meta.map((item) => (
+                    <span key={item}>{item}</span>
+                  ))}
+                </div>
+              ) : null}
+              <ProfileActions profile={profile} />
+            </div>
           </div>
 
-          <aside className="profile-hero__aside">
-            <ProfileVisual profile={profile} />
+          <aside className="profile-hero__credential">
+            <p className="profile-hero__credential-label">
+              <BadgeCheck size={14} /> Kuber Credential
+            </p>
+            <div className="profile-hero__credential-avatar">
+              {profile.photoUrl ? (
+                <img src={profile.photoUrl} alt="" />
+              ) : (
+                <span>{initialsFromName(profile.displayName)}</span>
+              )}
+            </div>
+            <strong>{profile.displayName}</strong>
+            <span>{profile.designation}</span>
+            {profile.companyName ? <em>{profile.companyName}</em> : null}
+            <div className="profile-hero__credential-stats">
+              {profile.experienceYears ? (
+                <div>
+                  <b>{profile.experienceYears}+</b>
+                  <small>Years</small>
+                </div>
+              ) : null}
+              {profile.statistics?.customerRating ? (
+                <div>
+                  <b>{profile.statistics.customerRating.toFixed(1)}</b>
+                  <small>Rating</small>
+                </div>
+              ) : null}
+              <div>
+                <b>{profile.businessSince || '—'}</b>
+                <small>Since</small>
+              </div>
+            </div>
+            <p className="profile-hero__credential-foot">Powered by {profile.poweredBy}</p>
           </aside>
         </div>
       </div>
@@ -221,7 +231,7 @@ export function PartnerProfilePage() {
   if (isLoading) {
     return (
       <>
-        <SiteHeader variant="immersive" />
+        <SiteHeader />
         <div className="container" style={{ padding: '4rem 0' }}>
           <div className="skeleton" style={{ height: 420, borderRadius: 28 }} />
         </div>
@@ -232,7 +242,7 @@ export function PartnerProfilePage() {
   if (error || !profile) {
     return (
       <>
-        <SiteHeader variant="immersive" />
+        <SiteHeader />
         <div className="container profile-not-found glass-card">
           <h1>Profile not found</h1>
           <p>This professional profile may not be published yet.</p>
@@ -263,7 +273,7 @@ export function PartnerProfilePage() {
         <meta property="og:url" content={profile.profileUrl} />
         {profile.photoUrl ? <meta property="og:image" content={profile.photoUrl} /> : null}
       </Helmet>
-      <SiteHeader variant="immersive" />
+      <SiteHeader />
       <main className="profile-page">
         <ProfileHero profile={profile} />
 
