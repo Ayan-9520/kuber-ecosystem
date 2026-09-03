@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Button, Card, Screen, StatusBadge } from '@/components/ui';
@@ -15,16 +15,49 @@ const CONTENT_TYPES = [
   { type: 'FINANCE_TIP', label: 'Finance Tip' },
 ];
 
+type FormState = {
+  displayName: string;
+  designation: string;
+  companyName: string;
+  tagline: string;
+  biography: string;
+  mission: string;
+  vision: string;
+  city: string;
+  experienceYears: string;
+  businessSince: string;
+  languages: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  photoUrl: string;
+  officeAddress: string;
+};
+
+const EMPTY: FormState = {
+  displayName: '',
+  designation: '',
+  companyName: '',
+  tagline: '',
+  biography: '',
+  mission: '',
+  vision: '',
+  city: '',
+  experienceYears: '',
+  businessSince: '',
+  languages: '',
+  phone: '',
+  whatsapp: '',
+  email: '',
+  photoUrl: '',
+  officeAddress: '',
+};
+
 export function BrandingDashboardScreen() {
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const queryClient = useQueryClient();
-
-  const [displayName, setDisplayName] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [tagline, setTagline] = useState('');
-  const [biography, setBiography] = useState('');
-  const [city, setCity] = useState('');
+  const [form, setForm] = useState<FormState>(EMPTY);
   const [generatedContent, setGeneratedContent] = useState('');
 
   const profile = useQuery({
@@ -33,18 +66,68 @@ export function BrandingDashboardScreen() {
     retry: false,
   });
 
+  useEffect(() => {
+    const data = profile.data;
+    if (!data) return;
+    setForm({
+      displayName: data.displayName ?? '',
+      designation: data.designation ?? '',
+      companyName: data.companyName ?? '',
+      tagline: data.tagline ?? '',
+      biography: data.biography ?? '',
+      mission: data.mission ?? '',
+      vision: data.vision ?? '',
+      city: data.location?.city ?? '',
+      experienceYears: data.experienceYears != null ? String(data.experienceYears) : '',
+      businessSince: data.businessSince != null ? String(data.businessSince) : '',
+      languages: data.languages?.length ? data.languages.join(', ') : '',
+      phone: data.contact?.phone ?? '',
+      whatsapp: data.contact?.whatsapp ?? '',
+      email: data.contact?.email ?? '',
+      photoUrl: data.photoUrl ?? '',
+      officeAddress: data.company?.officeAddress ?? data.officeAddress ?? '',
+    });
+  }, [profile.data]);
+
+  const setField = (key: keyof FormState, value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
   const saveMutation = useMutation({
-    mutationFn: () =>
-      partnerBrandingService.updateMyProfile({
-        displayName: displayName || profile.data?.displayName,
-        companyName: companyName || profile.data?.companyName,
-        tagline: tagline || profile.data?.tagline,
-        biography: biography || profile.data?.biography,
-        city: city || undefined,
-      }),
+    mutationFn: () => {
+      const languages = form.languages
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const experienceYears = form.experienceYears.trim()
+        ? Number.parseInt(form.experienceYears, 10)
+        : undefined;
+      const businessSince = form.businessSince.trim()
+        ? Number.parseInt(form.businessSince, 10)
+        : undefined;
+
+      return partnerBrandingService.updateMyProfile({
+        displayName: form.displayName || undefined,
+        designation: form.designation || null,
+        companyName: form.companyName || null,
+        tagline: form.tagline || null,
+        biography: form.biography || null,
+        mission: form.mission || null,
+        vision: form.vision || null,
+        city: form.city || null,
+        experienceYears: Number.isFinite(experienceYears) ? experienceYears : null,
+        businessSince: Number.isFinite(businessSince) ? businessSince : null,
+        languages: languages.length ? languages : undefined,
+        phone: form.phone || null,
+        whatsapp: form.whatsapp || null,
+        email: form.email || null,
+        photoUrl: form.photoUrl || null,
+        officeAddress: form.officeAddress || null,
+      });
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['partner-branding'] });
-      Alert.alert('Saved', 'Your brand profile has been updated.');
+      Alert.alert('Saved', 'Your public profile has been updated. Refresh the live page to see changes.');
     },
     onError: () => Alert.alert('Error', 'Could not save profile.'),
   });
@@ -53,7 +136,10 @@ export function BrandingDashboardScreen() {
     mutationFn: (publish: boolean) => partnerBrandingService.publish(publish),
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: ['partner-branding'] });
-      Alert.alert(data.isPublished ? 'Published' : 'Unpublished', data.isPublished ? 'Your profile is now public.' : 'Profile hidden from public.');
+      Alert.alert(
+        data.isPublished ? 'Published' : 'Unpublished',
+        data.isPublished ? 'Your profile is now public.' : 'Profile hidden from public.',
+      );
     },
     onError: (err: Error) => Alert.alert('Error', err.message || 'Could not update publish status.'),
   });
@@ -85,7 +171,7 @@ export function BrandingDashboardScreen() {
           <Ionicons name="ribbon" size={28} color={colors.primary} />
           <View style={styles.headerText}>
             <Text style={styles.title}>Kuber Verified Professional™</Text>
-            <Text style={styles.subtitle}>Your digital business identity</Text>
+            <Text style={styles.subtitle}>Edit once — your public page updates live</Text>
           </View>
         </View>
         <View style={styles.badgeRow}>
@@ -103,59 +189,35 @@ export function BrandingDashboardScreen() {
         ) : null}
       </Card>
 
-      <Card title="Edit Profile">
-        <Text style={styles.muted}>
-          Starter content is auto-filled from your partner role and products. Edit About anytime — your public
-          page updates after Save.
-        </Text>
-        <Text style={styles.label}>Display Name</Text>
-        <TextInput
-          style={styles.input}
-          defaultValue={data?.displayName}
-          onChangeText={setDisplayName}
-          placeholder="Your professional name"
-          placeholderTextColor={colors.textMuted}
-        />
-        <Text style={styles.label}>Company Name</Text>
-        <TextInput
-          style={styles.input}
-          defaultValue={data?.companyName ?? ''}
-          onChangeText={setCompanyName}
-          placeholder="Your company"
-          placeholderTextColor={colors.textMuted}
-        />
-        <Text style={styles.label}>Tagline</Text>
-        <TextInput
-          style={styles.input}
-          defaultValue={data?.tagline ?? ''}
-          onChangeText={setTagline}
-          placeholder="One-line promise to customers"
-          placeholderTextColor={colors.textMuted}
-        />
-        <Text style={styles.label}>City</Text>
-        <TextInput
-          style={styles.input}
-          defaultValue={data?.location?.city ?? ''}
-          onChangeText={setCity}
-          placeholder="e.g. Delhi NCR"
-          placeholderTextColor={colors.textMuted}
-        />
-        <Text style={styles.label}>About / Biography</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          defaultValue={data?.biography ?? ''}
-          onChangeText={setBiography}
-          placeholder="Professional biography"
-          placeholderTextColor={colors.textMuted}
-          multiline
-          numberOfLines={5}
-        />
+      <Card title="Identity">
+        <Field label="Display Name" value={form.displayName} onChange={(v) => setField('displayName', v)} styles={styles} colors={colors} />
+        <Field label="Designation" value={form.designation} onChange={(v) => setField('designation', v)} styles={styles} colors={colors} placeholder="e.g. Executive Partner — Financial Solutions" />
+        <Field label="Company Name" value={form.companyName} onChange={(v) => setField('companyName', v)} styles={styles} colors={colors} />
+        <Field label="Tagline" value={form.tagline} onChange={(v) => setField('tagline', v)} styles={styles} colors={colors} placeholder="One-line promise to customers" />
+        <Field label="Photo URL" value={form.photoUrl} onChange={(v) => setField('photoUrl', v)} styles={styles} colors={colors} placeholder="https://..." />
+      </Card>
+
+      <Card title="About">
+        <Field label="Biography" value={form.biography} onChange={(v) => setField('biography', v)} styles={styles} colors={colors} multiline />
+        <Field label="Mission" value={form.mission} onChange={(v) => setField('mission', v)} styles={styles} colors={colors} multiline />
+        <Field label="Vision" value={form.vision} onChange={(v) => setField('vision', v)} styles={styles} colors={colors} multiline />
+        <Field label="Languages (comma separated)" value={form.languages} onChange={(v) => setField('languages', v)} styles={styles} colors={colors} placeholder="English, Hindi" />
+        <Field label="City" value={form.city} onChange={(v) => setField('city', v)} styles={styles} colors={colors} placeholder="e.g. Delhi NCR" />
+        <Field label="Experience years" value={form.experienceYears} onChange={(v) => setField('experienceYears', v)} styles={styles} colors={colors} placeholder="e.g. 8" keyboardType="number-pad" />
+        <Field label="Business since (year)" value={form.businessSince} onChange={(v) => setField('businessSince', v)} styles={styles} colors={colors} placeholder="e.g. 2018" keyboardType="number-pad" />
+        <Field label="Office address" value={form.officeAddress} onChange={(v) => setField('officeAddress', v)} styles={styles} colors={colors} multiline />
+      </Card>
+
+      <Card title="Contact (shown on public page)">
+        <Field label="Phone" value={form.phone} onChange={(v) => setField('phone', v)} styles={styles} colors={colors} keyboardType="phone-pad" />
+        <Field label="WhatsApp" value={form.whatsapp} onChange={(v) => setField('whatsapp', v)} styles={styles} colors={colors} keyboardType="phone-pad" placeholder="10-digit mobile" />
+        <Field label="Email" value={form.email} onChange={(v) => setField('email', v)} styles={styles} colors={colors} keyboardType="email-address" />
         <Button title="Save Profile" fullWidth onPress={() => saveMutation.mutate()} loading={saveMutation.isPending} />
       </Card>
 
       <Card title="Publish">
         <Text style={styles.muted}>
-          After KYC verification your page goes live automatically. You can still unpublish or re-publish here.
+          After KYC verification your page can go live. Unpublish anytime from here.
         </Text>
         <View style={styles.row}>
           <Button
@@ -187,6 +249,43 @@ export function BrandingDashboardScreen() {
         {generateMutation.isPending ? <Text style={styles.muted}>Generating...</Text> : null}
       </Card>
     </Screen>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  styles,
+  colors,
+  placeholder,
+  multiline,
+  keyboardType,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  styles: ReturnType<typeof createStyles>;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+  placeholder?: string;
+  multiline?: boolean;
+  keyboardType?: 'default' | 'number-pad' | 'phone-pad' | 'email-address';
+}) {
+  return (
+    <>
+      <Text style={styles.label}>{label}</Text>
+      <TextInput
+        style={[styles.input, multiline ? styles.textArea : null]}
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        placeholderTextColor={colors.textMuted}
+        multiline={multiline}
+        numberOfLines={multiline ? 4 : 1}
+        keyboardType={keyboardType}
+        autoCapitalize={keyboardType === 'email-address' ? 'none' : 'sentences'}
+      />
+    </>
   );
 }
 

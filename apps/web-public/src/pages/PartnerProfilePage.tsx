@@ -51,6 +51,22 @@ function expertiseIcon(type: string) {
   return CreditCard;
 }
 
+function hasCompanyContent(profile: PartnerProfile) {
+  const c = profile.company;
+  return Boolean(
+    c.name ||
+      c.logoUrl ||
+      c.category ||
+      c.founderName ||
+      c.establishedYear ||
+      c.officeAddress ||
+      c.gstNumber ||
+      c.website ||
+      c.citiesServed.length ||
+      profile.team.length,
+  );
+}
+
 function ProfileAvatar({
   profile,
   className,
@@ -62,140 +78,9 @@ function ProfileAvatar({
     return <img src={profile.photoUrl} alt={profile.displayName} className={className} />;
   }
   return (
-    <div className={`${className ?? ''} profile-hero__photo--placeholder`} aria-hidden>
+    <div className={`${className ?? ''} profile-avatar--placeholder`} aria-hidden>
       <span>{profile.displayName.charAt(0)}</span>
     </div>
-  );
-}
-
-function HeroCredentialCard({ profile }: { profile: PartnerProfile }) {
-  const rating = profile.statistics?.customerRating;
-  const customers = profile.statistics?.customersServed;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(profile.profileUrl)}`;
-
-  return (
-    <div className="hero-id-card">
-      <div className="hero-id-card__ribbon">
-        <BadgeCheck size={14} />
-        <span>Kuber Verified Credential</span>
-      </div>
-
-      <div className="hero-id-card__body">
-        <div className="hero-id-card__identity">
-          <div className="hero-id-card__avatar-wrap">
-            <ProfileAvatar profile={profile} className="hero-id-card__avatar" />
-            {profile.companyLogoUrl ? (
-              <img src={profile.companyLogoUrl} alt="" className="hero-id-card__logo" />
-            ) : null}
-          </div>
-          <div className="hero-id-card__who">
-            <strong>{profile.displayName}</strong>
-            <span>{profile.designation}</span>
-            {profile.companyName ? <em>{profile.companyName}</em> : null}
-          </div>
-        </div>
-
-        <div className="hero-id-card__stats">
-          {profile.experienceYears ? (
-            <div>
-              <strong>{profile.experienceYears}+</strong>
-              <span>Years</span>
-            </div>
-          ) : null}
-          {rating ? (
-            <div>
-              <strong>{rating.toFixed(1)}</strong>
-              <span>Rating</span>
-            </div>
-          ) : null}
-          {customers ? (
-            <div>
-              <strong>{customers >= 1000 ? `${Math.round(customers / 100) / 10}k` : customers}</strong>
-              <span>Clients</span>
-            </div>
-          ) : (
-            <div>
-              <strong>{profile.businessSince || '—'}</strong>
-              <span>Since</span>
-            </div>
-          )}
-        </div>
-
-        <div className="hero-id-card__qr-row">
-          <img src={qrUrl} alt="Profile QR" width={72} height={72} className="hero-id-card__qr" />
-          <div>
-            <strong>Scan to connect</strong>
-            <span>{profile.location.label || 'Verified professional profile'}</span>
-            <a href={profile.profileUrl}>{profile.slug ? `pro.kuberone.online/partner/${profile.slug}` : 'Open profile'}</a>
-          </div>
-        </div>
-
-        <div className="hero-id-card__foot">
-          <Shield size={13} />
-          Powered by {profile.poweredBy}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ProfileHero({ profile }: { profile: PartnerProfile }) {
-  const verified = profile.badges[0];
-
-  return (
-    <section className="profile-hero">
-      <div
-        className="profile-hero__cover"
-        style={profile.coverImageUrl ? { backgroundImage: `url(${profile.coverImageUrl})` } : undefined}
-      />
-      <div className="profile-hero__glow" aria-hidden />
-      <div className="profile-hero__mesh" aria-hidden />
-      <div className="profile-hero__body">
-        <div className="profile-hero__layout">
-          <div className="profile-hero__copy">
-            {verified ? (
-              <p className="profile-hero__eyebrow">
-                <BadgeCheck size={14} /> {verified.label}
-              </p>
-            ) : (
-              <p className="profile-hero__eyebrow">
-                <BadgeCheck size={14} /> Kuber Verified
-              </p>
-            )}
-
-            <div className="profile-hero__identity">
-              <div className="profile-hero__visual profile-hero__visual--mobile">
-                <div className="profile-hero__photo-wrap">
-                  <ProfileAvatar profile={profile} className="profile-hero__photo" />
-                </div>
-              </div>
-              <div className="profile-hero__titles">
-                <h1>{profile.displayName}</h1>
-                <p className="profile-hero__designation">{profile.designation}</p>
-                {profile.companyName ? (
-                  <p className="profile-hero__company">
-                    <Building2 size={15} /> {profile.companyName}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-
-            {profile.tagline ? <p className="profile-hero__tagline">{profile.tagline}</p> : null}
-            <div className="profile-hero__meta">
-              {profile.experienceYears ? <span>{profile.experienceYears}+ yrs</span> : null}
-              {profile.location.label ? <span>{profile.location.label}</span> : null}
-              {profile.languages.length ? <span>{profile.languages.slice(0, 3).join(' · ')}</span> : null}
-              {profile.businessSince ? <span>Since {profile.businessSince}</span> : null}
-            </div>
-            <ProfileActions profile={profile} />
-          </div>
-
-          <aside className="profile-hero__visual profile-hero__visual--desktop">
-            <HeroCredentialCard profile={profile} />
-          </aside>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -206,48 +91,125 @@ function ProfileActions({ profile }: { profile: PartnerProfile }) {
     <>
       <div className="profile-actions">
         {profile.contact.consultationUrl || profile.contact.calendarUrl ? (
-          <a href={profile.contact.consultationUrl ?? profile.contact.calendarUrl!} className="btn btn-primary" target="_blank" rel="noreferrer">
-            <Calendar size={16} /> Book Consultation
-          </a>
-        ) : (
-          <a href="#consultation" className="btn btn-primary">
-            <Calendar size={16} /> Book Consultation
-          </a>
-        )}
-        {profile.contact.phone ? (
-          <a href={`tel:${profile.contact.phone}`} className="btn btn-secondary profile-actions__call">
-            <Phone size={16} /> <span>Call</span>
-          </a>
-        ) : null}
-        {profile.contact.whatsapp ? (
           <a
-            href={`https://wa.me/91${profile.contact.whatsapp}`}
-            className="btn btn-secondary profile-actions__wa"
+            href={profile.contact.consultationUrl ?? profile.contact.calendarUrl!}
+            className="btn btn-primary profile-actions__primary"
             target="_blank"
             rel="noreferrer"
           >
-            <MessageCircle size={16} /> <span>WhatsApp</span>
+            <Calendar size={16} /> Book Consultation
           </a>
-        ) : null}
-        {profile.contact.applyLoanUrl ? (
-          <a href={profile.contact.applyLoanUrl} className="btn btn-secondary" target="_blank" rel="noreferrer">
-            Apply Loan
+        ) : (
+          <a href="#consultation" className="btn btn-primary profile-actions__primary">
+            <Calendar size={16} /> Book Consultation
           </a>
-        ) : null}
-        {profile.contact.applyInsuranceUrl ? (
-          <a href={profile.contact.applyInsuranceUrl} className="btn btn-secondary" target="_blank" rel="noreferrer">
-            Apply Insurance
-          </a>
-        ) : null}
-        <button type="button" className="btn btn-ghost" onClick={() => setShowCard(true)}>
-          <QrCode size={16} /> Digital Card
-        </button>
-        <button type="button" className="btn btn-ghost" onClick={() => window.print()}>
-          <Download size={16} /> Download
-        </button>
+        )}
+
+        <div className="profile-actions__row">
+          {profile.contact.phone ? (
+            <a href={`tel:${profile.contact.phone}`} className="btn btn-secondary">
+              <Phone size={16} /> Call
+            </a>
+          ) : null}
+          {profile.contact.whatsapp ? (
+            <a
+              href={`https://wa.me/91${profile.contact.whatsapp}`}
+              className="btn btn-secondary"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <MessageCircle size={16} /> WhatsApp
+            </a>
+          ) : null}
+          <button type="button" className="btn btn-ghost" onClick={() => setShowCard(true)}>
+            <QrCode size={16} /> Card
+          </button>
+        </div>
       </div>
       {showCard ? <DigitalBusinessCard profile={profile} onClose={() => setShowCard(false)} /> : null}
     </>
+  );
+}
+
+function ProfileHero({ profile }: { profile: PartnerProfile }) {
+  const verified = profile.badges[0];
+  const meta = [
+    profile.experienceYears ? `${profile.experienceYears}+ yrs experience` : null,
+    profile.location.label || null,
+    profile.languages.length ? profile.languages.slice(0, 3).join(' · ') : null,
+    profile.businessSince ? `Since ${profile.businessSince}` : null,
+  ].filter(Boolean) as string[];
+
+  return (
+    <section className="profile-hero">
+      <div
+        className="profile-hero__cover"
+        style={profile.coverImageUrl ? { backgroundImage: `url(${profile.coverImageUrl})` } : undefined}
+      />
+      <div className="profile-hero__atmosphere" aria-hidden>
+        <span className="profile-hero__orb profile-hero__orb--a" />
+        <span className="profile-hero__orb profile-hero__orb--b" />
+        <span className="profile-hero__grain" />
+      </div>
+
+      <div className="profile-hero__body">
+        <div className="profile-hero__layout">
+          <div className="profile-hero__copy">
+            <p className="profile-hero__eyebrow">
+              <BadgeCheck size={14} />
+              {verified?.label ?? 'Kuber Verified Professional'}
+            </p>
+
+            <h1>{profile.displayName}</h1>
+
+            <p className="profile-hero__role">
+              <span>{profile.designation}</span>
+              {profile.companyName ? (
+                <>
+                  <span className="profile-hero__dot" aria-hidden>
+                    ·
+                  </span>
+                  <span className="profile-hero__company">
+                    <Building2 size={15} /> {profile.companyName}
+                  </span>
+                </>
+              ) : null}
+            </p>
+
+            {profile.tagline ? <p className="profile-hero__tagline">{profile.tagline}</p> : null}
+
+            {meta.length ? (
+              <p className="profile-hero__meta">
+                {meta.map((item, i) => (
+                  <span key={item}>
+                    {i > 0 ? <span className="profile-hero__dot" aria-hidden>·</span> : null}
+                    {item}
+                  </span>
+                ))}
+              </p>
+            ) : null}
+
+            <ProfileActions profile={profile} />
+          </div>
+
+          <aside className="profile-hero__portrait-wrap">
+            <div className="profile-hero__portrait">
+              <ProfileAvatar profile={profile} className="profile-hero__photo" />
+              {profile.companyLogoUrl ? (
+                <img src={profile.companyLogoUrl} alt="" className="profile-hero__logo-badge" />
+              ) : (
+                <span className="profile-hero__verify-badge" title="Kuber Verified">
+                  <Shield size={16} />
+                </span>
+              )}
+            </div>
+            <p className="profile-hero__portrait-caption">
+              <BadgeCheck size={13} /> Powered by {profile.poweredBy}
+            </p>
+          </aside>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -272,7 +234,7 @@ export function PartnerProfilePage() {
       <>
         <SiteHeader />
         <div className="container" style={{ padding: '4rem 0' }}>
-          <div className="skeleton" style={{ height: 400 }} />
+          <div className="skeleton" style={{ height: 420, borderRadius: 28 }} />
         </div>
       </>
     );
@@ -296,6 +258,8 @@ export function PartnerProfilePage() {
       ? profile.reviews.reduce((s, r) => s + r.rating, 0) / profile.reviews.length
       : profile.statistics?.customerRating;
 
+  const showCompany = hasCompanyContent(profile);
+
   return (
     <>
       <Helmet>
@@ -314,27 +278,31 @@ export function PartnerProfilePage() {
       <main className="profile-page">
         <ProfileHero profile={profile} />
 
-        <div className="container profile-powered">
+        <div className="container profile-trust">
           <span>Associated with {profile.associatedWith}</span>
-          <span className="profile-powered__plus">·</span>
-          <span className="profile-powered__kuber">Powered by {profile.poweredBy}</span>
+          <span className="profile-trust__sep" aria-hidden>
+            ·
+          </span>
+          <span className="profile-trust__brand">Powered by {profile.poweredBy}</span>
         </div>
 
-        <button type="button" className="profile-share-fab btn btn-primary" onClick={() => setShowShare(true)}>
-          <Share2 size={18} /> Share
+        <button type="button" className="profile-share-fab" onClick={() => setShowShare(true)}>
+          <Share2 size={18} />
+          <span>Share</span>
         </button>
         {showShare && shareUrls ? <ShareBar urls={shareUrls} onClose={() => setShowShare(false)} /> : null}
 
-        {/* Section 2: About */}
         <section className="section" id="about">
           <div className="container">
             <p className="section-kicker">Story</p>
-            <h2 className="section-title">About Me</h2>
+            <h2 className="section-title">About {profile.displayName.split(' ')[0]}</h2>
             <div className="premium-card about-card">
               {profile.biography ? (
                 <p className="profile-bio">{profile.biography}</p>
               ) : (
-                <p className="profile-bio muted">Biography coming soon.</p>
+                <p className="profile-bio muted">
+                  Update your biography from the Partner app → Brand section to show your story here.
+                </p>
               )}
               {(profile.mission || profile.vision) && (
                 <div className="about-split">
@@ -364,110 +332,110 @@ export function PartnerProfilePage() {
           </div>
         </section>
 
-        {/* Section 3: Company */}
-        <section className="section" id="company">
-          <div className="container">
-            <p className="section-kicker">Business</p>
-            <h2 className="section-title">Company Profile</h2>
-            <div className="premium-card company-card">
-              <div className="company-card__top">
-                <div className="company-card__mark">
-                  {profile.company.logoUrl ? (
-                    <img src={profile.company.logoUrl} alt="" />
-                  ) : (
-                    <span>{(profile.company.name || 'C').charAt(0)}</span>
-                  )}
+        {showCompany ? (
+          <section className="section" id="company">
+            <div className="container">
+              <p className="section-kicker">Business</p>
+              <h2 className="section-title">Company Profile</h2>
+              <div className="premium-card company-card">
+                <div className="company-card__top">
+                  <div className="company-card__mark">
+                    {profile.company.logoUrl ? (
+                      <img src={profile.company.logoUrl} alt="" />
+                    ) : (
+                      <span>{(profile.company.name || profile.displayName).charAt(0)}</span>
+                    )}
+                  </div>
+                  <div className="company-card__intro">
+                    <h3>{profile.company.name || profile.companyName || profile.displayName}</h3>
+                    {profile.company.category ? <p>{profile.company.category}</p> : null}
+                  </div>
                 </div>
-                <div className="company-card__intro">
-                  <h3>{profile.company.name || profile.displayName}</h3>
-                  {profile.company.category ? <p>{profile.company.category}</p> : null}
-                </div>
-              </div>
 
-              <div className="company-facts">
-                {profile.company.founderName ? (
-                  <div className="company-fact">
-                    <UserRound size={16} />
-                    <div>
-                      <em>Founder</em>
-                      <strong>{profile.company.founderName}</strong>
-                    </div>
-                  </div>
-                ) : null}
-                {profile.company.establishedYear ? (
-                  <div className="company-fact">
-                    <Calendar size={16} />
-                    <div>
-                      <em>Established</em>
-                      <strong>{profile.company.establishedYear}</strong>
-                    </div>
-                  </div>
-                ) : null}
-                {profile.company.officeAddress ? (
-                  <div className="company-fact company-fact--wide">
-                    <MapPin size={16} />
-                    <div>
-                      <em>Office</em>
-                      <strong>{profile.company.officeAddress}</strong>
-                    </div>
-                  </div>
-                ) : null}
-                {profile.company.gstNumber ? (
-                  <div className="company-fact">
-                    <FileText size={16} />
-                    <div>
-                      <em>GST</em>
-                      <strong>{profile.company.gstNumber}</strong>
-                    </div>
-                  </div>
-                ) : null}
-                {profile.company.website ? (
-                  <div className="company-fact company-fact--wide">
-                    <Globe size={16} />
-                    <div>
-                      <em>Website</em>
-                      <strong>
-                        <a href={profile.company.website} target="_blank" rel="noreferrer">
-                          {profile.company.website}
-                        </a>
-                      </strong>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-
-              {profile.company.citiesServed.length ? (
-                <div className="profile-tags">
-                  <strong>Cities Served</strong>
-                  {profile.company.citiesServed.map((c) => (
-                    <span key={c}>{c}</span>
-                  ))}
-                </div>
-              ) : null}
-
-              {profile.team.length ? (
-                <div className="team-grid">
-                  <h4>Team</h4>
-                  <div className="grid-4">
-                    {profile.team.map((m) => (
-                      <div key={m.id} className="team-member">
-                        {m.photoUrl ? (
-                          <img src={m.photoUrl} alt={m.name} />
-                        ) : (
-                          <div className="team-member__avatar">{m.name.charAt(0)}</div>
-                        )}
-                        <strong>{m.name}</strong>
-                        {m.role ? <span>{m.role}</span> : null}
+                <div className="company-facts">
+                  {profile.company.founderName ? (
+                    <div className="company-fact">
+                      <UserRound size={16} />
+                      <div>
+                        <em>Founder</em>
+                        <strong>{profile.company.founderName}</strong>
                       </div>
+                    </div>
+                  ) : null}
+                  {profile.company.establishedYear ? (
+                    <div className="company-fact">
+                      <Calendar size={16} />
+                      <div>
+                        <em>Established</em>
+                        <strong>{profile.company.establishedYear}</strong>
+                      </div>
+                    </div>
+                  ) : null}
+                  {profile.company.officeAddress ? (
+                    <div className="company-fact company-fact--wide">
+                      <MapPin size={16} />
+                      <div>
+                        <em>Office</em>
+                        <strong>{profile.company.officeAddress}</strong>
+                      </div>
+                    </div>
+                  ) : null}
+                  {profile.company.gstNumber ? (
+                    <div className="company-fact">
+                      <FileText size={16} />
+                      <div>
+                        <em>GST</em>
+                        <strong>{profile.company.gstNumber}</strong>
+                      </div>
+                    </div>
+                  ) : null}
+                  {profile.company.website ? (
+                    <div className="company-fact company-fact--wide">
+                      <Globe size={16} />
+                      <div>
+                        <em>Website</em>
+                        <strong>
+                          <a href={profile.company.website} target="_blank" rel="noreferrer">
+                            {profile.company.website}
+                          </a>
+                        </strong>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                {profile.company.citiesServed.length ? (
+                  <div className="profile-tags">
+                    <strong>Cities Served</strong>
+                    {profile.company.citiesServed.map((c) => (
+                      <span key={c}>{c}</span>
                     ))}
                   </div>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </section>
+                ) : null}
 
-        {/* Section 4: Expertise */}
+                {profile.team.length ? (
+                  <div className="team-grid">
+                    <h4>Team</h4>
+                    <div className="grid-4">
+                      {profile.team.map((m) => (
+                        <div key={m.id} className="team-member">
+                          {m.photoUrl ? (
+                            <img src={m.photoUrl} alt={m.name} />
+                          ) : (
+                            <div className="team-member__avatar">{m.name.charAt(0)}</div>
+                          )}
+                          <strong>{m.name}</strong>
+                          {m.role ? <span>{m.role}</span> : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         {profile.expertises.length ? (
           <section className="section" id="expertise">
             <div className="container">
@@ -482,7 +450,9 @@ export function PartnerProfilePage() {
                         <Icon size={22} />
                       </div>
                       <h3>{e.label}</h3>
-                      {e.isPrimary ? <span className="expertise-card__badge">Primary focus</span> : (
+                      {e.isPrimary ? (
+                        <span className="expertise-card__badge">Primary focus</span>
+                      ) : (
                         <span className="expertise-card__hint">Advisory available</span>
                       )}
                     </div>
@@ -493,34 +463,36 @@ export function PartnerProfilePage() {
           </section>
         ) : null}
 
-        {/* Section 5: Statistics */}
         {profile.statistics ? (
           <section className="section stats-section" id="statistics">
             <div className="container">
+              <p className="section-kicker">Impact</p>
               <h2 className="section-title">Business Statistics</h2>
               <p className="section-subtitle">Verified metrics only</p>
               <div className="grid-4">
                 {profile.statistics.businessFacilitated ? (
-                  <div className="glass-card stat-card">
+                  <div className="stat-card">
                     <strong>{formatCurrency(profile.statistics.businessFacilitated)}</strong>
                     <span>Business Facilitated</span>
                   </div>
                 ) : null}
                 {profile.statistics.customersServed ? (
-                  <div className="glass-card stat-card">
+                  <div className="stat-card">
                     <strong>{profile.statistics.customersServed.toLocaleString()}</strong>
                     <span>Customers Served</span>
                   </div>
                 ) : null}
                 {profile.statistics.experienceYears ? (
-                  <div className="glass-card stat-card">
+                  <div className="stat-card">
                     <strong>{profile.statistics.experienceYears}+</strong>
                     <span>Years Experience</span>
                   </div>
                 ) : null}
                 {profile.statistics.customerRating ? (
-                  <div className="glass-card stat-card">
-                    <strong>{profile.statistics.customerRating.toFixed(1)} <Star size={16} /></strong>
+                  <div className="stat-card">
+                    <strong>
+                      {profile.statistics.customerRating.toFixed(1)} <Star size={16} />
+                    </strong>
                     <span>Customer Rating</span>
                   </div>
                 ) : null}
@@ -529,14 +501,14 @@ export function PartnerProfilePage() {
           </section>
         ) : null}
 
-        {/* Section 6: Achievements */}
         {profile.achievements.length ? (
           <section className="section" id="achievements">
             <div className="container">
+              <p className="section-kicker">Recognition</p>
               <h2 className="section-title">Achievements</h2>
               <div className="grid-3">
                 {profile.achievements.map((a) => (
-                  <div key={a.id} className="glass-card achievement-card">
+                  <div key={a.id} className="achievement-card">
                     <Award size={28} />
                     <h3>{a.title ?? a.type.replace(/_/g, ' ')}</h3>
                     {a.year ? <span>{a.year}</span> : null}
@@ -548,14 +520,14 @@ export function PartnerProfilePage() {
           </section>
         ) : null}
 
-        {/* Section 7: Certificates */}
         {profile.certificates.length ? (
           <section className="section" id="certificates">
             <div className="container">
+              <p className="section-kicker">Credentials</p>
               <h2 className="section-title">Certificates</h2>
               <div className="grid-3">
                 {profile.certificates.map((c) => (
-                  <div key={c.id} className="glass-card cert-card">
+                  <div key={c.id} className="cert-card">
                     <FileText size={24} />
                     <h3>{c.title}</h3>
                     {c.issuer ? <p>{c.issuer}</p> : null}
@@ -571,21 +543,26 @@ export function PartnerProfilePage() {
           </section>
         ) : null}
 
-        {/* Section 8: Reviews */}
         {profile.reviews.length ? (
           <section className="section" id="reviews">
             <div className="container">
+              <p className="section-kicker">Social proof</p>
               <h2 className="section-title">Customer Reviews</h2>
               {avgRating ? (
                 <p className="reviews-rating">
-                  <Star size={20} /> {avgRating.toFixed(1)} average from {profile.reviews.length} verified reviews
+                  <Star size={20} /> {avgRating.toFixed(1)} average from {profile.reviews.length} verified
+                  reviews
                 </p>
               ) : null}
               <div className="grid-2">
                 {profile.reviews.map((r) => (
-                  <div key={r.id} className="glass-card review-card">
+                  <div key={r.id} className="review-card">
                     <div className="review-card__header">
-                      {r.photoUrl ? <img src={r.photoUrl} alt="" /> : <div className="review-card__avatar">{r.reviewerName.charAt(0)}</div>}
+                      {r.photoUrl ? (
+                        <img src={r.photoUrl} alt="" />
+                      ) : (
+                        <div className="review-card__avatar">{r.reviewerName.charAt(0)}</div>
+                      )}
                       <div>
                         <strong>{r.reviewerName}</strong>
                         <div className="review-stars">
@@ -608,15 +585,21 @@ export function PartnerProfilePage() {
           </section>
         ) : null}
 
-        {/* Section 9: Media */}
         {profile.media.length ? (
           <section className="section" id="media">
             <div className="container">
+              <p className="section-kicker">Press</p>
               <h2 className="section-title">Media</h2>
               <div className="grid-3">
                 {profile.media.map((m) => (
-                  <a key={m.id} href={m.url} className="glass-card media-card" target="_blank" rel="noreferrer">
-                    {m.thumbnailUrl ? <img src={m.thumbnailUrl} alt="" /> : <div className="media-card__placeholder"><Play size={32} /></div>}
+                  <a key={m.id} href={m.url} className="media-card" target="_blank" rel="noreferrer">
+                    {m.thumbnailUrl ? (
+                      <img src={m.thumbnailUrl} alt="" />
+                    ) : (
+                      <div className="media-card__placeholder">
+                        <Play size={32} />
+                      </div>
+                    )}
                     <h3>{m.title}</h3>
                     <span className="badge">{m.type.replace(/_/g, ' ')}</span>
                   </a>
@@ -626,14 +609,14 @@ export function PartnerProfilePage() {
           </section>
         ) : null}
 
-        {/* Section 10: Gallery */}
         {profile.gallery.length ? (
           <section className="section" id="gallery">
             <div className="container">
+              <p className="section-kicker">Moments</p>
               <h2 className="section-title">Business Gallery</h2>
               <div className="gallery-grid">
                 {profile.gallery.map((g) => (
-                  <figure key={g.id} className="gallery-item glass-card">
+                  <figure key={g.id} className="gallery-item">
                     <img src={g.imageUrl} alt={g.title ?? g.category} />
                     {g.caption ? <figcaption>{g.caption}</figcaption> : null}
                   </figure>
@@ -643,16 +626,17 @@ export function PartnerProfilePage() {
           </section>
         ) : null}
 
-        {/* Section 11: Consultation */}
         <section className="section consultation-section" id="consultation">
           <div className="container">
             <div className="consultation-panel">
               <div className="consultation-panel__copy">
                 <p className="consultation-panel__eyebrow">Private consultation</p>
-                <h2 className="consultation-panel__title">Book a conversation with {profile.displayName}</h2>
+                <h2 className="consultation-panel__title">
+                  Book a conversation with {profile.displayName}
+                </h2>
                 <p className="consultation-panel__text">
-                  Get personalized guidance on loans, insurance, and financial planning — directly from a
-                  Kuber Verified Professional.
+                  Personalized guidance on loans, insurance, and financial planning — directly from a Kuber
+                  Verified Professional.
                 </p>
                 {profile.location.label ? (
                   <p className="consultation-panel__location">Serving {profile.location.label}</p>
