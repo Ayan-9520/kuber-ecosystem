@@ -7,11 +7,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://tutorials-reprints-pushed-developmental.trycloudflare.com/api/:path*"
+      "destination": "https://clinton-approval-generic-largest.trycloudflare.com/api/:path*"
     },
     {
       "source": "/health/:path*",
-      "destination": "https://tutorials-reprints-pushed-developmental.trycloudflare.com/health/:path*"
+      "destination": "https://clinton-approval-generic-largest.trycloudflare.com/health/:path*"
     },
     {
       "source": "/(.*)",
