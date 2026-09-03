@@ -24,6 +24,9 @@ export function createApp(): express.Application {
     helmet({
       contentSecurityPolicy: env.APP_ENV === 'production' ? undefined : false,
       crossOriginEmbedderPolicy: false,
+      // Partner/admin Vercel domains call the API cross-origin (Cloudflare tunnel).
+      // Helmet's default same-origin CORP blocks those browser fetches → ERR_NETWORK.
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
       hsts: env.APP_ENV === 'production' ? { maxAge: 31_536_000, includeSubDomains: true, preload: true } : false,
     }),
   );
