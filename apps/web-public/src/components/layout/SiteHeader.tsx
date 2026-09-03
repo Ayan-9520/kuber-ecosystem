@@ -5,14 +5,18 @@ import { useTheme } from '@/theme/ThemeProvider';
 
 import './SiteHeader.css';
 
-export function SiteHeader() {
+interface SiteHeaderProps {
+  variant?: 'default' | 'immersive';
+}
+
+export function SiteHeader({ variant = 'default' }: SiteHeaderProps) {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="site-header glass-card">
+    <header className={`site-header${variant === 'immersive' ? ' site-header--immersive' : ''}`}>
       <div className="container site-header__inner">
         <Link to="/" className="site-header__brand">
-          <ShieldCheck size={28} className="site-header__logo" />
+          <ShieldCheck size={26} className="site-header__logo" />
           <div>
             <strong>Kuber Verified Professional™</strong>
             <span>Powered by Kuber Finserve</span>
@@ -20,7 +24,12 @@ export function SiteHeader() {
         </Link>
         <nav className="site-header__nav">
           <Link to="/professionals">Find a Professional</Link>
-          <button type="button" className="btn btn-ghost site-header__theme" onClick={toggleTheme} aria-label="Toggle theme">
+          <button
+            type="button"
+            className="btn btn-ghost site-header__theme"
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+          >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
         </nav>
