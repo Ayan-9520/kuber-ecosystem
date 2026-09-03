@@ -1,7 +1,7 @@
 const API_SUFFIX = '/api/v1';
 
 /** Keep in sync with apps/admin/vercel.json tunnel destination. */
-const HOSTED_ADMIN_API_FALLBACK = 'https://clinton-approval-generic-largest.trycloudflare.com';
+const HOSTED_ADMIN_API_FALLBACK = 'https://deeply-lately-accepting-moscow.trycloudflare.com';
 
 /**
  * Ensure API base URL always ends with /api/v1.
