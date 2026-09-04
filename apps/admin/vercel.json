@@ -1,21 +1,21 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "echo 'Using prebuilt admin dist'",
-  "buildCommand": "echo 'Prebuilt — API https://idaho-strategies-helicopter-mixer.trycloudflare.com'",
+  "buildCommand": "echo 'Prebuilt — API https://falling-smoking-wondering-trackbacks.trycloudflare.com'",
   "outputDirectory": "dist",
   "framework": null,
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://idaho-strategies-helicopter-mixer.trycloudflare.com/api/:path*"
+      "destination": "https://falling-smoking-wondering-trackbacks.trycloudflare.com/api/:path*"
     },
     {
       "source": "/health",
-      "destination": "https://idaho-strategies-helicopter-mixer.trycloudflare.com/health/live"
+      "destination": "https://falling-smoking-wondering-trackbacks.trycloudflare.com/health/live"
     },
     {
       "source": "/health/:path*",
-      "destination": "https://idaho-strategies-helicopter-mixer.trycloudflare.com/health/:path*"
+      "destination": "https://falling-smoking-wondering-trackbacks.trycloudflare.com/health/:path*"
     },
     {
       "source": "/(.*)",
