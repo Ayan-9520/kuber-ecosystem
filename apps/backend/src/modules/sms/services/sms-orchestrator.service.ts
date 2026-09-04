@@ -109,6 +109,7 @@ export const smsOrchestratorService = {
       to: params.toPhone,
       body: rendered.body,
       dltTemplateId: rendered.dltTemplateId ?? undefined,
+      variables: params.variables,
     });
 
     const now = new Date();

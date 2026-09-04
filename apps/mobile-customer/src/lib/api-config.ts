@@ -3,6 +3,12 @@ import { Platform } from 'react-native';
 
 const API_SUFFIX = '/api/v1';
 
+/**
+ * Permanent production API (VPS / Cloudflare tunnel named host).
+ * Keep in sync with apps/mobile-customer/vercel.json destinations.
+ */
+const HOSTED_CUSTOMER_API_FALLBACK = 'https://api.kuberone.online';
+
 function normalizeApiBaseUrl(url: string): string {
   const trimmed = url.trim().replace(/\/+$/, '');
   if (trimmed.endsWith(API_SUFFIX)) return trimmed;
@@ -28,12 +34,36 @@ function isLocalDevHost(): boolean {
   return true;
 }
 
+function isHostedCustomerWebHostname(hostname: string): boolean {
+  return (
+    hostname === 'customer.kuberone.online' ||
+    hostname === 'app.kuberone.online' ||
+    hostname === 'my.kuberone.online' ||
+    hostname.endsWith('.vercel.app')
+  );
+}
+
 /**
- * Resolve API base URL from env (EXPO_PUBLIC_API_BASE_URL / VITE_API_BASE_URL) or Expo extra.
- * Never uses localhost when the web app is opened from a non-local host (Vercel, LAN IP, production).
+ * Resolve API base URL from env or Expo extra.
+ * Hosted web always prefers absolute https API (never same-origin /api alone).
  */
 export function resolveApiBaseUrl(): string {
   const configured = readConfiguredUrl();
+
+  if (Platform.OS === 'web' && typeof globalThis !== 'undefined') {
+    const win = globalThis as typeof globalThis & { location?: { hostname?: string } };
+    const host = win.location?.hostname;
+    if (host && isHostedCustomerWebHostname(host)) {
+      const absoluteConfigured =
+        configured &&
+        /^https?:\/\//i.test(configured) &&
+        !/localhost|127\.0\.0\.1/i.test(configured)
+          ? configured
+          : undefined;
+      return normalizeApiBaseUrl(absoluteConfigured || HOSTED_CUSTOMER_API_FALLBACK);
+    }
+  }
+
   if (configured) {
     return normalizeApiBaseUrl(configured);
   }
@@ -45,5 +75,5 @@ export function resolveApiBaseUrl(): string {
     return `http://localhost:4000${API_SUFFIX}`;
   }
 
-  return normalizeApiBaseUrl('https://api.kuberone.com');
+  return normalizeApiBaseUrl(HOSTED_CUSTOMER_API_FALLBACK);
 }

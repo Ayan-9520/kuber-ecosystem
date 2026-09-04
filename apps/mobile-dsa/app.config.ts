@@ -10,7 +10,7 @@ const API_URLS: Record<AppEnv, string> = {
   development: process.env.EXPO_PUBLIC_API_BASE_URL ?? process.env.VITE_API_BASE_URL ?? '',
   qa: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://qa-api.kuberone.com/api/v1',
   staging: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://staging-api.kuberone.com/api/v1',
-  production: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.kuberone.com/api/v1',
+  production: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.kuberone.online/api/v1',
 };
 
 const PACKAGE_IDS: Record<AppEnv, string> = {

@@ -1,59 +1,101 @@
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { type ReactNode, useMemo } from 'react';
 import {
   ActivityIndicator,
-  Platform,
   ScrollView,
   type ScrollViewProps,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useResponsiveLayout } from '@/hooks';
 import { spacing, typography } from '@/theme';
+import { meshBackground } from '@/theme/premium';
 import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
+
+/** Auth/onboarding screens use Screen title because stack header is hidden. */
+const KEEP_SCREEN_HEADER_ROUTES = new Set(['OtpLogin', 'Onboarding', 'Register', 'ForgotPassword']);
+
+/** Main tab hubs — always get desktop top inset (canGoBack is unreliable on web). */
+const DESKTOP_HUB_ROUTES = new Set([
+  'Dashboard',
+  'ApplicationsList',
+  'ProductsList',
+  'SupportHome',
+  'ProfileHome',
+]);
 
 interface ScreenProps extends ScrollViewProps {
   children: ReactNode;
   title?: string;
   subtitle?: string;
   headerRight?: ReactNode;
+  /** Force Screen header even when stack header is visible (rare). */
+  forceHeader?: boolean;
   loading?: boolean;
   scroll?: boolean;
   padded?: boolean;
 }
 
-function createStyles(colors: AppColors, isWide: boolean) {
+function useShowScreenHeader(hasTitle: boolean, forceHeader: boolean | undefined): boolean {
+  const navigation = useNavigation();
+  const route = useRoute();
+  if (!hasTitle) return false;
+  if (forceHeader) return true;
+  if (KEEP_SCREEN_HEADER_ROUTES.has(route.name)) return true;
+  if (navigation.canGoBack()) return false;
+  return true;
+}
+
+function createStyles(
+  colors: AppColors,
+  contentMaxWidth: number | undefined,
+  pagePad: number,
+  scrollTopPad: number,
+  isDesktop: boolean,
+) {
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: {
+      flex: 1,
+      ...meshBackground(colors, isDesktop),
+    },
     flex: { flex: 1 },
-    padded: { paddingHorizontal: spacing.md },
+    padded: { paddingHorizontal: pagePad },
     scrollContent: {
-      paddingBottom: spacing.xxl,
+      paddingTop: scrollTopPad,
+      paddingBottom: isDesktop ? spacing.xl + 16 : spacing.xxl,
       width: '100%',
-      maxWidth: isWide ? 1100 : undefined,
-      alignSelf: 'center',
+      maxWidth: contentMaxWidth,
+      alignSelf: isDesktop ? 'stretch' : 'center',
     },
     bodyShell: {
       width: '100%',
-      maxWidth: isWide ? 1100 : undefined,
-      alignSelf: 'center',
+      maxWidth: contentMaxWidth,
+      alignSelf: isDesktop ? 'stretch' : 'center',
       flex: 1,
     },
     header: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
+      paddingHorizontal: pagePad,
+      paddingTop: isDesktop ? spacing.md : spacing.md,
+      paddingBottom: spacing.sm,
       width: '100%',
-      maxWidth: isWide ? 1100 : undefined,
-      alignSelf: 'center',
+      maxWidth: contentMaxWidth,
+      alignSelf: isDesktop ? 'stretch' : 'center',
     },
     headerLeft: { flex: 1 },
-    title: { ...typography.h1, color: colors.text, fontSize: 24 },
-    subtitle: { ...typography.bodySm, color: colors.textMuted, marginTop: 4 },
+    title: {
+      ...typography.h1,
+      color: colors.text,
+      fontSize: isDesktop ? 22 : 24,
+      fontWeight: '700',
+      letterSpacing: -0.4,
+    },
+    subtitle: { ...typography.bodySm, color: colors.textMuted, marginTop: 4, fontSize: isDesktop ? 13 : 13 },
     loading: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
     empty: { alignItems: 'center', paddingVertical: spacing.xxl, paddingHorizontal: spacing.lg },
     emptyTitle: { ...typography.h3, color: colors.textSecondary, textAlign: 'center' },
@@ -67,6 +109,7 @@ export function Screen({
   title,
   subtitle,
   headerRight,
+  forceHeader,
   loading,
   scroll = true,
   padded = true,
@@ -74,12 +117,24 @@ export function Screen({
   ...rest
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+  const route = useRoute();
   const { colors } = useAppTheme();
-  const { width } = useWindowDimensions();
-  const isWide = Platform.OS === 'web' && width >= 920;
-  const styles = useMemo(() => createStyles(colors, isWide), [colors, isWide]);
+  const { contentMaxWidth, pagePad, contentTopPad, isDesktop } = useResponsiveLayout();
 
-  const header = (title || subtitle) && (
+  const isDesktopHub = isDesktop && DESKTOP_HUB_ROUTES.has(route.name);
+  const isNested = navigation.canGoBack() && !isDesktopHub;
+  const containerTopPad = isDesktopHub ? contentTopPad : isDesktop && !isNested ? contentTopPad : insets.top;
+  const scrollTopPad = isDesktopHub || (isDesktop && !isNested) ? 0 : isNested ? 0 : contentTopPad;
+
+  const styles = useMemo(
+    () => createStyles(colors, contentMaxWidth, pagePad, scrollTopPad, isDesktop),
+    [colors, contentMaxWidth, pagePad, scrollTopPad, isDesktop],
+  );
+
+  const showHeader = useShowScreenHeader(!!(title || subtitle), forceHeader);
+
+  const header = showHeader && (title || subtitle) && (
     <View style={styles.header}>
       <View style={styles.headerLeft}>
         {title && <Text style={styles.title}>{title}</Text>}
@@ -101,7 +156,7 @@ export function Screen({
 
   if (!scroll) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: containerTopPad }]}>
         {header}
         <View style={[styles.bodyShell, ...contentStyle]}>{body}</View>
       </View>
@@ -109,7 +164,7 @@ export function Screen({
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: containerTopPad }]}>
       {header}
       <ScrollView
         style={styles.flex}
@@ -133,9 +188,11 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   const { colors } = useAppTheme();
-  const { width } = useWindowDimensions();
-  const isWide = Platform.OS === 'web' && width >= 920;
-  const styles = useMemo(() => createStyles(colors, isWide), [colors, isWide]);
+  const { contentMaxWidth, pagePad, isDesktop } = useResponsiveLayout();
+  const styles = useMemo(
+    () => createStyles(colors, contentMaxWidth, pagePad, 0, isDesktop),
+    [colors, contentMaxWidth, pagePad, isDesktop],
+  );
 
   return (
     <View style={styles.empty}>

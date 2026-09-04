@@ -1,0 +1,31 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "echo 'Using prebuilt customer dist (Expo export is too heavy for Vercel CI)'",
+  "buildCommand": "echo 'Prebuilt dist — baked API: https://api.kuberone.online'",
+  "outputDirectory": "dist",
+  "framework": null,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://api.kuberone.online/api/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "https://api.kuberone.online/health/live"
+    },
+    {
+      "source": "/health/:path*",
+      "destination": "https://api.kuberone.online/health/:path*"
+    },
+    {
+      "source": "/((?!_expo|assets|favicon|icon|.*\\..*).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

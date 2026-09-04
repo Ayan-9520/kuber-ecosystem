@@ -6,12 +6,16 @@ node_modules/
 dist/
 !apps/mobile-dsa/dist/
 !apps/mobile-dsa/dist/**
+!apps/mobile-customer/dist/
+!apps/mobile-customer/dist/**
 !apps/admin/dist/
 !apps/admin/dist/**
 apps/admin/dist/**/*.map
 # Expo copies fonts under .../vector-icons/build/... inside dist — allow them
 !apps/mobile-dsa/dist/**/build/**
 !apps/mobile-dsa/dist/**/build/**/*
+!apps/mobile-customer/dist/**/build/**
+!apps/mobile-customer/dist/**/build/**/*
 /build/
 **/coverage-build/
 devops/artifacts/

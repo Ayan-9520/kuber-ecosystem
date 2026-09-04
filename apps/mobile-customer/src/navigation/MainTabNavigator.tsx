@@ -33,9 +33,10 @@ import { FeedbackScreen } from '@/features/support/screens/FeedbackScreen';
 import { SupportScreen } from '@/features/support/screens/SupportScreen';
 import { TicketDetailScreen } from '@/features/support/screens/TicketDetailScreen';
 import { VoiceAiScreen } from '@/features/voice-ai/screens/VoiceAiScreen';
-import { useAuth } from '@/hooks';
+import { useAuth, useResponsiveLayout } from '@/hooks';
 import { useAppTheme } from '@/theme/ThemeProvider';
 
+import { CustomerDesktopTabBar } from './CustomerDesktopTabBar';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -83,7 +84,11 @@ function ApplicationsStackNavigator() {
   const screenOptions = useStackScreenOptions();
   return (
     <AppsStack.Navigator screenOptions={screenOptions}>
-      <AppsStack.Screen name="ApplicationsList" component={ApplicationsScreen} options={{ title: 'Applications' }} />
+      <AppsStack.Screen
+        name="ApplicationsList"
+        component={ApplicationsScreen}
+        options={{ title: 'Applications', headerShown: false }}
+      />
       <AppsStack.Screen name="ApplicationDetail" component={ApplicationDetailScreen} options={{ headerShown: false }} />
       <AppsStack.Screen
         name="ApplicationWizard"
@@ -100,7 +105,11 @@ function ProductsStackNavigator() {
   const screenOptions = useStackScreenOptions();
   return (
     <ProductsStack.Navigator screenOptions={screenOptions}>
-      <ProductsStack.Screen name="ProductsList" component={LoanProductsScreen} options={{ title: 'Loan Products' }} />
+      <ProductsStack.Screen
+        name="ProductsList"
+        component={LoanProductsScreen}
+        options={{ title: 'Loan Products', headerShown: false }}
+      />
       <ProductsStack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ title: 'Product Details' }} />
     </ProductsStack.Navigator>
   );
@@ -110,7 +119,11 @@ function SupportStackNavigator() {
   const screenOptions = useStackScreenOptions();
   return (
     <SupportStack.Navigator screenOptions={screenOptions}>
-      <SupportStack.Screen name="SupportHome" component={SupportScreen} options={{ title: 'Support' }} />
+      <SupportStack.Screen
+        name="SupportHome"
+        component={SupportScreen}
+        options={{ title: 'Support', headerShown: false }}
+      />
       <SupportStack.Screen name="CreateTicket" component={CreateTicketScreen} options={{ title: 'New Ticket' }} />
       <SupportStack.Screen name="TicketDetail" component={TicketDetailScreen} options={{ title: 'Ticket' }} />
       <SupportStack.Screen name="TicketFeedback" component={FeedbackScreen} options={{ title: 'Feedback' }} />
@@ -122,7 +135,11 @@ function ProfileStackNavigator() {
   const screenOptions = useStackScreenOptions();
   return (
     <ProfileStack.Navigator screenOptions={screenOptions}>
-      <ProfileStack.Screen name="ProfileHome" component={ProfileScreen} options={{ title: 'Profile' }} />
+      <ProfileStack.Screen
+        name="ProfileHome"
+        component={ProfileScreen}
+        options={{ title: 'Profile', headerShown: false }}
+      />
       <ProfileStack.Screen name="Kyc" component={KycScreen} options={{ title: 'KYC Verification' }} />
       <ProfileStack.Screen name="Documents" component={DocumentsScreen} options={{ title: 'Documents' }} />
       <ProfileStack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
@@ -133,29 +150,42 @@ function ProfileStackNavigator() {
 
 export function MainTabNavigator() {
   const { colors } = useAppTheme();
+  const { isDesktop } = useResponsiveLayout();
 
   return (
     <Tab.Navigator
+      tabBar={isDesktop ? (props) => <CustomerDesktopTabBar {...props} /> : undefined}
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: colors.card,
-          borderTopColor: colors.borderLight,
-          borderTopWidth: 1,
-          height: 72,
-          paddingBottom: 10,
-          paddingTop: 10,
-          elevation: 12,
-          shadowColor: '#071A1F',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.08,
-          shadowRadius: 12,
-        },
+        tabBarPosition: isDesktop ? 'left' : 'bottom',
+        tabBarStyle: isDesktop
+          ? {
+              backgroundColor: 'transparent',
+              borderTopWidth: 0,
+              elevation: 0,
+              shadowOpacity: 0,
+            }
+          : {
+              backgroundColor: colors.card,
+              borderTopColor: colors.borderLight,
+              borderTopWidth: 1,
+              height: 72,
+              paddingBottom: 10,
+              paddingTop: 10,
+              elevation: 12,
+              shadowColor: '#071A1F',
+              shadowOffset: { width: 0, height: -4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+            },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: { fontSize: 12, fontWeight: '700', marginTop: 2 },
         tabBarIcon: ({ color, focused }) => {
-          const icons: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
+          const icons: Record<
+            string,
+            { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }
+          > = {
             Home: { active: 'home', inactive: 'home-outline' },
             Applications: { active: 'document-text', inactive: 'document-text-outline' },
             Products: { active: 'grid', inactive: 'grid-outline' },
@@ -163,13 +193,7 @@ export function MainTabNavigator() {
             Profile: { active: 'person', inactive: 'person-outline' },
           };
           const icon = icons[route.name] ?? { active: 'ellipse', inactive: 'ellipse-outline' };
-          return (
-            <Ionicons
-              name={focused ? icon.active : icon.inactive}
-              size={22}
-              color={color}
-            />
-          );
+          return <Ionicons name={focused ? icon.active : icon.inactive} size={22} color={color} />;
         },
       })}
     >

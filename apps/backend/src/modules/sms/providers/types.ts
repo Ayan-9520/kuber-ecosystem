@@ -9,6 +9,7 @@ export type SmsPayload = {
   to: string;
   body: string;
   dltTemplateId?: string;
+  variables?: Record<string, unknown>;
 };
 
 export interface SmsProviderAdapter {

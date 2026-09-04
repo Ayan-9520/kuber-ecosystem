@@ -75,15 +75,19 @@ function tokensToColors(tokens: ThemeTokens): AppColors {
 }
 
 function nextPreference(current: ThemePreference): ThemePreference {
-  if (current === 'system') return 'light';
-  if (current === 'light') return 'dark';
-  return 'system';
+  return current === 'light' ? 'dark' : 'light';
+}
+
+function normalizePreference(stored: string | null): ThemePreference {
+  if (stored === 'light' || stored === 'dark') return stored;
+  // Legacy "system" → dark (app default)
+  return 'dark';
 }
 
 async function readPreference(): Promise<ThemePreference> {
   try {
     const stored = await secureGet(THEME_STORAGE_KEY);
-    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
+    return normalizePreference(stored);
   } catch {
     /* ignore */
   }
@@ -113,8 +117,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const colors = useMemo(() => tokensToColors(tokensFor(resolved)), [resolved]);
 
   const setPreference = useCallback((next: ThemePreference) => {
-    setPreferenceState(next);
-    void secureSet(THEME_STORAGE_KEY, next);
+    const normalized = next === 'system' ? 'dark' : next;
+    setPreferenceState(normalized);
+    void secureSet(THEME_STORAGE_KEY, normalized);
   }, []);
 
   const toggle = useCallback(() => {

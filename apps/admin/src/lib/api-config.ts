@@ -1,7 +1,7 @@
 const API_SUFFIX = '/api/v1';
 
-/** Keep in sync with apps/admin/vercel.json tunnel destination. */
-const HOSTED_ADMIN_API_FALLBACK = 'https://carried-values-bloomberg-couple.trycloudflare.com';
+/** Keep in sync with apps/admin/vercel.json API destination. */
+const HOSTED_ADMIN_API_FALLBACK = 'https://api.kuberone.online';
 
 /**
  * Ensure API base URL always ends with /api/v1.
@@ -30,8 +30,8 @@ function isHostedAdminHostname(hostname: string): boolean {
 }
 
 /**
- * Hosted Admin: hit Cloudflare tunnel / public API directly.
- * Same-origin /api rewrites to trycloudflare often 502 (DNS_HOSTNAME_NOT_FOUND) from Vercel edge.
+ * Hosted Admin: hit public API (VPS) directly.
+ * Same-origin /api rewrites can 502 if the edge cannot resolve the API host.
  */
 export function resolveApiBaseUrl(): string {
   const configured = import.meta.env.VITE_API_BASE_URL?.trim();

@@ -5,8 +5,8 @@ import { useEffect, useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 
-import { Card, DashboardHeader, EmptyState, QuickAction, Screen, StatCard, StatusBadge } from '@/components/ui';
-import { useAuth } from '@/hooks';
+import { Card, DashboardHeader, EmptyState, QuickAction, Screen, SectionHeader, StatCard, StatusBadge } from '@/components/ui';
+import { useAuth, useResponsiveLayout } from '@/hooks';
 import { formatCurrency, formatDateTime, str } from '@/lib/utils';
 import {
   fetchUnreadNotificationSummary,
@@ -28,7 +28,11 @@ export function DashboardScreen() {
   const dispatch = useDispatch();
   const { user, customerId } = useAuth();
   const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { isDesktop, isWide, pagePad, statColumns, actionColumns, listColumns } = useResponsiveLayout();
+  const styles = useMemo(
+    () => createStyles(colors, isDesktop, pagePad, statColumns, actionColumns, listColumns),
+    [colors, isDesktop, pagePad, statColumns, actionColumns, listColumns],
+  );
 
   useEffect(() => {
     if (!user || customerId || user.userType !== 'CUSTOMER') return;
@@ -72,14 +76,14 @@ export function DashboardScreen() {
     0,
   ) ?? 0;
 
+  const tabNav = navigation.getParent();
+
   const openApplication = (id: string) => {
     tabNav?.navigate('Applications', {
       screen: 'ApplicationDetail',
       params: { id },
     });
   };
-
-  const tabNav = navigation.getParent();
 
   const goProfile = () => {
     tabNav?.navigate('Profile');
@@ -133,27 +137,38 @@ export function DashboardScreen() {
       />
 
       <View style={styles.sectionHead}>
-        <Text style={styles.sectionTitle}>Quick actions</Text>
-        <Text style={styles.sectionSub}>Tools & services</Text>
+        <SectionHeader eyebrow="Tools" title="Quick actions" subtitle="Services for your loans" />
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.actions}>
-        <QuickAction label="Eligibility" icon="checkmark-circle" onPress={() => navigation.navigate('Eligibility')} />
-        <QuickAction label="EMI Calc" icon="calculator" onPress={() => navigation.navigate('EmiCalculator')} />
-        <QuickAction label="Offers" icon="sparkles" onPress={() => navigation.navigate('Recommendations')} />
-        <QuickAction label="AI Advisor" icon="chatbubble-ellipses" onPress={() => navigation.navigate('AiAdvisor')} />
-        <QuickAction label="Voice AI" icon="mic" onPress={() => navigation.navigate('VoiceAi')} />
-        <QuickAction label="Referrals" icon="gift" onPress={() => navigation.navigate('Referrals')} />
-        <QuickAction label="Alerts" icon="notifications" onPress={() => navigation.navigate('Notifications')} />
-      </ScrollView>
+      {isWide ? (
+        <View style={styles.actionsGrid}>
+          <QuickAction style={styles.actionItem} label="Eligibility" icon="checkmark-circle" onPress={() => navigation.navigate('Eligibility')} />
+          <QuickAction style={styles.actionItem} label="EMI Calc" icon="calculator" onPress={() => navigation.navigate('EmiCalculator')} />
+          <QuickAction style={styles.actionItem} label="Offers" icon="sparkles" onPress={() => navigation.navigate('Recommendations')} />
+          <QuickAction style={styles.actionItem} label="AI Advisor" icon="chatbubble-ellipses" onPress={() => navigation.navigate('AiAdvisor')} />
+          <QuickAction style={styles.actionItem} label="Voice AI" icon="mic" onPress={() => navigation.navigate('VoiceAi')} />
+          <QuickAction style={styles.actionItem} label="Referrals" icon="gift" onPress={() => navigation.navigate('Referrals')} />
+          <QuickAction style={styles.actionItem} label="Alerts" icon="notifications" onPress={() => navigation.navigate('Notifications')} />
+        </View>
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.actions}>
+          <QuickAction label="Eligibility" icon="checkmark-circle" onPress={() => navigation.navigate('Eligibility')} />
+          <QuickAction label="EMI Calc" icon="calculator" onPress={() => navigation.navigate('EmiCalculator')} />
+          <QuickAction label="Offers" icon="sparkles" onPress={() => navigation.navigate('Recommendations')} />
+          <QuickAction label="AI Advisor" icon="chatbubble-ellipses" onPress={() => navigation.navigate('AiAdvisor')} />
+          <QuickAction label="Voice AI" icon="mic" onPress={() => navigation.navigate('VoiceAi')} />
+          <QuickAction label="Referrals" icon="gift" onPress={() => navigation.navigate('Referrals')} />
+          <QuickAction label="Alerts" icon="notifications" onPress={() => navigation.navigate('Notifications')} />
+        </ScrollView>
+      )}
 
       <View style={styles.section}>
-        <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Overview</Text>
-          <Text style={styles.sectionSub}>Your numbers at a glance</Text>
+        <View style={styles.sectionHeadInner}>
+          <SectionHeader eyebrow="Snapshot" title="Overview" subtitle="Your numbers at a glance" />
         </View>
-        <View style={styles.statRow}>
+        <View style={styles.statGrid}>
           <StatCard
+            style={styles.statCell}
             label="Active Apps"
             value={applications.data?.meta.total ?? 0}
             icon="document-text"
@@ -161,20 +176,21 @@ export function DashboardScreen() {
             onPress={goApplications}
           />
           <StatCard
+            style={styles.statCell}
             label="Referral ₹"
             value={formatCurrency(referralEarnings)}
             icon="wallet"
             onPress={() => navigation.navigate('Referrals')}
           />
-        </View>
-        <View style={styles.statRow}>
           <StatCard
+            style={styles.statCell}
             label="Pending Docs"
             value={pendingDocs.data?.meta.total ?? 0}
             icon="folder-open"
             onPress={goDocuments}
           />
           <StatCard
+            style={styles.statCell}
             label="Unread"
             value={notifications.data?.meta.total ?? 0}
             icon="mail-unread"
@@ -183,7 +199,8 @@ export function DashboardScreen() {
         </View>
       </View>
 
-      <View style={styles.section}>
+      <View style={styles.listGrid}>
+        <View style={styles.listCell}>
         <Card title="Active Applications" subtitle="Track your loan pipeline" elevated onPress={goApplications}>
           {applications.isLoading ? (
             <Text style={styles.muted}>Loading...</Text>
@@ -210,7 +227,9 @@ export function DashboardScreen() {
             ))
           )}
         </Card>
+        </View>
 
+        <View style={styles.listCell}>
         <Card
           title="Recent Notifications"
           subtitle="Stay updated on your applications"
@@ -236,15 +255,27 @@ export function DashboardScreen() {
             ))
           )}
         </Card>
+        </View>
       </View>
     </Screen>
   );
 }
 
-function createStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+function createStyles(
+  colors: ReturnType<typeof useAppTheme>['colors'],
+  isDesktop: boolean,
+  pagePad: number,
+  statColumns: number,
+  actionColumns: number,
+  listColumns: number,
+) {
+  const statBasis = `${Math.floor(100 / Math.max(statColumns, 1)) - 1}%`;
+  const listBasis = listColumns > 1 ? '48%' : '100%';
+  const actionBasis = isDesktop ? 110 : 88;
+
   return StyleSheet.create({
     errorBanner: {
-      marginHorizontal: spacing.md,
+      marginHorizontal: pagePad,
       marginTop: spacing.sm,
       marginBottom: spacing.sm,
       padding: spacing.md,
@@ -255,16 +286,52 @@ function createStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     errorBannerText: { ...typography.bodySm, color: colors.textSecondary, lineHeight: 20 },
     errorBannerAction: { ...typography.label, color: colors.primary, marginTop: spacing.sm },
-    section: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
-    sectionHead: { paddingHorizontal: spacing.md, marginBottom: spacing.sm },
-    sectionTitle: { ...typography.h3, color: colors.text, fontSize: 17 },
+    section: { paddingHorizontal: pagePad, paddingBottom: spacing.sm },
+    sectionHead: { paddingHorizontal: pagePad, marginBottom: spacing.sm },
+    sectionHeadInner: { marginBottom: spacing.sm },
+    sectionTitle: { ...typography.h3, color: colors.text, fontSize: isDesktop ? 18 : 17 },
     sectionSub: { ...typography.bodySm, color: colors.textSecondary, marginTop: 2 },
     actions: {
-      paddingHorizontal: spacing.md,
+      paddingHorizontal: pagePad,
       gap: spacing.md,
       paddingBottom: spacing.lg,
     },
-    statRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
+    actionsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      paddingHorizontal: pagePad,
+      gap: spacing.md,
+      paddingBottom: spacing.lg,
+    },
+    actionItem: {
+      flexBasis: isDesktop ? 'auto' : actionBasis,
+      maxWidth: isDesktop ? undefined : actionBasis,
+      minWidth: isDesktop ? undefined : 88,
+    },
+    statGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.md,
+    },
+    statCell: {
+      flexBasis: statBasis as unknown as number,
+      minWidth: isDesktop ? 160 : 140,
+      maxWidth: isDesktop && statColumns === 4 ? '24%' : undefined,
+      flexGrow: 1,
+    },
+    listGrid: {
+      paddingHorizontal: pagePad,
+      paddingBottom: spacing.lg,
+      gap: spacing.md,
+      flexDirection: listColumns > 1 ? 'row' : 'column',
+      flexWrap: 'wrap',
+      alignItems: 'flex-start',
+    },
+    listCell: {
+      flexBasis: listBasis as unknown as number,
+      minWidth: listColumns > 1 ? 320 : undefined,
+      flexGrow: 1,
+    },
     row: {
       flexDirection: 'row',
       alignItems: 'center',

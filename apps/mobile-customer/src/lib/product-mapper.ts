@@ -73,6 +73,23 @@ function variantConfig(variant?: ApiVariant): Record<string, unknown> | undefine
   return config && typeof config === 'object' ? (config as Record<string, unknown>) : undefined;
 }
 
+function formatVariantLabel(variantCode: string): string {
+  const map: Record<string, string> = {
+    FRESH: 'Fresh',
+    BT: 'Balance Transfer',
+    TOP_UP: 'Top-up',
+    WORKING_CAPITAL: 'Working Capital',
+    USED: 'Used',
+    NEW: 'New',
+  };
+  const key = variantCode.toUpperCase();
+  if (map[key]) return map[key];
+  return key
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export function mapProductToDisplay(
   product: ApiProduct,
   variant?: ApiVariant,
@@ -83,7 +100,13 @@ export function mapProductToDisplay(
   const familyCode = String(family?.code ?? slug.split('-')[0] ?? '').toUpperCase();
   const variantCode = variant ? String(variant.variantCode ?? 'FRESH') : 'FRESH';
   const productName = String(product.name ?? catalog?.label ?? 'Loan Product');
-  const displayName = catalog?.label ?? productName;
+  const variantLabel = formatVariantLabel(variantCode);
+  // Catalog entries already encode the right label; otherwise distinguish variants so chips aren't duplicates.
+  const displayName =
+    catalog?.label ??
+    (variant && variantCode.toUpperCase() !== 'FRESH'
+      ? `${productName} · ${variantLabel}`
+      : productName);
   const description =
     catalog?.description ??
     String(variant?.description ?? product.description ?? 'Flexible repayment with digital tracking');
@@ -127,6 +150,24 @@ export function mapProductToDisplay(
   });
 }
 
+/**
+ * One chip / row per product — prefers FRESH variant.
+ * Use for eligibility / simple product pickers (avoids 4× "Home Loan" chips).
+ */
+export function uniqueProductsForPicker(items: ProductDisplayItem[]): ProductDisplayItem[] {
+  const byProduct = new Map<string, ProductDisplayItem>();
+  for (const item of items) {
+    const existing = byProduct.get(item.productId);
+    if (!existing) {
+      byProduct.set(item.productId, item);
+      continue;
+    }
+    const preferNew = item.variant.toUpperCase() === 'FRESH' && existing.variant.toUpperCase() !== 'FRESH';
+    if (preferNew) byProduct.set(item.productId, item);
+  }
+  return Array.from(byProduct.values());
+}
+
 export function flattenProductsWithVariants(
   products: ApiProduct[],
   variants: ApiVariant[],
@@ -142,7 +183,14 @@ export function flattenProductsWithVariants(
       }
     }
   }
-  return items;
+  // Deduplicate identical labels (same productId + same display name)
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = `${item.productId}::${item.name}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /** Pick the 9 flagship catalog products for the customer Products tab. */

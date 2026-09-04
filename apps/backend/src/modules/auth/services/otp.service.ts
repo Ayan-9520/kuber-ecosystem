@@ -143,6 +143,7 @@ async function dispatchOtp(
     });
   }
 
+  let smsSent = false;
   if (env.APP_ENV !== 'production') {
     console.info(
       `[OTP] phone=${input.phone} email=${toEmail ?? 'none'} purpose=${input.purpose} emailSent=${emailSent} (phone bypass 123456 still allowed)`,
@@ -151,23 +152,27 @@ async function dispatchOtp(
     const smsChannel = channelStatusService.getStatus('sms');
     if (smsChannel.deliverable) {
       const templateCode = OTP_TEMPLATE_MAP[input.purpose] ?? 'LOGIN_OTP';
-      await smsOrchestratorService.send({
-        userId: input.userId,
-        toPhone: input.phone,
-        templateCode,
-        eventType: 'LOGIN_OTP',
-        category: 'OTP',
-        priority: 'URGENT',
-        isOtp: true,
-        otpPurpose: input.purpose,
-        variables: { otp, expiryMinutes: Math.floor(env.OTP_EXPIRY_SECONDS / 60) },
-      });
-    } else if (!emailSent) {
-      throw new ValidationError({
-        phone: [
-          'Could not deliver OTP. Configure email SMTP or SMS gateway, then try again.',
-        ],
-      });
+      try {
+        const smsResult = await smsOrchestratorService.send({
+          userId: input.userId,
+          toPhone: input.phone,
+          templateCode,
+          eventType: 'LOGIN_OTP',
+          category: 'OTP',
+          priority: 'URGENT',
+          isOtp: true,
+          otpPurpose: input.purpose,
+          variables: { otp, expiryMinutes: Math.floor(env.OTP_EXPIRY_SECONDS / 60) },
+        });
+        smsSent = Boolean(
+          smsResult &&
+            !('skipped' in smsResult && smsResult.skipped) &&
+            (!('success' in smsResult) || smsResult.success !== false),
+        );
+      } catch (error) {
+        console.warn('[OTP SMS] failed:', error instanceof Error ? error.message : error);
+        smsSent = false;
+      }
     }
   }
 
@@ -179,6 +184,7 @@ async function dispatchOtp(
       phone: input.phone,
       purpose: input.purpose,
       emailSent,
+      smsSent,
       email: toEmail ? maskEmail(toEmail) : null,
     },
     ipAddress: ctx.ipAddress,
@@ -186,28 +192,29 @@ async function dispatchOtp(
     requestId: ctx.requestId,
   });
 
-  if (!emailSent && env.APP_ENV === 'production') {
+  // Production: succeed if SMS OR email delivered (do not require both).
+  if (env.APP_ENV === 'production' && !emailSent && !smsSent) {
     throw new ValidationError({
-      phone: ['OTP email failed. Check SMTP settings or try again.'],
+      phone: [
+        'Could not deliver OTP. Configure MSG91 SMS and/or email SMTP, then try again.',
+      ],
     });
   }
 
   const parts: string[] = [];
   if (emailSent && toEmail) parts.push(`email ${maskEmail(toEmail)}`);
-  if (env.APP_ENV === 'production') {
-    const smsChannel = channelStatusService.getStatus('sms');
-    if (smsChannel.deliverable) parts.push(`mobile ${input.phone.slice(0, 2)}******${input.phone.slice(-2)}`);
-  }
-  const where = parts.length ? parts.join(' and ') : 'your registered email';
+  if (smsSent) parts.push(`mobile ${input.phone.slice(0, 2)}******${input.phone.slice(-2)}`);
+  const where = parts.length ? parts.join(' and ') : 'your registered contact';
   const phoneBypassHint =
     env.APP_ENV !== 'production' && !emailSent
-      ? ' If email is delayed, contact support or retry in a minute.'
+      ? ' If email is delayed, use phone bypass 123456 in non-production.'
       : '';
 
   return {
-    message: emailSent
-      ? `OTP sent to ${where}. Check your inbox (and spam).`
-      : `Could not send email OTP yet.${phoneBypassHint}`,
+    message:
+      emailSent || smsSent
+        ? `OTP sent to ${where}.${emailSent ? ' Check inbox (and spam).' : ''}`
+        : `Could not send email OTP yet.${phoneBypassHint}`,
     emailSent,
     emailHint: toEmail ? maskEmail(toEmail) : undefined,
   };

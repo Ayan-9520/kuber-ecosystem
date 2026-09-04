@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Button, Card, Input, Screen, StatusBadge } from '@/components/ui';
-import { useAuth } from '@/hooks';
+import { Button, Card, Input, PageHero, Screen, StatusBadge } from '@/components/ui';
+import { useAuth, useResponsiveLayout } from '@/hooks';
 import { getApiErrorMessage, str } from '@/lib/utils';
 import { kycService } from '@/services';
 import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
@@ -14,7 +14,11 @@ type AadhaarStep = 'input' | 'otp' | 'done';
 
 export function KycScreen() {
   const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { isDesktop, pagePad } = useResponsiveLayout();
+  const styles = useMemo(
+    () => createStyles(colors, isDesktop, pagePad),
+    [colors, isDesktop, pagePad],
+  );
   const queryClient = useQueryClient();
   const { customerId } = useAuth();
 
@@ -105,157 +109,197 @@ export function KycScreen() {
   const overallStatus = str(kycProfile.data?.overallStatus ?? 'NOT_STARTED');
 
   return (
-    <Screen title="KYC Verification" subtitle="Complete identity verification" loading={kycProfile.isLoading}>
-      <Card title="Verification Status">
-        <View style={styles.statusRow}>
-          <StatusBadge status={overallStatus} />
-          <Text style={styles.statusHint}>Required before loan submission</Text>
-        </View>
-      </Card>
+    <Screen scroll padded={false} loading={kycProfile.isLoading}>
+      <PageHero
+        eyebrow="Account"
+        title="KYC Verification"
+        subtitle="Complete identity verification"
+        icon="shield-checkmark"
+      />
 
-      <Card title="PAN Verification" subtitle={panVerified ? 'Verified' : 'Submit your PAN details'}>
-        {panVerified ? (
-          <View style={styles.verifiedBox}>
-            <Ionicons name="checkmark-circle" size={22} color={colors.success} />
-            <View style={styles.verifiedText}>
-              <Text style={styles.verifiedLabel}>PAN Verified</Text>
-              <Text style={styles.verifiedMeta}>{str(latestPan?.pan ?? latestPan?.maskedPan)}</Text>
-              {latestPan?.nameOnPan ? (
-                <Text style={styles.verifiedMeta}>{str(latestPan.nameOnPan)}</Text>
-              ) : null}
-            </View>
+      <View style={styles.body}>
+        <Card elevated title="Verification status">
+          <View style={styles.statusRow}>
+            <StatusBadge status={overallStatus} />
+            <Text style={styles.statusHint}>Required before loan submission</Text>
           </View>
-        ) : (
-          <>
-            {panError ? <Text style={styles.error}>{panError}</Text> : null}
-            {panSuccess ? <Text style={styles.success}>{panSuccess}</Text> : null}
-            <Input
-              label="PAN Number"
-              value={pan}
-              onChangeText={(v) => setPan(v.toUpperCase())}
-              autoCapitalize="characters"
-              maxLength={10}
-              placeholder="ABCDE1234F"
-            />
-            <Input
-              label="Name on PAN"
-              value={nameOnPan}
-              onChangeText={setNameOnPan}
-              autoCapitalize="words"
-            />
-            <Button
-              title="Submit PAN"
-              fullWidth
-              loading={submitPanMutation.isPending}
-              onPress={() => {
-                setPanError('');
-                setPanSuccess('');
-                submitPanMutation.mutate();
-              }}
-              disabled={pan.trim().length !== 10}
-            />
-          </>
-        )}
-      </Card>
+        </Card>
 
-      <Card title="Aadhaar Verification" subtitle={aadhaarVerified ? 'Verified' : 'OTP-based e-KYC'}>
-        {aadhaarVerified ? (
-          <View style={styles.verifiedBox}>
-            <Ionicons name="checkmark-circle" size={22} color={colors.success} />
-            <View style={styles.verifiedText}>
-              <Text style={styles.verifiedLabel}>Aadhaar Verified</Text>
-              <Text style={styles.verifiedMeta}>
-                {str(kycProfile.data?.maskedAadhaar ?? 'XXXX XXXX XXXX')}
-              </Text>
-            </View>
-          </View>
-        ) : aadhaarStep === 'done' ? (
-          <Text style={styles.success}>{aadhaarSuccess}</Text>
-        ) : (
-          <>
-            {aadhaarError ? <Text style={styles.error}>{aadhaarError}</Text> : null}
-            {aadhaarSuccess && aadhaarStep === 'otp' ? (
-              <Text style={styles.success}>{aadhaarSuccess}</Text>
-            ) : null}
-
-            {aadhaarStep === 'input' ? (
-              <>
-                <Input
-                  label="Aadhaar Number"
-                  value={aadhaar}
-                  onChangeText={(v) => setAadhaar(v.replace(/\D/g, '').slice(0, 12))}
-                  keyboardType="number-pad"
-                  maxLength={12}
-                  placeholder="12-digit Aadhaar"
-                />
-                <Button
-                  title="Send OTP"
-                  fullWidth
-                  loading={sendOtpMutation.isPending}
-                  onPress={() => {
-                    setAadhaarError('');
-                    setAadhaarSuccess('');
-                    sendOtpMutation.mutate();
-                  }}
-                  disabled={aadhaar.replace(/\D/g, '').length !== 12}
-                />
-              </>
+        <View style={styles.cardsRow}>
+          <Card
+            elevated
+            title="PAN Verification"
+            subtitle={panVerified ? 'Verified' : 'Submit your PAN details'}
+            style={styles.halfCard}
+          >
+            {panVerified ? (
+              <View style={styles.verifiedBox}>
+                <Ionicons name="checkmark-circle" size={22} color={colors.success} />
+                <View style={styles.verifiedText}>
+                  <Text style={styles.verifiedLabel}>PAN Verified</Text>
+                  <Text style={styles.verifiedMeta}>{str(latestPan?.pan ?? latestPan?.maskedPan)}</Text>
+                  {latestPan?.nameOnPan ? (
+                    <Text style={styles.verifiedMeta}>{str(latestPan.nameOnPan)}</Text>
+                  ) : null}
+                </View>
+              </View>
             ) : (
               <>
-                <Text style={styles.otpHint}>Enter the 6-digit OTP sent to your registered mobile</Text>
+                {panError ? <Text style={styles.error}>{panError}</Text> : null}
+                {panSuccess ? <Text style={styles.success}>{panSuccess}</Text> : null}
                 <Input
-                  label="OTP"
-                  value={otp}
-                  onChangeText={(v) => setOtp(v.replace(/\D/g, '').slice(0, 6))}
-                  keyboardType="number-pad"
-                  maxLength={6}
+                  label="PAN Number"
+                  value={pan}
+                  onChangeText={(v) => setPan(v.toUpperCase())}
+                  autoCapitalize="characters"
+                  maxLength={10}
+                  placeholder="ABCDE1234F"
+                />
+                <Input
+                  label="Name on PAN"
+                  value={nameOnPan}
+                  onChangeText={setNameOnPan}
+                  autoCapitalize="words"
                 />
                 <Button
-                  title="Verify Aadhaar"
+                  title="Submit PAN"
                   fullWidth
-                  loading={verifyOtpMutation.isPending}
+                  loading={submitPanMutation.isPending}
                   onPress={() => {
-                    setAadhaarError('');
-                    verifyOtpMutation.mutate();
+                    setPanError('');
+                    setPanSuccess('');
+                    submitPanMutation.mutate();
                   }}
-                  disabled={otp.length !== 6}
-                />
-                <Button
-                  title="Change Aadhaar"
-                  variant="ghost"
-                  fullWidth
-                  onPress={() => {
-                    setAadhaarStep('input');
-                    setOtp('');
-                    setAadhaarSuccess('');
-                  }}
+                  disabled={pan.trim().length !== 10}
                 />
               </>
             )}
-          </>
-        )}
-      </Card>
+          </Card>
+
+          <Card
+            elevated
+            title="Aadhaar Verification"
+            subtitle={aadhaarVerified ? 'Verified' : 'OTP-based e-KYC'}
+            style={styles.halfCard}
+          >
+            {aadhaarVerified ? (
+              <View style={styles.verifiedBox}>
+                <Ionicons name="checkmark-circle" size={22} color={colors.success} />
+                <View style={styles.verifiedText}>
+                  <Text style={styles.verifiedLabel}>Aadhaar Verified</Text>
+                  <Text style={styles.verifiedMeta}>
+                    {str(kycProfile.data?.maskedAadhaar ?? 'XXXX XXXX XXXX')}
+                  </Text>
+                </View>
+              </View>
+            ) : aadhaarStep === 'done' ? (
+              <Text style={styles.success}>{aadhaarSuccess}</Text>
+            ) : (
+              <>
+                {aadhaarError ? <Text style={styles.error}>{aadhaarError}</Text> : null}
+                {aadhaarSuccess && aadhaarStep === 'otp' ? (
+                  <Text style={styles.success}>{aadhaarSuccess}</Text>
+                ) : null}
+
+                {aadhaarStep === 'input' ? (
+                  <>
+                    <Input
+                      label="Aadhaar Number"
+                      value={aadhaar}
+                      onChangeText={(v) => setAadhaar(v.replace(/\D/g, '').slice(0, 12))}
+                      keyboardType="number-pad"
+                      maxLength={12}
+                      placeholder="12-digit Aadhaar"
+                    />
+                    <Button
+                      title="Send OTP"
+                      fullWidth
+                      loading={sendOtpMutation.isPending}
+                      onPress={() => {
+                        setAadhaarError('');
+                        setAadhaarSuccess('');
+                        sendOtpMutation.mutate();
+                      }}
+                      disabled={aadhaar.replace(/\D/g, '').length !== 12}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.otpHint}>
+                      Enter the 6-digit OTP sent to your registered mobile
+                    </Text>
+                    <Input
+                      label="OTP"
+                      value={otp}
+                      onChangeText={(v) => setOtp(v.replace(/\D/g, '').slice(0, 6))}
+                      keyboardType="number-pad"
+                      maxLength={6}
+                    />
+                    <Button
+                      title="Verify Aadhaar"
+                      fullWidth
+                      loading={verifyOtpMutation.isPending}
+                      onPress={() => {
+                        setAadhaarError('');
+                        verifyOtpMutation.mutate();
+                      }}
+                      disabled={otp.length !== 6}
+                    />
+                    <Button
+                      title="Change Aadhaar"
+                      variant="ghost"
+                      fullWidth
+                      onPress={() => {
+                        setAadhaarStep('input');
+                        setOtp('');
+                        setAadhaarSuccess('');
+                      }}
+                    />
+                  </>
+                )}
+              </>
+            )}
+          </Card>
+        </View>
+      </View>
     </Screen>
   );
 }
 
-function createStyles(colors: AppColors) {
+function createStyles(colors: AppColors, isDesktop: boolean, pagePad: number) {
   return StyleSheet.create({
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' },
-  statusHint: { ...typography.bodySm, color: colors.textMuted, flex: 1 },
-  verifiedBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    backgroundColor: 'rgba(24,201,100,0.08)',
-    borderRadius: radius.md,
-    padding: spacing.md,
-  },
-  verifiedText: { flex: 1 },
-  verifiedLabel: { ...typography.label, color: colors.success },
-  verifiedMeta: { ...typography.bodySm, color: colors.textMuted, marginTop: 2 },
-  error: { color: colors.danger, marginBottom: spacing.sm },
-  success: { color: colors.success, marginBottom: spacing.sm },
-  otpHint: { ...typography.bodySm, color: colors.textMuted, marginBottom: spacing.md },
-});
+    body: {
+      paddingHorizontal: pagePad,
+      paddingBottom: spacing.xl,
+      gap: spacing.md,
+      maxWidth: isDesktop ? 980 : undefined,
+      width: '100%',
+      alignSelf: 'center',
+    },
+    cardsRow: {
+      flexDirection: isDesktop ? 'row' : 'column',
+      gap: spacing.md,
+      alignItems: 'stretch',
+    },
+    halfCard: {
+      flex: 1,
+      minWidth: isDesktop ? 280 : undefined,
+    },
+    statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' },
+    statusHint: { ...typography.bodySm, color: colors.textMuted, flex: 1 },
+    verifiedBox: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.md,
+      backgroundColor: 'rgba(24,201,100,0.08)',
+      borderRadius: radius.md,
+      padding: spacing.md,
+    },
+    verifiedText: { flex: 1 },
+    verifiedLabel: { ...typography.label, color: colors.success },
+    verifiedMeta: { ...typography.bodySm, color: colors.textMuted, marginTop: 2 },
+    error: { color: colors.danger, marginBottom: spacing.sm },
+    success: { color: colors.success, marginBottom: spacing.sm },
+    otpHint: { ...typography.bodySm, color: colors.textMuted, marginBottom: spacing.md },
+  });
 }

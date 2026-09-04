@@ -5,10 +5,9 @@ const API_SUFFIX = '/api/v1';
 
 /**
  * Fallback when Vercel build env is missing / stale.
- * Keep in sync with apps/mobile-dsa/vercel.json EXPO_PUBLIC_API_BASE_URL.
- * Never use same-origin /api on partner.kuberone.online — Vercel→trycloudflare rewrites 502.
+ * Keep in sync with apps/mobile-dsa/vercel.json API destination (permanent VPS host).
  */
-const HOSTED_PARTNER_API_FALLBACK = 'https://carried-values-bloomberg-couple.trycloudflare.com';
+const HOSTED_PARTNER_API_FALLBACK = 'https://api.kuberone.online';
 
 function normalizeApiBaseUrl(url: string): string {
   const trimmed = url.trim().replace(/\/+$/, '');
@@ -47,7 +46,7 @@ function isHostedPartnerWebHostname(hostname: string): boolean {
 export function resolveApiBaseUrl(): string {
   const configured = readConfiguredUrl();
 
-  // Hosted Partner web: always hit Cloudflare tunnel / public API directly.
+  // Hosted Partner web: always hit permanent public API directly.
   if (Platform.OS === 'web' && typeof globalThis !== 'undefined') {
     const win = globalThis as typeof globalThis & { location?: { hostname?: string } };
     const host = win.location?.hostname;
@@ -69,5 +68,5 @@ export function resolveApiBaseUrl(): string {
     return `http://localhost:4000${API_SUFFIX}`;
   }
 
-  return normalizeApiBaseUrl('https://api.kuberone.com');
+  return normalizeApiBaseUrl(HOSTED_PARTNER_API_FALLBACK);
 }

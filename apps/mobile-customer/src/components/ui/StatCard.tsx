@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, type StyleProp, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
+import { useResponsiveLayout } from '@/hooks';
 import { radius, spacing, typography } from '@/theme';
 import { cardShadow } from '@/theme/elevation';
+import { glassSurface, premiumHover } from '@/theme/premium';
 import { type AppColors, useAppTheme } from '@/theme/ThemeProvider';
 
 interface StatCardProps {
@@ -13,29 +15,30 @@ interface StatCardProps {
   trend?: string;
   accent?: boolean;
   onPress?: () => void;
+  style?: StyleProp<ViewStyle>;
 }
 
-function createStyles(colors: AppColors) {
+function createStyles(colors: AppColors, isDesktop: boolean) {
   return StyleSheet.create({
     card: {
       flex: 1,
       minWidth: '45%',
-      backgroundColor: colors.card,
-      borderRadius: radius.lg,
+      borderRadius: isDesktop ? radius.md : radius.lg,
       borderWidth: 1,
-      borderColor: colors.borderLight,
       padding: spacing.md,
-      ...cardShadow(),
+      ...glassSurface(colors, isDesktop),
+      ...cardShadow(false, colors.primary),
+      ...premiumHover(),
     },
     cardAccent: {
-      borderColor: colors.primary,
-      backgroundColor: colors.surface,
+      borderColor: `${colors.primary}55`,
+      backgroundColor: isDesktop ? `${colors.primary}08` : colors.surface,
     },
     iconWrap: {
       width: 40,
       height: 40,
       borderRadius: radius.md,
-      backgroundColor: `${colors.primary}22`,
+      backgroundColor: `${colors.primary}18`,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: spacing.sm,
@@ -51,7 +54,7 @@ function createStyles(colors: AppColors) {
     value: {
       ...typography.h2,
       color: colors.text,
-      fontSize: 22,
+      fontSize: isDesktop ? 20 : 22,
       marginTop: 4,
       fontWeight: '700',
       letterSpacing: -0.5,
@@ -63,13 +66,12 @@ function createStyles(colors: AppColors) {
       width: 60,
       height: 60,
       borderRadius: radius.lg,
-      backgroundColor: colors.card,
       borderWidth: 1,
-      borderColor: colors.borderLight,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: spacing.sm,
-      ...cardShadow(),
+      ...glassSurface(colors, isDesktop),
+      ...cardShadow(false, colors.primary),
     },
     actionIconInner: {
       width: 44,
@@ -89,9 +91,10 @@ function createStyles(colors: AppColors) {
   });
 }
 
-export function StatCard({ label, value, icon, trend, accent, onPress }: StatCardProps) {
+export function StatCard({ label, value, icon, trend, accent, onPress, style }: StatCardProps) {
   const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { isDesktop } = useResponsiveLayout();
+  const styles = useMemo(() => createStyles(colors, isDesktop), [colors, isDesktop]);
 
   const content = (
     <>
@@ -112,6 +115,7 @@ export function StatCard({ label, value, icon, trend, accent, onPress }: StatCar
         style={({ pressed }) => [
           styles.card,
           accent && styles.cardAccent,
+          style,
           pressed && { opacity: 0.9 },
           Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
         ]}
@@ -123,25 +127,29 @@ export function StatCard({ label, value, icon, trend, accent, onPress }: StatCar
     );
   }
 
-  return <View style={[styles.card, accent && styles.cardAccent]}>{content}</View>;
+  return <View style={[styles.card, accent && styles.cardAccent, style]}>{content}</View>;
 }
 
 export function QuickAction({
   label,
   icon,
   onPress,
+  style,
 }: {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
+  style?: StyleProp<ViewStyle>;
 }) {
   const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { isDesktop } = useResponsiveLayout();
+  const styles = useMemo(() => createStyles(colors, isDesktop), [colors, isDesktop]);
 
   return (
     <Pressable
       style={({ pressed }) => [
         styles.action,
+        style,
         pressed && styles.actionPressed,
         Platform.OS === 'web' && ({ cursor: 'pointer' } as const),
       ]}
