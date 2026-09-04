@@ -9,7 +9,10 @@ import type {
 import { AppError, ConflictError, NotFoundError } from '../../../shared/errors/app-error.js';
 import { partnerRepository } from '../repositories/partner.repository.js';
 
-import { assertPartnerCanVerifyKyc } from './partner-kyc.service.js';
+import {
+  assertPartnerCanVerifyKyc,
+  maybeMarkPartnerKycVerifiedFromDocuments,
+} from './partner-kyc.service.js';
 import { partnerNotificationService } from './partner-notification.service.js';
 
 export interface RequestContext {
@@ -99,8 +102,17 @@ export const partnerService = {
   },
 
   async getById(id: string) {
-    const partner = await partnerRepository.findById(id);
+    let partner = await partnerRepository.findById(id);
     if (!partner) throw new NotFoundError('Partner', id);
+
+    // Heal stuck SUBMITTED partners when admin already verified all required docs
+    if (partner.kycStatus === 'SUBMITTED' || partner.kycStatus === 'IN_PROGRESS') {
+      const promoted = await maybeMarkPartnerKycVerifiedFromDocuments(id).catch(() => false);
+      if (promoted) {
+        partner = (await partnerRepository.findById(id)) ?? partner;
+      }
+    }
+
     return toPartnerResponse(partner);
   },
 

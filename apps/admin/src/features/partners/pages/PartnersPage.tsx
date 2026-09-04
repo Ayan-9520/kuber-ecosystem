@@ -448,8 +448,9 @@ export function PartnersPage() {
               <div className={styles.actionBlock}>
                 <h3 className={styles.actionTitle}>KYC documents</h3>
                 <p className={styles.actionHint}>
-                  Real flow: partner uploads PAN, Aadhaar, cheque (+ agreement) in the Partner App → you review
-                  here → then verify KYC.
+                  Real flow: partner uploads PAN, Aadhaar, cheque (+ agreement) in the Partner App → you verify
+                  each file under <strong>Documents</strong> (overall KYC becomes Verified automatically when PAN,
+                  Aadhaar and cheque are verified) → or press <strong>Verify KYC</strong> here.
                 </p>
                 <div className={styles.infoGrid}>
                   <div>

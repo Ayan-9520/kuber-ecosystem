@@ -21,6 +21,17 @@ export async function getPartnerKycDocumentSummary(partnerId: string) {
   const uploadedTypeCodes = new Set(
     docs.map((d) => d.documentType.code.toUpperCase()),
   );
+  const verifiedTypeCodes = new Set(
+    docs
+      .filter((d) => d.status === 'VERIFIED')
+      .map((d) => d.documentType.code.toUpperCase()),
+  );
+  const missingRequired = PARTNER_KYC_REQUIRED_TYPE_CODES.filter(
+    (code) => !uploadedTypeCodes.has(code),
+  );
+  const missingVerified = PARTNER_KYC_REQUIRED_TYPE_CODES.filter(
+    (code) => !verifiedTypeCodes.has(code),
+  );
 
   return {
     total: docs.length,
@@ -32,8 +43,10 @@ export async function getPartnerKycDocumentSummary(partnerId: string) {
       documentTypeName: d.documentType.name,
       createdAt: d.createdAt.toISOString(),
     })),
-    missingRequired: PARTNER_KYC_REQUIRED_TYPE_CODES.filter((code) => !uploadedTypeCodes.has(code)),
-    canVerify: docs.length > 0 && PARTNER_KYC_REQUIRED_TYPE_CODES.every((code) => uploadedTypeCodes.has(code)),
+    missingRequired,
+    missingVerified,
+    canVerify: missingRequired.length === 0 && docs.length > 0,
+    allRequiredVerified: missingVerified.length === 0 && docs.length > 0,
   };
 }
 
@@ -45,6 +58,39 @@ export async function markPartnerKycSubmitted(partnerId: string): Promise<void> 
     where: { id: partnerId },
     data: { kycStatus: 'SUBMITTED' },
   });
+}
+
+/**
+ * When PAN + Aadhaar + cheque are all document-status VERIFIED, promote partner.kycStatus.
+ * Keeps Documents "Verify" and Partners "Verify KYC" in sync (admin often only does the former).
+ */
+export async function maybeMarkPartnerKycVerifiedFromDocuments(
+  partnerId: string,
+): Promise<boolean> {
+  const partner = await prisma.partner.findUnique({ where: { id: partnerId } });
+  if (!partner || partner.deletedAt) return false;
+  if (partner.kycStatus === 'VERIFIED' || partner.kycStatus === 'REJECTED') return false;
+
+  const summary = await getPartnerKycDocumentSummary(partnerId);
+  if (!summary.allRequiredVerified) return false;
+
+  await prisma.partner.update({
+    where: { id: partnerId },
+    data: { kycStatus: 'VERIFIED' },
+  });
+
+  try {
+    const { partnerBrandService } = await import(
+      '../../partner-branding/services/partner-brand.service.js'
+    );
+    const baseUrl =
+      process.env.PUBLIC_PROFILE_BASE_URL?.replace(/\/$/, '') || 'https://pro.kuberone.online';
+    await partnerBrandService.ensurePublishedAfterKyc(partnerId, baseUrl);
+  } catch {
+    /* branding is best-effort */
+  }
+
+  return true;
 }
 
 export async function assertPartnerCanVerifyKyc(partnerId: string): Promise<void> {

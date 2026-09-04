@@ -9,7 +9,11 @@ function statusPalette(colors: AppColors, status: string) {
   const map: Record<string, { bg: string; text: string }> = {
     ACTIVE: { bg: `${colors.success}22`, text: colors.success },
     VERIFIED: { bg: `${colors.success}22`, text: colors.success },
+    UPLOADED: { bg: `${colors.primary}22`, text: colors.primary },
+    REQUIRED: { bg: `${colors.warning}22`, text: colors.warning },
+    MISSING: { bg: `${colors.textMuted}22`, text: colors.textSecondary },
     PENDING: { bg: `${colors.warning}22`, text: colors.warning },
+    PENDING_VERIFICATION: { bg: `${colors.warning}22`, text: colors.warning },
     OPEN: { bg: `${colors.info}22`, text: colors.info },
     SUBMITTED: { bg: `${colors.info}22`, text: colors.info },
     UNDER_REVIEW: { bg: `${colors.warning}22`, text: colors.warning },
@@ -24,6 +28,8 @@ function statusPalette(colors: AppColors, status: string) {
     HIGH: { bg: `${colors.danger}22`, text: colors.danger },
     NEW: { bg: `${colors.info}22`, text: colors.info },
     CONVERTED: { bg: `${colors.success}22`, text: colors.success },
+    NOT_STARTED: { bg: `${colors.textMuted}22`, text: colors.textSecondary },
+    IN_PROGRESS: { bg: `${colors.warning}22`, text: colors.warning },
   };
   return map[key] ?? { bg: `${colors.textMuted}22`, text: colors.textSecondary };
 }

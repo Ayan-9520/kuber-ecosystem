@@ -3,6 +3,7 @@ import type { ListVerificationResultsQuery, VerifyDocumentInput } from '@kuberon
 
 import { NotFoundError } from '../../../shared/errors/app-error.js';
 import { authAuditRepository } from '../../auth/repositories/audit.repository.js';
+import { maybeMarkPartnerKycVerifiedFromDocuments } from '../../partners/services/partner-kyc.service.js';
 import { documentRepository } from '../repositories/document.repository.js';
 import { ocrResultRepository } from '../repositories/ocr-result.repository.js';
 import { verificationResultRepository } from '../repositories/verification-result.repository.js';
@@ -101,6 +102,18 @@ export const verificationResultService = {
       verifiedById: ctx.actorId,
       verifiedAt: now,
     });
+
+    if (status === 'VERIFIED') {
+      const latest = await documentRepository.findById(documentId);
+      if (latest?.partnerId && latest.ownerType === 'PARTNER') {
+        await maybeMarkPartnerKycVerifiedFromDocuments(latest.partnerId).catch((err: unknown) => {
+          console.error(
+            '[partner-kyc-auto-verify]',
+            err instanceof Error ? err.message : err,
+          );
+        });
+      }
+    }
 
     await auditDocumentMutation(authAuditRepository.log, ctx, 'DOCUMENT_VERIFIED', 'verification_result', record.id, {
       result: output.result,
