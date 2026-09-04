@@ -37,12 +37,11 @@ export interface ProductionReadinessReport {
   publicLaunchBlockers: string[];
 }
 
-const CORE_SECRET_NAMES = [
+const STAGED_SECRET_NAMES = [
   'DATABASE_URL',
   'JWT_ACCESS_SECRET',
   'JWT_REFRESH_SECRET',
   'DATA_ENCRYPTION_KEY',
-  'OPENAI_API_KEY',
 ] as const;
 
 function notificationReports(env: BackendEnv): NotificationProviderReport[] {
@@ -50,7 +49,9 @@ function notificationReports(env: BackendEnv): NotificationProviderReport[] {
 }
 
 function computeStagedPercent(secrets: ProductionReadinessReport['secrets']): number {
-  const core = secrets.filter((s) => CORE_SECRET_NAMES.includes(s.name as (typeof CORE_SECRET_NAMES)[number]));
+  const core = secrets.filter((s) =>
+    STAGED_SECRET_NAMES.includes(s.name as (typeof STAGED_SECRET_NAMES)[number]),
+  );
   const present = core.filter((s) => s.present).length;
   return Math.round((present / core.length) * 100);
 }
@@ -98,7 +99,8 @@ export function assessProductionReadiness(env: BackendEnv): ProductionReadinessR
     {
       name: 'OPENAI_API_KEY',
       present: Boolean(env.OPENAI_API_KEY),
-      required: production,
+      // Staged VPS launch can run without AI; full public rollout still requires it.
+      required: production && !stagedRollout,
       requiredForPublicLaunch: true,
     },
     {
