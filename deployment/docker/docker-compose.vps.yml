@@ -1,0 +1,188 @@
+# KuberOne VPS stack — Hostinger KVM 2 (2 vCPU / 8 GB)
+# Frontends (admin / partner / customer / pro) stay on Vercel.
+# This compose runs ONLY: MySQL + Redis + API + worker + Caddy (HTTPS).
+#
+# Usage on VPS:
+#   cd /opt/kuberone
+#   cp deployment/docker/env.vps.example deployment/docker/.env.vps
+#   nano deployment/docker/.env.vps   # fill secrets
+#   docker compose -f deployment/docker/docker-compose.vps.yml --env-file deployment/docker/.env.vps up -d --build
+#
+# Health:
+#   curl -sf https://api.kuberone.online/health/live
+
+name: kuberone-vps
+
+x-api-env: &api-env
+  NODE_ENV: production
+  APP_ENV: production
+  API_PORT: 4000
+  API_BASE_URL: ${API_BASE_URL:-https://api.kuberone.online}
+  API_VERSION: v1
+  DATABASE_URL: mysql://${MYSQL_USER:-kuberone}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-kuberone}
+  DATABASE_CONNECTION_LIMIT: ${DATABASE_CONNECTION_LIMIT:-20}
+  REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+  DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY}
+  JWT_ACCESS_EXPIRY: ${JWT_ACCESS_EXPIRY:-15m}
+  JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-7d}
+  CORS_ORIGINS: ${CORS_ORIGINS}
+  WEBSITE_INTAKE_API_KEY: ${WEBSITE_INTAKE_API_KEY}
+  PUBLIC_PROFILE_BASE_URL: ${PUBLIC_PROFILE_BASE_URL:-https://pro.kuberone.online}
+  DOCUMENT_STORAGE_PATH: /app/apps/backend/storage/documents
+  AWS_REGION: ${AWS_REGION:-ap-south-1}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+  AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+  EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
+  DEPLOYMENT_ROLLOUT_PHASE: ${DEPLOYMENT_ROLLOUT_PHASE:-staged}
+  NOTIFICATION_EMAIL_ENABLED: ${NOTIFICATION_EMAIL_ENABLED:-true}
+  EMAIL_PROVIDER: ${EMAIL_PROVIDER:-smtp}
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_SECURE: ${SMTP_SECURE:-false}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASS: ${SMTP_PASS:-}
+  EMAIL_FROM: ${EMAIL_FROM:-}
+  EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-KuberOne}
+  NOTIFICATION_SMS_ENABLED: ${NOTIFICATION_SMS_ENABLED:-false}
+  SMS_PROVIDER: ${SMS_PROVIDER:-mock}
+  MSG91_AUTH_KEY: ${MSG91_AUTH_KEY:-}
+  MSG91_TEMPLATE_ID: ${MSG91_TEMPLATE_ID:-}
+  MSG91_SENDER_ID: ${MSG91_SENDER_ID:-KUBERF}
+  KUBERFINSERVE_PARTNER_SYNC_URL: ${KUBERFINSERVE_PARTNER_SYNC_URL:-}
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: kuberone-vps-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-kuberone}
+      MYSQL_USER: ${MYSQL_USER:-kuberone}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --innodb-buffer-pool-size=512M
+      --max-connections=100
+      --performance-schema=OFF
+    volumes:
+      - kuberone_vps_mysql:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-uroot', '-p${MYSQL_ROOT_PASSWORD}']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    networks: [kuberone]
+    # No host port publish — API-only access inside Docker network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: kuberone-vps-redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD} --save 60 1 --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - kuberone_vps_redis:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks: [kuberone]
+
+  backend:
+    build:
+      context: ../..
+      dockerfile: docker/backend/Dockerfile
+    image: kuberone-backend:vps
+    container_name: kuberone-vps-api
+    restart: unless-stopped
+    environment:
+      <<: *api-env
+      API_WORKERS_ENABLED: 'false'
+      AUTOMATION_WORKER_ENABLED: 'false'
+      CONTENT_WORKER_ENABLED: 'false'
+      BACKUP_WORKER_ENABLED: 'false'
+      DOCKER_RUN_MIGRATIONS: 'true'
+      DOCKER_SEED_ON_START: ${DOCKER_SEED_ON_START:-false}
+    volumes:
+      - kuberone_vps_uploads:/app/apps/backend/storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:4000/health/live']
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+    networks: [kuberone]
+    # Bound only on loopback via Caddy; no public :4000
+
+  worker:
+    image: kuberone-backend:vps
+    container_name: kuberone-vps-worker
+    restart: unless-stopped
+    environment:
+      <<: *api-env
+      API_PORT: 4001
+      API_BASE_URL: http://worker:4001
+      API_WORKERS_ENABLED: 'true'
+      AUTOMATION_WORKER_ENABLED: 'true'
+      CONTENT_WORKER_ENABLED: 'true'
+      BACKUP_WORKER_ENABLED: 'false'
+      DOCKER_RUN_MIGRATIONS: 'false'
+      DOCKER_SEED_ON_START: 'false'
+    volumes:
+      - kuberone_vps_uploads:/app/apps/backend/storage
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:4001/health/live']
+      interval: 30s
+      timeout: 5s
+      retries: 8
+      start_period: 60s
+    networks: [kuberone]
+
+  caddy:
+    image: caddy:2.8-alpine
+    container_name: kuberone-vps-caddy
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      API_DOMAIN: ${API_DOMAIN:-api.kuberone.online}
+    volumes:
+      - ./Caddyfile.vps:/etc/caddy/Caddyfile:ro
+      - kuberone_vps_caddy_data:/data
+      - kuberone_vps_caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks: [kuberone]
+
+networks:
+  kuberone:
+    name: kuberone_vps_net
+    driver: bridge
+
+volumes:
+  kuberone_vps_mysql:
+  kuberone_vps_redis:
+  kuberone_vps_uploads:
+  kuberone_vps_caddy_data:
+  kuberone_vps_caddy_config:

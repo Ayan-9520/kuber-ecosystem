@@ -1,4 +1,8 @@
 # KuberOne Production Stack — Docker Compose
+# Heavy multi-replica + monitoring stack (not for Hostinger KVM 2).
+# For KVM 2 / first live API host use:
+#   deployment/docker/docker-compose.vps.yml
+#
 # Target: 1000+ concurrent users on multi-node deployment
 # Kubernetes-ready: each service maps to a K8s Deployment
 

@@ -1,12 +1,12 @@
-# KuberOne — full stack (one command from repo root)
-#   docker compose up -d --build
-#   docker compose down
-#   docker compose logs -f
-#   docker compose ps
+# KuberOne — local / Docker Desktop full stack (repo root)
+#   docker compose up -d --build          # API + frontends (dev)
+#   docker compose up -d mysql redis      # infra only
+#
+# Production VPS (Hostinger KVM 2) — API only, frontends on Vercel:
+#   docker compose -f deployment/docker/docker-compose.vps.yml --env-file deployment/docker/.env.vps up -d --build
 #
 # Defaults: .env.docker (auto-loaded into containers) + inline defaults below.
-# Infra only (host dev):  docker compose up -d mysql redis
-# Integration tests:       docker compose --profile integration up -d mysql-integration
+# Integration tests: docker compose --profile integration up -d mysql-integration
 
 name: kuberone
 

@@ -1,7 +1,7 @@
 const API_SUFFIX = '/api/v1';
 
 /** Keep in sync with apps/admin/vercel.json API destination. */
-const HOSTED_ADMIN_API_FALLBACK = 'https://falling-smoking-wondering-trackbacks.trycloudflare.com';
+const HOSTED_ADMIN_API_FALLBACK = 'https://api.kuberone.online';
 
 /**
  * Ensure API base URL always ends with /api/v1.

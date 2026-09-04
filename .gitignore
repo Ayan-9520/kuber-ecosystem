@@ -31,6 +31,8 @@ devops/artifacts/
 .env.production
 !.env.example
 !.env.docker
+deployment/docker/.env.vps
+**/.env.vps
 
 # Logs
 logs/
