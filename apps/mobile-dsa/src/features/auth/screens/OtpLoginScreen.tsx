@@ -10,17 +10,13 @@ import { useAuth } from '@/hooks';
 import { API_BASE_URL, setMemoryAccessToken } from '@/lib/api';
 import { partnerNeedsKyc } from '@/lib/partnerSession';
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from '@/lib/storage';
-import { getApiErrorMessage, normalizePhone } from '@/lib/utils';
+import { getApiErrorMessage } from '@/lib/utils';
 import { validateOtp } from '@/lib/validation';
 import type { AuthStackParamList } from '@/navigation/types';
 import { authService, partnerBrandingService } from '@/services';
 import type { RootState } from '@/store';
 import { setRequiresPartnerKyc } from '@/store/slices/authSlice';
 import { spacing, typography } from '@/theme';
-
-const DEMO_DSA_PHONE = '8888777766';
-const DEV_OTP = '123456';
-const SHOW_DEMO_LOGIN = (process.env.EXPO_PUBLIC_APP_ENV ?? 'development') !== 'production';
 
 type OtpLoginRoute = RouteProp<AuthStackParamList, 'OtpLogin'>;
 
@@ -73,7 +69,7 @@ export function OtpLoginScreen() {
     }
   }, [route.params?.phone]);
 
-  // Warm Cloudflare / Vercel proxy so first OTP / login is less likely to 502.
+  // Warm API so first OTP / login is less likely to cold-start fail.
   useEffect(() => {
     const controller = new AbortController();
     const base = API_BASE_URL.replace(/\/api\/v1\/?$/, '') || '';
@@ -181,17 +177,13 @@ export function OtpLoginScreen() {
       const result = await authService.partnerOtpRequest(id);
       setOtpSent(true);
       const hintParts: string[] = [];
+      if (result.sms_sent && result.phone_hint) hintParts.push(`SMS ${result.phone_hint}`);
+      else if (result.phone_hint) hintParts.push(`mobile ${result.phone_hint}`);
       if (result.email_sent && result.email_hint) hintParts.push(`email ${result.email_hint}`);
-      if (result.phone_hint) hintParts.push(`mobile ${result.phone_hint}`);
-      const where =
-        hintParts.length > 0
-          ? `OTP sent to ${hintParts.join(' · ')}.`
-          : result.message || 'OTP sent.';
-      const bypass = result.phone_bypass_otp || result.dev_otp;
       setInfo(
-        bypass
-          ? `${where} Check email for real code. Phone bypass: ${bypass}`
-          : `${where} Check your email for the code.`,
+        hintParts.length > 0
+          ? `OTP sent to ${hintParts.join(' · ')}. Enter the 6-digit code.`
+          : result.message || 'OTP sent. Enter the 6-digit code.',
       );
     } catch (e) {
       setError(getApiErrorMessage(e));
@@ -203,27 +195,6 @@ export function OtpLoginScreen() {
   const completeLogin = async (id: string, otpCode: string) => {
     const tokens = await authService.partnerOtpVerify(id, otpCode);
     await finishWithTokens(tokens.accessToken, tokens.refreshToken);
-  };
-
-  const demoLogin = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      const normalized = normalizePhone(DEMO_DSA_PHONE);
-      setIdentifier(DEMO_DSA_PHONE);
-      setOtp(DEV_OTP);
-      setOtpSent(true);
-      try {
-        await authService.partnerOtpRequest(normalized);
-      } catch {
-        /* dev bypass accepts 123456 without a prior send */
-      }
-      await completeLogin(normalized, DEV_OTP);
-    } catch (e) {
-      setError(getApiErrorMessage(e));
-    } finally {
-      setLoading(false);
-    }
   };
 
   const verify = async () => {
@@ -252,9 +223,8 @@ export function OtpLoginScreen() {
             New Financial Partner? Register here
           </Text>
           <Text style={styles.hint}>
-            Mobile, email, or Partner Code + OTP. OTP goes to that partner's registered mobile
-            (SMS after gateway purchase) and email when SMTP is on. Same login as
-            kuberfinserve.com/partner-login.
+            Login with registered mobile, email, or Partner Code (e.g. DSA-MTCPSD). OTP goes to that
+            partner&apos;s mobile SMS and email.
           </Text>
         </View>
       }
@@ -307,15 +277,10 @@ export function OtpLoginScreen() {
           onPress={() => {
             setOtpSent(false);
             setOtp('');
+            setInfo('');
           }}
         />
       )}
-
-      {SHOW_DEMO_LOGIN ? (
-        <Text style={styles.devLink} onPress={() => !loading && void demoLogin()}>
-          Try demo partner ({DEMO_DSA_PHONE})
-        </Text>
-      ) : null}
     </PremiumAuthShell>
   );
 }
@@ -349,15 +314,6 @@ function createStyles() {
       textAlign: 'center',
       lineHeight: 18,
       paddingHorizontal: spacing.md,
-    },
-    devLink: {
-      ...typography.caption,
-      color: '#0D6B57',
-      fontWeight: '700',
-      textAlign: 'center',
-      marginTop: spacing.md,
-      textTransform: 'uppercase',
-      letterSpacing: 0.4,
     },
     restoring: {
       alignItems: 'center',

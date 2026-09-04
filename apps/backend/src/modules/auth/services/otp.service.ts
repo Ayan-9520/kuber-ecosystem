@@ -98,7 +98,13 @@ async function sendOtpEmail(params: {
 async function dispatchOtp(
   input: { phone: string; purpose: SendOtpInput['purpose']; userId?: string; email?: string | null },
   ctx: RequestContext,
-): Promise<{ message: string; emailSent?: boolean; emailHint?: string }> {
+): Promise<{
+  message: string;
+  emailSent?: boolean;
+  emailHint?: string;
+  smsSent?: boolean;
+  phoneHint?: string;
+}> {
   const recent = await otpRepository.findRecentByPhone(
     input.phone,
     input.purpose,
@@ -108,7 +114,7 @@ async function dispatchOtp(
 
   await otpRepository.invalidatePending(input.phone, input.purpose);
 
-  // Always store a real random OTP (emailed). Non-production still accepts 123456 on verify as phone/SMS bypass.
+  // Random OTP always. Non-production verify still accepts 123456 as local bypass only.
   const otp = generateOtp();
   const otpHash = await hashSecret(otp);
   const expiresAt = new Date(Date.now() + env.OTP_EXPIRY_SECONDS * 1000);
@@ -146,7 +152,7 @@ async function dispatchOtp(
   let smsSent = false;
   if (env.APP_ENV !== 'production') {
     console.info(
-      `[OTP] phone=${input.phone} email=${toEmail ?? 'none'} purpose=${input.purpose} emailSent=${emailSent} (phone bypass 123456 still allowed)`,
+      `[OTP] phone=${input.phone} email=${toEmail ?? 'none'} purpose=${input.purpose} emailSent=${emailSent}`,
     );
   } else {
     const smsChannel = channelStatusService.getStatus('sms');
@@ -201,22 +207,18 @@ async function dispatchOtp(
     });
   }
 
+  const phoneHint = `${input.phone.slice(0, 2)}******${input.phone.slice(-2)}`;
   const parts: string[] = [];
+  if (smsSent) parts.push(`SMS ${phoneHint}`);
   if (emailSent && toEmail) parts.push(`email ${maskEmail(toEmail)}`);
-  if (smsSent) parts.push(`mobile ${input.phone.slice(0, 2)}******${input.phone.slice(-2)}`);
   const where = parts.length ? parts.join(' and ') : 'your registered contact';
-  const phoneBypassHint =
-    env.APP_ENV !== 'production' && !emailSent
-      ? ' If email is delayed, use phone bypass 123456 in non-production.'
-      : '';
 
   return {
-    message:
-      emailSent || smsSent
-        ? `OTP sent to ${where}.${emailSent ? ' Check inbox (and spam).' : ''}`
-        : `Could not send email OTP yet.${phoneBypassHint}`,
+    message: emailSent || smsSent ? `OTP sent to ${where}.` : 'OTP generated. Check email when SMTP is ready.',
     emailSent,
     emailHint: toEmail ? maskEmail(toEmail) : undefined,
+    smsSent,
+    phoneHint,
   };
 }
 
@@ -224,7 +226,13 @@ export const otpService = {
   async sendOtp(
     input: SendOtpInput & { email?: string | null },
     ctx: RequestContext,
-  ): Promise<{ message: string; emailSent?: boolean; emailHint?: string }> {
+  ): Promise<{
+    message: string;
+    emailSent?: boolean;
+    emailHint?: string;
+    smsSent?: boolean;
+    phoneHint?: string;
+  }> {
     const user = await userRepository.findByPhone(input.phone);
 
     if (input.purpose === 'LOGIN') {

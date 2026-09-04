@@ -311,10 +311,10 @@ export const websiteIntakeService = {
         message:
           result.message ||
           'OTP sent to your registered mobile number (and email if available).',
-        phone_hint: maskPhone(partner.phone),
+        phone_hint: result.phoneHint ?? maskPhone(partner.phone),
         email_hint: emailHint ?? (partner.email ? maskEmailHint(partner.email) : null),
         email_sent: Boolean(result.emailSent),
-        // Bypass still accepted on verify in non-prod — do not return the code to the browser/app UI.
+        sms_sent: Boolean(result.smsSent),
         phone_bypass_otp: undefined,
       };
     }

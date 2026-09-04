@@ -35,6 +35,7 @@ export const authService = {
       phone_hint?: string;
       email_hint?: string;
       email_sent?: boolean;
+      sms_sent?: boolean;
       otp_sent?: boolean;
       phone_bypass_otp?: string;
       dev_otp?: string;
