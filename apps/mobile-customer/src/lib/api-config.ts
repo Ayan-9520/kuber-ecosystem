@@ -7,7 +7,7 @@ const API_SUFFIX = '/api/v1';
  * Permanent production API (VPS / Cloudflare tunnel named host).
  * Keep in sync with apps/mobile-customer/vercel.json destinations.
  */
-const HOSTED_CUSTOMER_API_FALLBACK = 'https://api.kuberone.online';
+const HOSTED_CUSTOMER_API_FALLBACK = 'https://idaho-strategies-helicopter-mixer.trycloudflare.com';
 
 function normalizeApiBaseUrl(url: string): string {
   const trimmed = url.trim().replace(/\/+$/, '');

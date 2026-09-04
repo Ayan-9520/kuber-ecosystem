@@ -7,7 +7,7 @@ const API_SUFFIX = '/api/v1';
  * Fallback when Vercel build env is missing / stale.
  * Keep in sync with apps/mobile-dsa/vercel.json API destination (permanent VPS host).
  */
-const HOSTED_PARTNER_API_FALLBACK = 'https://api.kuberone.online';
+const HOSTED_PARTNER_API_FALLBACK = 'https://idaho-strategies-helicopter-mixer.trycloudflare.com';
 
 function normalizeApiBaseUrl(url: string): string {
   const trimmed = url.trim().replace(/\/+$/, '');
