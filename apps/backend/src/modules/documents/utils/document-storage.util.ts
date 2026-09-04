@@ -1,10 +1,14 @@
 import { env } from '../../../config/env.js';
 
+/**
+ * Prefer S3 when credentials exist. Otherwise use local disk
+ * (dev/test and staged VPS with DOCUMENT_STORAGE_PATH volume).
+ */
 export function shouldUseLocalDocumentStorage(): boolean {
   if (env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY) {
     return false;
   }
-  return env.APP_ENV === 'development' || env.NODE_ENV === 'development' || env.NODE_ENV === 'test';
+  return true;
 }
 
 export function buildLocalDownloadUrl(storageKey: string): string {
