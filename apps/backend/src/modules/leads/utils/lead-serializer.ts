@@ -43,6 +43,10 @@ const CONVERTED_STATUSES = new Set(['APPLICATION_CREATED', 'SANCTIONED', 'DISBUR
 
 export function serializeLead<T extends LeadRecord>(lead: T) {
   const wizardPersonal = readWizardPersonal(lead.metadata);
+  const meta =
+    lead.metadata && typeof lead.metadata === 'object' && !Array.isArray(lead.metadata)
+      ? (lead.metadata as Record<string, unknown>)
+      : {};
   const loanAmount =
     decimalToNumber(lead.requestedAmount) ??
     decimalToNumber(wizardPersonal?.requestedLoanAmount) ??
@@ -64,6 +68,18 @@ export function serializeLead<T extends LeadRecord>(lead: T) {
     [wizardPersonal?.firstName, wizardPersonal?.lastName].filter(Boolean).join(' ').trim() ||
     lead.customer?.fullName?.trim() ||
     null;
+
+  const city = meta.city != null && String(meta.city).trim() ? String(meta.city) : null;
+  const employmentType =
+    meta.employmentType != null && String(meta.employmentType).trim()
+      ? String(meta.employmentType)
+      : null;
+  const companyName =
+    meta.companyName != null && String(meta.companyName).trim() ? String(meta.companyName) : null;
+  const monthlyIncome = decimalToNumber(meta.monthlyIncome);
+  const tenureMonths = decimalToNumber(meta.tenureMonths);
+  const loanType =
+    meta.loanType != null && String(meta.loanType).trim() ? String(meta.loanType) : null;
 
   return {
     ...lead,
@@ -92,6 +108,25 @@ export function serializeLead<T extends LeadRecord>(lead: T) {
     phone,
     email: prospectEmail,
     loanAmount,
+    city,
+    employmentType,
+    companyName,
+    monthlyIncome,
+    tenureMonths,
+    loanType,
+    age: meta.age != null && String(meta.age).trim() ? String(meta.age) : null,
+    workExperience:
+      meta.workExperience != null && String(meta.workExperience).trim()
+        ? String(meta.workExperience)
+        : null,
+    existingEmi: decimalToNumber(meta.existingEmi),
+    purpose: meta.purpose != null && String(meta.purpose).trim() ? String(meta.purpose) : null,
+    pan: meta.pan != null && String(meta.pan).trim() ? String(meta.pan) : null,
+    message: meta.message != null && String(meta.message).trim() ? String(meta.message) : null,
+    formType: meta.formType != null ? String(meta.formType) : null,
+    formVariant: meta.formVariant != null ? String(meta.formVariant) : null,
+    pageUrl: meta.pageUrl != null ? String(meta.pageUrl) : null,
+    websiteSource: meta.source != null ? String(meta.source) : null,
     isConverted: Boolean(lead.convertedAt) || CONVERTED_STATUSES.has(lead.status),
   };
 }

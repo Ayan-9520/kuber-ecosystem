@@ -134,18 +134,44 @@ function buildMetadata(input: WebsiteLeadIntakeInput): Prisma.InputJsonValue {
     formType: input.form_type ?? 'Lead',
     source: input.source,
     pageUrl: input.page_url,
+    loanType: fields.loan_type ?? fields.loanType,
     city: fields.city,
+    age: fields.age,
     employmentType: fields.employment_type ?? fields.employmentType,
     companyName: fields.company_name ?? fields.companyName,
     monthlyIncome: fields.monthly_income ?? fields.monthlyIncome,
+    workExperience: fields.work_experience ?? fields.workExperience,
     tenureMonths: fields.tenure_months ?? fields.tenureMonths,
-    propertyValue: fields.property_value,
+    existingEmi: fields.existing_emi ?? fields.existingEmi,
+    purpose: fields.purpose,
+    pan: fields.pan,
+    propertyValue: fields.property_value ?? fields.propertyValue,
     message: fields.message,
     externalLeadId: fields.external_lead_id ?? fields.lead_id,
     websitePartnerCode: fields.partner_id,
     crmChannel: fields.crm_channel,
     formVariant: fields.form_variant,
   };
+}
+
+function mergeLeadMetadata(
+  existing: unknown,
+  incoming: Prisma.InputJsonValue,
+): Prisma.InputJsonValue {
+  const prev =
+    existing && typeof existing === 'object' && !Array.isArray(existing)
+      ? (existing as Record<string, unknown>)
+      : {};
+  const next =
+    incoming && typeof incoming === 'object' && !Array.isArray(incoming)
+      ? (incoming as Record<string, unknown>)
+      : {};
+  const merged: Record<string, unknown> = { ...prev };
+  for (const [key, value] of Object.entries(next)) {
+    if (value === undefined || value === null || value === '') continue;
+    merged[key] = value;
+  }
+  return merged as Prisma.InputJsonValue;
 }
 
 export const websiteIntakeService = {
@@ -196,10 +222,18 @@ export const websiteIntakeService = {
     });
 
     if (recent) {
+      const incomingMeta = buildMetadata(input);
+      const requestedAmount = parseAmount(fields.loan_amount ?? fields.loanAmount);
+      const updated = await leadRepository.update(recent.id, {
+        prospectName: prospectName || recent.prospectName,
+        ...(prospectEmail ? { prospectEmail } : {}),
+        ...(requestedAmount !== undefined ? { requestedAmount } : {}),
+        metadata: mergeLeadMetadata(recent.metadata, incomingMeta),
+      });
       return {
         duplicate: true,
-        lead: serializeLead(recent),
-        message: 'Lead already exists for this phone and product',
+        lead: serializeLead(updated),
+        message: 'Lead already exists for this phone and product — details updated',
       };
     }
 

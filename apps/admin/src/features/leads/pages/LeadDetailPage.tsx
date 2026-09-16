@@ -46,8 +46,34 @@ const TABS = [
 ];
 
 function str(v: unknown): string {
-  if (v === null || v === undefined) return '—';
+  if (v === null || v === undefined || v === '') return '—';
   return String(v);
+}
+
+function readMeta(data: Record<string, unknown>, key: string): unknown {
+  if (data[key] != null && data[key] !== '') return data[key];
+  const meta = data.metadata;
+  if (meta && typeof meta === 'object' && !Array.isArray(meta)) {
+    const value = (meta as Record<string, unknown>)[key];
+    if (value != null && value !== '') return value;
+  }
+  return null;
+}
+
+function formatIncome(value: unknown): string {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n) || n <= 0) return str(value);
+  return formatCurrency(n);
+}
+
+function formatTenure(value: unknown): string {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n) || n <= 0) return str(value);
+  if (n >= 12 && n % 12 === 0) {
+    const years = n / 12;
+    return `${years} year${years === 1 ? '' : 's'} (${n} months)`;
+  }
+  return `${n} months`;
 }
 
 function InfoItem({ label, value }: { label: string; value: string }) {
@@ -182,10 +208,18 @@ export function LeadDetailPage() {
         <div className="detail-grid">
           <Card title="Lead Information">
             <div className="info-grid">
+              <InfoItem label="Full Name" value={str(data.fullName ?? data.prospectName ?? data.name)} />
               <InfoItem label="Phone" value={str(data.phone ?? data.prospectPhone)} />
               <InfoItem label="Email" value={str(data.email ?? data.prospectEmail)} />
-              <InfoItem label="Loan Amount" value={formatCurrency((data.loanAmount ?? data.requestedAmount) as number)} />
-              <InfoItem label="Product" value={str(data.productName ?? data.productId)} />
+              <InfoItem label="City" value={str(data.city ?? readMeta(data, 'city'))} />
+              <InfoItem
+                label="Loan Amount"
+                value={formatCurrency((data.loanAmount ?? data.requestedAmount) as number)}
+              />
+              <InfoItem
+                label="Product"
+                value={str(data.productName ?? data.loanType ?? readMeta(data, 'loanType') ?? data.productId)}
+              />
               <InfoItem label="Source" value={str(data.sourceName ?? data.sourceId)} />
               <InfoItem label="Partner" value={str(data.partnerName ?? data.partnerCode)} />
               <InfoItem label="Grade" value={str(data.grade)} />
@@ -194,6 +228,47 @@ export function LeadDetailPage() {
               <InfoItem label="Branch" value={str(data.branchName ?? data.branchId)} />
               <InfoItem label="Created" value={formatDateTime(data.createdAt as string)} />
               <InfoItem label="Updated" value={formatDateTime(data.updatedAt as string)} />
+            </div>
+          </Card>
+          <Card title="Application Details">
+            <div className="info-grid">
+              <InfoItem
+                label="Employment"
+                value={str(data.employmentType ?? readMeta(data, 'employmentType'))}
+              />
+              <InfoItem
+                label="Monthly Income"
+                value={formatIncome(data.monthlyIncome ?? readMeta(data, 'monthlyIncome'))}
+              />
+              <InfoItem
+                label="Tenure"
+                value={formatTenure(data.tenureMonths ?? readMeta(data, 'tenureMonths'))}
+              />
+              <InfoItem
+                label="Company"
+                value={str(data.companyName ?? readMeta(data, 'companyName'))}
+              />
+              <InfoItem label="Age" value={str(data.age ?? readMeta(data, 'age'))} />
+              <InfoItem
+                label="Work Experience"
+                value={str(data.workExperience ?? readMeta(data, 'workExperience'))}
+              />
+              <InfoItem
+                label="Existing EMI"
+                value={formatIncome(data.existingEmi ?? readMeta(data, 'existingEmi'))}
+              />
+              <InfoItem label="Purpose" value={str(data.purpose ?? readMeta(data, 'purpose'))} />
+              <InfoItem label="PAN" value={str(data.pan ?? readMeta(data, 'pan'))} />
+              <InfoItem
+                label="Form"
+                value={str(data.formType ?? readMeta(data, 'formType'))}
+              />
+              <InfoItem
+                label="Website Source"
+                value={str(data.websiteSource ?? readMeta(data, 'source') ?? data.formVariant ?? readMeta(data, 'formVariant'))}
+              />
+              <InfoItem label="Page URL" value={str(data.pageUrl ?? readMeta(data, 'pageUrl'))} />
+              <InfoItem label="Message" value={str(data.message ?? readMeta(data, 'message'))} />
             </div>
           </Card>
           <Card title="Quick Stats">
